@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contador de Personas Interactivo</title>
+    <!-- Favicon (icono en la pestaña del navegador) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+    
+    <style>
+        /*
+         * =============================================
+         * CSS - Estructura, Temas y Animaciones
+         * =============================================
+         */
+
+        /* Importación de fuentes */
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Press+Start+2P&display=swap');
+
+        /* ---------------- Variables de Tema ---------------- */
+        :root {
+            --font-main: 'Roboto', sans-serif;
+            --font-pixel: 'Press Start 2P', cursive;
+            
+            /* Transiciones suaves para el cambio de tema */
+            --theme-transition: all 0.5s ease;
+        }
+
+        /* Tema Claro (Por defecto) */
+        body {
+            --bg-color: #f4f7f6;
+            --bg-image: url('https://www.transparenttextures.com/patterns/light-paper-fibers.png');
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --primary-color: #007bff;
+            --primary-text: #ffffff;
+            --secondary-color: #6c757d;
+            --accent-color: #28a745;
+            --error-color: #dc3545;
+            --man-color: #3498db;
+            --woman-color: #e91e63;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --font-family: var(--font-main);
+        }
+
+        /* Tema Oscuro */
+        body.theme-dark {
+            --bg-color: #1a1a1a;
+            --bg-image: url('https://www.transparenttextures.com/patterns/dark-matter.png');
+            --card-bg: #2c2c2c;
+            --text-color: #f1f1f1;
+            --primary-color: #00aaff;
+            --secondary-color: #888888;
+            --accent-color: #33cc66;
+            --error-color: #ff4444;
+            --man-color: #58a6ff;
+            --woman-color: #f778ba;
+            --shadow-color: rgba(0, 0, 0, 0.4);
+        }
+
+        /* Tema Retro */
+        body.theme-retro {
+            --bg-color: #0d0221;
+            --bg-image: url('https://www.transparenttextures.com/patterns/stardust.png');
+            --card-bg: rgba(26, 2, 65, 0.8);
+            --text-color: #00ff9b;
+            --primary-color: #ff00c1;
+            --secondary-color: #f0f;
+            --accent-color: #00f1ff;
+            --error-color: #ffee00;
+            --man-color: #00f1ff;
+            --woman-color: #ff00c1;
+            --shadow-color: rgba(255, 0, 193, 0.5);
+            --font-family: var(--font-pixel);
+            text-shadow: 0 0 5px var(--primary-color), 0 0 10px var(--accent-color);
+        }
+
+        /* Tema Minimalista */
+        body.theme-minimalist {
+            --bg-color: #ffffff;
+            --bg-image: none;
+            --card-bg: #ffffff;
+            --text-color: #222222;
+            --primary-color: #333333;
+            --secondary-color: #aaaaaa;
+            --accent-color: #555555;
+            --error-color: #222222;
+            --man-color: #444444;
+            --woman-color: #666666;
+            --shadow-color: rgba(0, 0, 0, 0.05);
+        }
+
+        /* Tema Pastel */
+        body.theme-pastel {
+            --bg-color: #fef6e4;
+            --bg-image: url('https://www.transparenttextures.com/patterns/subtle-dots.png');
+            --card-bg: #ffffff;
+            --text-color: #8d8d8d;
+            --primary-color: #8bd3dd;
+            --secondary-color: #fde2e4;
+            --accent-color: #fad2e1;
+            --error-color: #c5dedd;
+            --man-color: #a2d2ff;
+            --woman-color: #ffc8dd;
+            --shadow-color: rgba(141, 141, 141, 0.1);
+        }
+
+        /* Tema Alto Contraste */
+        body.theme-high-contrast {
+            --bg-color: #000000;
+            --bg-image: none;
+            --card-bg: #000000;
+            --text-color: #ffffff;
+            --primary-color: #ffff00;
+            --primary-text: #000000;
+            --secondary-color: #00ffff;
+            --accent-color: #ff00ff;
+            --error-color: #ffffff;
+            --man-color: #ffff00;
+            --woman-color: #00ffff;
+            --shadow-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Tema Naturaleza */
+        body.theme-nature {
+            --bg-color: #edf6f9;
+            --bg-image: url('https://www.transparenttextures.com/patterns/forest.png');
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --text-color: #006d77;
+            --primary-color: #83c5be;
+            --secondary-color: #e29578;
+            --accent-color: #ffddd2;
+            --primary-text: #006d77;
+            --error-color: #e29578;
+            --man-color: #83c5be;
+            --woman-color: #e29578;
+            --shadow-color: rgba(0, 109, 119, 0.15);
+        }
+
+        /* Tema Cyberpunk */
+        body.theme-cyberpunk {
+            --bg-color: #0a0f18;
+            --bg-image: url('https://www.transparenttextures.com/patterns/hexellence.png');
+            --card-bg: rgba(23, 29, 42, 0.85);
+            --text-color: #00f0ff;
+            --primary-color: #ff005d;
+            --secondary-color: #7b00e0;
+            --accent-color: #fcee0a;
+            --error-color: #fcee0a;
+            --man-color: #00f0ff;
+            --woman-color: #ff005d;
+            --shadow-color: rgba(123, 0, 224, 0.4);
+            border: 2px solid var(--secondary-color);
+        }
+        body.theme-cyberpunk .card {
+            border: 1px solid var(--secondary-color);
+            box-shadow: 0 0 15px var(--shadow-color);
+        }
+
+        /* ---------------- Estilos Generales ---------------- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+            transition: var(--theme-transition);
+            background-image: var(--bg-image);
+            background-attachment: fixed;
+            background-blend-mode: overlay;
+            background-color: rgba(255, 255, 255, 0.85); /* Opacidad de fondo */
+        }
+        
+        .main-container {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 15px var(--shadow-color);
+            transition: var(--theme-transition);
+            border: 1px solid transparent;
+        }
+
+        h1, h2, h3 {
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+        }
+        
+        /* ---------------- Cabecera y Controles ---------------- */
+        .header-controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        #clock-date {
+            font-size: 0.9rem;
+            font-weight: 300;
+        }
+
+        .controls-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        label {
+            font-weight: 400;
+        }
+        
+        input[type="number"], select {
+            padding: 0.5rem;
+            border-radius: 6px;
+            border: 1px solid var(--secondary-color);
+            background: var(--card-bg);
+            color: var(--text-color);
+            transition: var(--theme-transition);
+        }
+        
+        /* ---------------- Contadores Principales ---------------- */
+        .counters-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .counter-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .counter-card h2 {
+            font-size: 1.5rem;
+        }
+
+        .counter-value {
+            font-size: 5rem;
+            font-weight: 700;
+            margin: 1rem 0;
+            transition: transform 0.2s ease, color 0.2s;
+        }
+        
+        .counter-value.man-color { color: var(--man-color); }
+        .counter-value.woman-color { color: var(--woman-color); }
+        
+        .buttons-group {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            font-size: 1.5rem;
+            padding: 0.5rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.1s ease, box-shadow 0.2s ease, background-color 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px var(--shadow-color);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-plus { background-color: var(--accent-color); color: var(--primary-text); }
+        .btn-minus { background-color: var(--error-color); color: var(--primary-text); }
+        .btn-primary { background-color: var(--primary-color); color: var(--primary-text); }
+        .btn-secondary { background-color: var(--secondary-color); color: var(--primary-text); }
+
+        /* ---------------- Totales y Estadísticas ---------------- */
+        .stats-wrapper {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .total-counter {
+            text-align: center;
+        }
+
+        #total-value {
+            font-size: 4rem;
+            font-weight: 700;
+        }
+
+        #status-message {
+            margin-top: 0.5rem;
+            font-style: italic;
+            height: 20px;
+            color: var(--accent-color);
+        }
+
+        .stats-details, .chart-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .percentage-bar {
+            width: 100%;
+            height: 30px;
+            background-color: var(--woman-color);
+            border-radius: 15px;
+            overflow: hidden;
+            display: flex;
+            margin-top: 1rem;
+            border: 1px solid var(--secondary-color);
+        }
+
+        #men-percentage-fill {
+            background-color: var(--man-color);
+            height: 100%;
+            transition: width 0.5s ease-in-out;
+        }
+        
+        .percentage-labels {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        #chart {
+            max-width: 100%;
+            max-height: 150px;
+        }
+        
+        /* ---------------- Historial y Acciones ---------------- */
+        .history-actions-wrapper {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        
+        .actions-and-help-wrapper {
+             display: grid;
+             grid-template-columns: 2fr 1fr;
+             gap: 1rem;
+        }
+
+        #history-log {
+            list-style: none;
+            height: 150px;
+            overflow-y: auto;
+            border: 1px solid var(--secondary-color);
+            padding: 0.5rem;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column-reverse; /* Mostrar lo nuevo arriba */
+        }
+
+        #history-log li {
+            padding: 0.25rem;
+            border-bottom: 1px dashed var(--shadow-color);
+            font-size: 0.9rem;
+        }
+
+        .actions-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+        }
+        
+        .voice-commands-help ul {
+            list-style: none;
+            font-size: 0.85rem;
+        }
+        .voice-commands-help li {
+            margin-bottom: 0.5rem;
+        }
+        .voice-commands-help code {
+            background: var(--shadow-color);
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
+
+
+        /* ---------------- Animaciones ---------------- */
+        @keyframes zoom-in-out {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        .animate-zoom {
+            animation: zoom-in-out 0.3s ease-in-out;
+        }
+
+        @keyframes shake-error {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+        .animate-shake {
+            animation: shake-error 0.4s ease-in-out;
+        }
+
+        /* ---------------- Control por Voz ---------------- */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        .btn#voice-btn.listening {
+            background-color: var(--error-color);
+            animation: pulse 1s infinite;
+        }
+
+        #voice-feedback {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px var(--shadow-color);
+            opacity: 0;
+            transition: opacity 0.5s, transform 0.5s;
+            z-index: 1001;
+            transform: translate(-50%, -150%);
+            pointer-events: none; /* No interfiere con clics */
+        }
+        #voice-feedback.show {
+            opacity: 1;
+            transform: translate(-50%, 0);
+        }
+        
+        /* ---------------- Logros / Trofeos ---------------- */
+        #achievements-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+        }
+        .achievement {
+            background-color: var(--accent-color);
+            color: var(--primary-text);
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px var(--shadow-color);
+            opacity: 0;
+            transform: translateX(100%);
+            transition: opacity 0.5s, transform 0.5s;
+        }
+        .achievement.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* ---------------- Modo Presentación ---------------- */
+        body.presentation-mode {
+            justify-content: center;
+        }
+        body.presentation-mode .main-container > *:not(.stats-wrapper) {
+            display: none;
+        }
+        body.presentation-mode .stats-wrapper {
+            grid-template-columns: 1fr;
+        }
+        body.presentation-mode .total-counter {
+            transform: scale(2);
+        }
+
+        /* ---------------- Easter Egg: Modo Fiesta ---------------- */
+        #party-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            overflow: hidden;
+            display: none;
+        }
+        body.party-mode #party-overlay {
+            display: block;
+            animation: party-lights 0.5s infinite;
+        }
+        @keyframes party-lights {
+            0% { box-shadow: inset 0 0 100px #ff00de; }
+            25% { box-shadow: inset 0 0 100px #00f6ff; }
+            50% { box-shadow: inset 0 0 100px #fffa00; }
+            75% { box-shadow: inset 0 0 100px #2bff00; }
+            100% { box-shadow: inset 0 0 100px #ff00de; }
+        }
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #f00;
+            opacity: 0.7;
+            animation: fall linear infinite;
+        }
+        @keyframes fall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+            }
+        }
+        
+        /* ---------------- Responsividad ---------------- */
+        @media (max-width: 900px) {
+            .actions-and-help-wrapper {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .counters-wrapper {
+                grid-template-columns: 1fr;
+            }
+            .stats-wrapper {
+                grid-template-columns: 1fr;
+            }
+            .header-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .counter-value {
+                font-size: 4rem;
+            }
+            body {
+                padding: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body class="theme-light">
+
+    <div class="main-container">
+        <!-- CABECERA Y CONTROLES GLOBALES -->
+        <header class="card header-controls">
+            <div class="title-group">
+                <h1>📊 Contador de Personas</h1>
+                <div id="clock-date"></div>
+            </div>
+            <div class="controls-group">
+                <div class="input-group">
+                    <label for="capacity">Aforo Máx:</label>
+                    <input type="number" id="capacity" min="0" value="50">
+                </div>
+                <div class="input-group">
+                    <label for="theme-selector">Tema:</label>
+                    <select id="theme-selector">
+                        <option value="auto">Automático</option>
+                        <option value="light">Claro</option>
+                        <option value="dark">Oscuro</option>
+                        <option value="retro">Retro</option>
+                        <option value="minimalist">Minimalista</option>
+                        <option value="pastel">Pastel</option>
+                        <option value="high-contrast">Alto Contraste</option>
+                        <option value="nature">Naturaleza</option>
+                        <option value="cyberpunk">Cyberpunk</option>
+                    </select>
+                </div>
+            </div>
+        </header>
+        
+        <!-- CONTADORES INDIVIDUALES -->
+        <main class="counters-wrapper">
+            <section class="card counter-card" id="men-drop-area">
+                <h2>Hombres 👨</h2>
+                <div class="counter-value man-color" id="men-count">0</div>
+                <div class="buttons-group">
+                    <button class="btn btn-plus" id="add-man" aria-label="Añadir hombre">+1</button>
+                    <button class="btn btn-minus" id="remove-man" aria-label="Quitar hombre">-1</button>
+                </div>
+            </section>
+
+            <section class="card counter-card" id="women-drop-area">
+                <h2>Mujeres 👩</h2>
+                <div class="counter-value woman-color" id="women-count">0</div>
+                <div class="buttons-group">
+                    <button class="btn btn-plus" id="add-woman" aria-label="Añadir mujer">+1</button>
+                    <button class="btn btn-minus" id="remove-woman" aria-label="Quitar mujer">-1</button>
+                </div>
+            </section>
+        </main>
+        
+        <!-- TOTALES, ESTADÍSTICAS Y GRÁFICO -->
+        <section class="stats-wrapper">
+            <div class="card total-counter">
+                <h3>Total</h3>
+                <div id="total-value">0</div>
+                <p id="status-message">No hay nadie.</p>
+            </div>
+            <div class="card stats-details">
+                <h3>Porcentajes</h3>
+                <div class="percentage-bar">
+                    <div id="men-percentage-fill"></div>
+                </div>
+                <div class="percentage-labels">
+                    <span id="men-percentage">Hombres: 0%</span>
+                    <span id="women-percentage">Mujeres: 0%</span>
+                </div>
+            </div>
+            <div class="card chart-container">
+                <h3>Gráfico</h3>
+                <canvas id="chart" width="300" height="150"></canvas>
+            </div>
+        </section>
+
+        <!-- HISTORIAL Y ACCIONES -->
+        <section class="history-actions-wrapper">
+            <div class="actions-and-help-wrapper">
+                <div class="card">
+                    <h3>Historial y Acciones</h3>
+                    <ul id="history-log">
+                        <!-- Las acciones se añadirán aquí con JS -->
+                    </ul>
+                    <div class="card actions-group" style="margin-top: 1rem; padding: 1rem; box-shadow: none;">
+                        <button class="btn btn-secondary" id="undo-btn">Deshacer</button>
+                        <button class="btn btn-primary" id="reset-btn">Reset</button>
+                        <button class="btn btn-secondary" id="export-json-btn">Exportar JSON</button>
+                        <button class="btn btn-secondary" id="export-csv-btn">Exportar CSV</button>
+                        <button class="btn btn-secondary" id="sim-btn">Iniciar Simulación</button>
+                        <button class="btn btn-secondary" id="present-btn">Modo Presentación</button>
+                        <button class="btn btn-secondary" id="voice-btn" aria-label="Control por voz">🎙️</button>
+                        <button class="btn btn-secondary" id="speak-btn" aria-label="Leer en voz alta">🔊</button>
+                    </div>
+                </div>
+                 <div class="card voice-commands-help">
+                    <h3>Comandos de Voz</h3>
+                    <ul>
+                        <li><code>+/- [número] hombre(s)</code></li>
+                        <li><code>+/- [número] mujer(es)</code></li>
+                        <li><code>reset</code> o <code>reiniciar</code></li>
+                        <li><code>aforo máximo [número]</code></li>
+                        <li><code>iniciar/detener simulación</code></li>
+                        <li><code>activar/desactivar modo fiesta</code></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Contenedor para feedback de voz -->
+    <div id="voice-feedback"></div>
+    <!-- Contenedor para notificaciones de logros -->
+    <div id="achievements-container"></div>
+    <!-- Contenedor para Easter Egg: Modo Fiesta -->
+    <div id="party-overlay"></div>
+    <!-- Audio para Modo Fiesta (necesita una fuente válida) -->
+    <audio id="party-audio" loop>
+        <!-- ¡IMPORTANTE! Debes reemplazar 'path/to/sandstorm.mp3' por una URL o archivo local válido -->
+        <source src="https://github.com/heberthburbano/Contador-de-personas/blob/main/cancion.mp3" type="audio/mpeg">
+    </audio>
+
+
+    <script>
+    /*
+     * =============================================
+     * JavaScript - Lógica del Contador
+     * =============================================
+     */
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // ----------------- 1. Selección de Elementos del DOM -----------------
+        const menCountEl = document.getElementById('men-count');
+        const womenCountEl = document.getElementById('women-count');
+        const totalValueEl = document.getElementById('total-value');
+        const capacityInput = document.getElementById('capacity');
+        const statusMessageEl = document.getElementById('status-message');
+        
+        const addManBtn = document.getElementById('add-man');
+        const removeManBtn = document.getElementById('add-man');
+        const addWomanBtn = document.getElementById('add-woman');
+        const removeWomanBtn = document.getElementById('remove-woman');
+
+        const menPercentageEl = document.getElementById('men-percentage');
+        const womenPercentageEl = document.getElementById('women-percentage');
+        const menPercentageFillEl = document.getElementById('men-percentage-fill');
+        
+        const chartCanvas = document.getElementById('chart');
+        const ctx = chartCanvas.getContext('2d');
+        
+        const historyLogEl = document.getElementById('history-log');
+        const undoBtn = document.getElementById('undo-btn');
+        const resetBtn = document.getElementById('reset-btn');
+
+        const themeSelector = document.getElementById('theme-selector');
+        const clockDateEl = document.getElementById('clock-date');
+
+        const exportJsonBtn = document.getElementById('export-json-btn');
+        const exportCsvBtn = document.getElementById('export-csv-btn');
+        const simBtn = document.getElementById('sim-btn');
+        const presentBtn = document.getElementById('present-btn');
+        const speakBtn = document.getElementById('speak-btn');
+        const voiceBtn = document.getElementById('voice-btn');
+        const voiceFeedbackEl = document.getElementById('voice-feedback');
+        const achievementsContainer = document.getElementById('achievements-container');
+        const partyOverlay = document.getElementById('party-overlay');
+        const partyAudio = document.getElementById('party-audio');
+
+
+        // ----------------- 2. Estado de la Aplicación -----------------
+        let state = {
+            men: 0,
+            women: 0,
+            capacity: 50,
+            history: [],
+            simulationInterval: null,
+            achievements: new Set(),
+            isListening: false,
+            isPartyMode: false,
+        };
+
+        // Web Audio API para sonidos
+        let audioCtx;
+        const initAudio = () => {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        };
+        
+        // ----------------- 3. Lógica del Contador y Actualizaciones -----------------
+
+        function updateUI() {
+            const total = state.men + state.women;
+            menCountEl.textContent = state.men;
+            womenCountEl.textContent = state.women;
+            totalValueEl.textContent = total;
+            document.getElementById('remove-man').disabled = state.men <= 0;
+            document.getElementById('remove-woman').disabled = state.women <= 0;
+            const atCapacity = total >= state.capacity;
+            addManBtn.disabled = atCapacity;
+            addWomanBtn.disabled = atCapacity;
+            if (atCapacity) {
+                statusMessageEl.textContent = "¡Aforo completo!";
+            } else if (total === 0) {
+                statusMessageEl.textContent = "No hay nadie.";
+            } else if (state.men === state.women) {
+                statusMessageEl.textContent = "Equilibrio perfecto.";
+            } else {
+                statusMessageEl.textContent = "";
+            }
+            const menPercent = total > 0 ? (state.men / total) * 100 : 0;
+            const womenPercent = total > 0 ? 100 - menPercent : 0;
+            menPercentageEl.textContent = `Hombres: ${menPercent.toFixed(1)}%`;
+            womenPercentageEl.textContent = `Mujeres: ${womenPercent.toFixed(1)}%`;
+            menPercentageFillEl.style.width = `${menPercent}%`;
+            drawChart(menPercent, womenPercent);
+            undoBtn.disabled = state.history.length === 0;
+            saveStateToLocalStorage();
+            checkAchievements(total);
+        }
+        
+        function changeCount(type, value) {
+            initAudio();
+            const amount = Math.abs(value);
+            for(let i=0; i < amount; i++) {
+                if (value > 0 && state.men + state.women >= state.capacity) {
+                    animateElement(totalValueEl, 'shake');
+                    playSound(100, 0.2, 'square');
+                    return;
+                }
+                if (value < 0 && state[type] === 0) {
+                    animateElement(type === 'men' ? menCountEl : womenCountEl, 'shake');
+                    playSound(100, 0.2, 'square');
+                    return;
+                }
+                state[type] += Math.sign(value);
+                const action = {
+                    type,
+                    value: Math.sign(value),
+                    timestamp: new Date().toISOString()
+                };
+                state.history.push(action);
+                updateHistoryLog(action);
+            }
+            animateElement(type === 'men' ? menCountEl : womenCountEl, 'zoom');
+            playSound(type === 'men' ? 261.63 : 392.00, 0.1, 'sine');
+            updateUI();
+        }
+
+        // ----------------- 4. Funciones Auxiliares (Gráfico, Historial, etc.) -----------------
+
+        function drawChart(menPercent, womenPercent) {
+            const manColor = getComputedStyle(document.body).getPropertyValue('--man-color');
+            const womanColor = getComputedStyle(document.body).getPropertyValue('--woman-color');
+            
+            ctx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
+            const totalBarWidth = chartCanvas.width * 0.8;
+            const barHeight = 50;
+            const y = (chartCanvas.height - barHeight) / 2;
+            
+            const menWidth = (totalBarWidth * menPercent) / 100;
+            const womenWidth = (totalBarWidth * womenPercent) / 100;
+            
+            ctx.fillStyle = manColor;
+            ctx.fillRect((chartCanvas.width - totalBarWidth) / 2, y, menWidth, barHeight);
+            
+            ctx.fillStyle = womanColor;
+            ctx.fillRect(((chartCanvas.width - totalBarWidth) / 2) + menWidth, y, womenWidth, barHeight);
+        }
+        
+        function updateHistoryLog(action) {
+            const li = document.createElement('li');
+            const time = new Date(action.timestamp).toLocaleTimeString();
+            const icon = action.type === 'men' ? '👨' : '👩';
+            const operation = action.value === 1 ? 'Añadido' : 'Quitado';
+            li.textContent = `[${time}] ${operation} ${icon}`;
+            historyLogEl.prepend(li);
+        }
+
+        function renderFullHistory() {
+            historyLogEl.innerHTML = '';
+            [...state.history].reverse().forEach(action => {
+                updateHistoryLog(action);
+            });
+        }
+        
+        function undoLastAction() {
+            if (state.history.length === 0) return;
+            const lastAction = state.history.pop();
+            state[lastAction.type] -= lastAction.value;
+            if (historyLogEl.firstChild) {
+                historyLogEl.removeChild(historyLogEl.firstChild);
+            }
+            updateUI();
+        }
+
+        function resetAll() {
+            state.men = 0;
+            state.women = 0;
+            state.history = [];
+            state.achievements.clear();
+            historyLogEl.innerHTML = '';
+            if (state.isPartyMode) togglePartyMode();
+            updateUI();
+        }
+
+        // ----------------- 5. Gestión de Temas y Reloj -----------------
+
+        function applyTheme(theme) {
+            document.body.className = state.isPartyMode ? 'party-mode' : '';
+            if (theme !== 'light') {
+                document.body.classList.add(`theme-${theme}`);
+            }
+            updateUI();
+        }
+        
+        function handleAutoTheme() {
+            const hour = new Date().getHours();
+            const isDayTime = hour > 6 && hour < 20;
+            const theme = isDayTime ? 'light' : 'dark';
+            applyTheme(theme);
+        }
+
+        function updateClock() {
+            const now = new Date();
+            clockDateEl.textContent = now.toLocaleString('es-ES', {
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+        }
+
+        // ----------------- 6. Persistencia (LocalStorage) -----------------
+
+        function saveStateToLocalStorage() {
+            const dataToSave = {
+                men: state.men, women: state.women, capacity: state.capacity, history: state.history,
+                theme: themeSelector.value, achievements: Array.from(state.achievements)
+            };
+            localStorage.setItem('peopleCounterState', JSON.stringify(dataToSave));
+        }
+
+        function loadStateFromLocalStorage() {
+            const savedState = localStorage.getItem('peopleCounterState');
+            if (savedState) {
+                const parsedState = JSON.parse(savedState);
+                state.men = parsedState.men || 0;
+                state.women = parsedState.women || 0;
+                state.capacity = parsedState.capacity || 50;
+                state.history = parsedState.history || [];
+                state.achievements = new Set(parsedState.achievements || []);
+                capacityInput.value = state.capacity;
+                themeSelector.value = parsedState.theme || 'auto';
+                if (themeSelector.value === 'auto') {
+                    handleAutoTheme();
+                } else {
+                    applyTheme(themeSelector.value);
+                }
+                renderFullHistory();
+                updateUI();
+            } else {
+                handleAutoTheme();
+            }
+        }
+        
+        // ----------------- 7. Funcionalidades Extra -----------------
+        
+        function animateElement(element, animationType) {
+            const className = animationType === 'zoom' ? 'animate-zoom' : 'animate-shake';
+            element.classList.add(className);
+            setTimeout(() => element.classList.remove(className), 400);
+        }
+
+        function playSound(frequency, duration, type) {
+            if (!audioCtx) return;
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.type = type;
+            oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + duration);
+        }
+
+        function exportData(format) {
+            const data = {
+                hombres: state.men, mujeres: state.women, total: state.men + state.women,
+                aforo: state.capacity, fecha: new Date().toISOString(), historial: state.history
+            };
+            let content = '', mimeType = '', fileExtension = '';
+            if (format === 'json') {
+                content = JSON.stringify(data, null, 2);
+                mimeType = 'application/json';
+                fileExtension = 'json';
+            } else {
+                content = `Categoria,Cantidad\nHombres,${state.men}\nMujeres,${state.women}\nTotal,${state.men + state.women}\n`;
+                mimeType = 'text/csv'; fileExtension = 'csv';
+            }
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `contador_datos_${new Date().getTime()}.${fileExtension}`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        function toggleSimulation(force) {
+            if (force === 'start' && !state.simulationInterval) {
+                simBtn.textContent = 'Detener Simulación';
+                state.simulationInterval = setInterval(() => {
+                    if (state.men + state.women < state.capacity) {
+                        changeCount(Math.random() > 0.5 ? 'men' : 'women', 1);
+                    } else {
+                        toggleSimulation('stop');
+                    }
+                }, 1500);
+            } else if (force === 'stop' && state.simulationInterval) {
+                clearInterval(state.simulationInterval);
+                state.simulationInterval = null;
+                simBtn.textContent = 'Iniciar Simulación';
+            }
+        }
+        
+        function togglePresentationMode() { document.body.classList.toggle('presentation-mode'); }
+
+        function speakStatus() {
+            if ('speechSynthesis' in window) {
+                const text = `Actualmente hay ${state.men + state.women} personas. ${state.men} hombres y ${state.women} mujeres.`;
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'es-ES';
+                speechSynthesis.speak(utterance);
+            } else {
+                alert('Tu navegador no soporta la lectura en voz alta.');
+            }
+        }
+        
+        const achievementList = { 1: '¡El primero! 🎉', 10: '¡Diez personas! 🔟', 50: '¡Cincuenta y contando! 🔥', 100: '¡Centena! 💯' };
+        function checkAchievements(total) {
+            if (achievementList[total] && !state.achievements.has(total)) {
+                state.achievements.add(total);
+                showAchievement(achievementList[total]);
+            }
+        }
+
+        function showAchievement(message) {
+            const el = document.createElement('div');
+            el.className = 'achievement'; el.textContent = message;
+            achievementsContainer.appendChild(el);
+            setTimeout(() => { el.classList.add('show'); }, 10);
+            setTimeout(() => {
+                el.classList.remove('show');
+                setTimeout(() => { el.remove(); }, 500);
+            }, 4000);
+        }
+        
+        function togglePartyMode() {
+            state.isPartyMode = !state.isPartyMode;
+            if (state.isPartyMode) {
+                document.body.classList.add('party-mode');
+                partyAudio.play();
+                for (let i = 0; i < 50; i++) createConfetti();
+            } else {
+                document.body.classList.remove('party-mode');
+                partyAudio.pause();
+                partyAudio.currentTime = 0;
+                partyOverlay.innerHTML = '';
+            }
+        }
+        
+        function createConfetti() {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.style.left = `${Math.random() * 100}vw`;
+            confetti.style.animationDuration = `${Math.random() * 3 + 2}s`;
+            confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+            partyOverlay.appendChild(confetti);
+            setTimeout(() => confetti.remove(), 5000);
+        }
+
+        // ----------------- 7a. Control por Voz (Web Speech API) -----------------
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+
+        function setupVoiceControl() {
+            if (SpeechRecognition) {
+                recognition = new SpeechRecognition();
+                recognition.lang = 'es-ES'; recognition.continuous = false; recognition.interimResults = false;
+                recognition.onstart = () => { state.isListening = true; voiceBtn.classList.add('listening'); };
+                recognition.onend = () => { state.isListening = false; voiceBtn.classList.remove('listening'); };
+                recognition.onerror = (e) => { console.error('Error de voz:', e.error); showVoiceFeedback(`Error: ${e.error}`); };
+                recognition.onresult = (e) => {
+                    const command = e.results[0][0].transcript.trim().toLowerCase();
+                    showVoiceFeedback(`🎙️ Voz reconocida: "${command}"`);
+                    parseVoiceCommand(command);
+                };
+            } else {
+                voiceBtn.disabled = true; voiceBtn.title = "Control por voz no disponible.";
+                alert("El control por voz no está disponible en este navegador.");
+            }
+        }
+
+        function toggleVoiceListening() {
+            if (!recognition || state.isListening) return;
+            try { recognition.start(); } catch (e) { console.error("Error al iniciar reconocimiento:", e); }
+        }
+
+        function parseVoiceCommand(command) {
+            const numMatch = command.match(/(\d+)/);
+            const num = numMatch ? parseInt(numMatch[1], 10) : 1;
+
+            if (command.includes('hombre')) {
+                changeCount('men', command.startsWith('-') ? -num : num);
+            } else if (command.includes('mujer')) {
+                changeCount('women', command.startsWith('-') ? -num : num);
+            } else if (command.includes('reset') || command.includes('reiniciar')) {
+                resetAll();
+            } else if (command.includes('iniciar simulación')) {
+                toggleSimulation('start');
+            } else if (command.includes('detener simulación')) {
+                toggleSimulation('stop');
+            } else if (command.includes('aforo máximo')) {
+                if (numMatch) {
+                    state.capacity = num;
+                    capacityInput.value = num;
+                    updateUI();
+                } else {
+                    showVoiceFeedback('No se entendió el número del aforo.');
+                }
+            } else if (command.includes('activar modo fiesta')) {
+                if (!state.isPartyMode) togglePartyMode();
+            } else if (command.includes('desactivar modo fiesta')) {
+                if (state.isPartyMode) togglePartyMode();
+            } else {
+                showVoiceFeedback('Comando no reconocido.');
+            }
+        }
+
+        function showVoiceFeedback(message) {
+            voiceFeedbackEl.textContent = message;
+            voiceFeedbackEl.classList.add('show');
+            setTimeout(() => { voiceFeedbackEl.classList.remove('show'); }, 3000);
+        }
+
+        // ----------------- 8. Event Listeners -----------------
+        
+        document.getElementById('add-man').addEventListener('click', () => changeCount('men', 1));
+        document.getElementById('remove-man').addEventListener('click', () => changeCount('men', -1));
+        document.getElementById('add-woman').addEventListener('click', () => changeCount('women', 1));
+        document.getElementById('remove-woman').addEventListener('click', () => changeCount('women', -1));
+        
+        resetBtn.addEventListener('click', resetAll);
+        undoBtn.addEventListener('click', undoLastAction);
+        
+        capacityInput.addEventListener('change', (e) => { state.capacity = parseInt(e.target.value, 10) || 0; updateUI(); });
+        
+        themeSelector.addEventListener('change', (e) => {
+            if (e.target.value === 'auto') handleAutoTheme(); else applyTheme(e.target.value);
+            saveStateToLocalStorage();
+        });
+
+        exportJsonBtn.addEventListener('click', () => exportData('json'));
+        exportCsvBtn.addEventListener('click', () => exportData('csv'));
+        simBtn.addEventListener('click', () => toggleSimulation(state.simulationInterval ? 'stop' : 'start'));
+        presentBtn.addEventListener('click', togglePresentationMode);
+        speakBtn.addEventListener('click', speakStatus);
+        voiceBtn.addEventListener('click', toggleVoiceListening);
+
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowUp': e.preventDefault(); changeCount('men', 1); break;
+                case 'ArrowDown': e.preventDefault(); changeCount('men', -1); break;
+                case 'ArrowRight': e.preventDefault(); changeCount('women', 1); break;
+                case 'ArrowLeft': e.preventDefault(); changeCount('women', -1); break;
+                case 'r': case 'R': if (e.ctrlKey || e.metaKey) { e.preventDefault(); resetAll(); } break;
+                case 'z': case 'Z': if (e.ctrlKey || e.metaKey) { e.preventDefault(); undoLastAction(); } break;
+            }
+        });
+        
+        // ----------------- 9. Inicialización -----------------
+        
+        setupVoiceControl();
+        loadStateFromLocalStorage();
+        updateClock();
+        setInterval(updateClock, 30000);
+    });
+    </script>
+</body>
+</html>
+
+
