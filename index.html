@@ -21,17 +21,14 @@
         :root {
             --font-main: 'Roboto', sans-serif;
             --font-pixel: 'Press Start 2P', cursive;
+            --theme-transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
             
-            /* Transiciones suaves para el cambio de tema */
-            --theme-transition: all 0.5s ease;
-        }
-
-        /* Tema Claro (Por defecto) */
-        body {
+            /* Tema Claro (Por defecto) */
             --bg-color: #f4f7f6;
             --bg-image: url('https://www.transparenttextures.com/patterns/light-paper-fibers.png');
             --card-bg: #ffffff;
             --text-color: #333333;
+            --text-color-light: #6c757d;
             --primary-color: #007bff;
             --primary-text: #ffffff;
             --secondary-color: #6c757d;
@@ -40,136 +37,61 @@
             --man-color: #3498db;
             --woman-color: #e91e63;
             --shadow-color: rgba(0, 0, 0, 0.1);
+            --border-color: #e0e0e0;
             --font-family: var(--font-main);
+            --active-tab-glow: 0 0 15px rgba(0, 123, 255, 0.3); /* Glow para pestaña activa */
         }
 
         /* Tema Oscuro */
         body.theme-dark {
-            --bg-color: #1a1a1a;
+            --bg-color: #1a1a2e; /* Tono azulado oscuro para un mejor "feeling" */
             --bg-image: url('https://www.transparenttextures.com/patterns/dark-matter.png');
-            --card-bg: #2c2c2c;
-            --text-color: #f1f1f1;
-            --primary-color: #00aaff;
-            --secondary-color: #888888;
-            --accent-color: #33cc66;
+            --card-bg: #2a2a4a; /* Un gris-azul más profundo para las tarjetas */
+            --text-color: #e0e0e0;
+            --text-color-light: #a0a0c0;
+            --primary-color: #845ef7; /* Morado eléctrico */
+            --primary-text: #e0e0e0;
+            --secondary-color: #555577;
+            --accent-color: #00e676; /* Verde neón */
             --error-color: #ff4444;
-            --man-color: #58a6ff;
-            --woman-color: #f778ba;
-            --shadow-color: rgba(0, 0, 0, 0.4);
+            --man-color: #64b5f6; /* Azul más vibrante */
+            --woman-color: #ff70a6; /* Rosa más suave */
+            --shadow-color: rgba(0, 0, 0, 0.6);
+            --border-color: #4a4a6a; /* Un borde más oscuro */
+            --active-tab-glow: 0 0 15px rgba(132, 94, 247, 0.5);
         }
 
         /* Tema Retro */
         body.theme-retro {
             --bg-color: #0d0221;
             --bg-image: url('https://www.transparenttextures.com/patterns/stardust.png');
-            --card-bg: rgba(26, 2, 65, 0.8);
+            --card-bg: rgba(26, 2, 65, 0.85);
             --text-color: #00ff9b;
+            --text-color-light: #00ff9b;
             --primary-color: #ff00c1;
+            --primary-text: #0d0221;
             --secondary-color: #f0f;
             --accent-color: #00f1ff;
             --error-color: #ffee00;
             --man-color: #00f1ff;
             --woman-color: #ff00c1;
             --shadow-color: rgba(255, 0, 193, 0.5);
+            --border-color: #ff00c1;
             --font-family: var(--font-pixel);
             text-shadow: 0 0 5px var(--primary-color), 0 0 10px var(--accent-color);
+            --active-tab-glow: 0 0 15px rgba(255, 0, 193, 0.7);
         }
 
-        /* Tema Minimalista */
-        body.theme-minimalist {
-            --bg-color: #ffffff;
-            --bg-image: none;
-            --card-bg: #ffffff;
-            --text-color: #222222;
-            --primary-color: #333333;
-            --secondary-color: #aaaaaa;
-            --accent-color: #555555;
-            --error-color: #222222;
-            --man-color: #444444;
-            --woman-color: #666666;
-            --shadow-color: rgba(0, 0, 0, 0.05);
-        }
-
-        /* Tema Pastel */
-        body.theme-pastel {
-            --bg-color: #fef6e4;
-            --bg-image: url('https://www.transparenttextures.com/patterns/subtle-dots.png');
-            --card-bg: #ffffff;
-            --text-color: #8d8d8d;
-            --primary-color: #8bd3dd;
-            --secondary-color: #fde2e4;
-            --accent-color: #fad2e1;
-            --error-color: #c5dedd;
-            --man-color: #a2d2ff;
-            --woman-color: #ffc8dd;
-            --shadow-color: rgba(141, 141, 141, 0.1);
-        }
-
-        /* Tema Alto Contraste */
-        body.theme-high-contrast {
-            --bg-color: #000000;
-            --bg-image: none;
-            --card-bg: #000000;
-            --text-color: #ffffff;
-            --primary-color: #ffff00;
-            --primary-text: #000000;
-            --secondary-color: #00ffff;
-            --accent-color: #ff00ff;
-            --error-color: #ffffff;
-            --man-color: #ffff00;
-            --woman-color: #00ffff;
-            --shadow-color: rgba(255, 255, 255, 0.2);
-        }
-        
-        /* Tema Naturaleza */
-        body.theme-nature {
-            --bg-color: #edf6f9;
-            --bg-image: url('https://www.transparenttextures.com/patterns/forest.png');
-            --card-bg: rgba(255, 255, 255, 0.9);
-            --text-color: #006d77;
-            --primary-color: #83c5be;
-            --secondary-color: #e29578;
-            --accent-color: #ffddd2;
-            --primary-text: #006d77;
-            --error-color: #e29578;
-            --man-color: #83c5be;
-            --woman-color: #e29578;
-            --shadow-color: rgba(0, 109, 119, 0.15);
-        }
-
-        /* Tema Cyberpunk */
-        body.theme-cyberpunk {
-            --bg-color: #0a0f18;
-            --bg-image: url('https://www.transparenttextures.com/patterns/hexellence.png');
-            --card-bg: rgba(23, 29, 42, 0.85);
-            --text-color: #00f0ff;
-            --primary-color: #ff005d;
-            --secondary-color: #7b00e0;
-            --accent-color: #fcee0a;
-            --error-color: #fcee0a;
-            --man-color: #00f0ff;
-            --woman-color: #ff005d;
-            --shadow-color: rgba(123, 0, 224, 0.4);
-            border: 2px solid var(--secondary-color);
-        }
-        body.theme-cyberpunk .card {
-            border: 1px solid var(--secondary-color);
-            box-shadow: 0 0 15px var(--shadow-color);
-        }
+        /* ... (Resto de temas sin cambios, omitidos por brevedad) ... */
+         body.theme-minimalist{--bg-color:#fff;--bg-image:none;--card-bg:#fff;--text-color:#222;--text-color-light:#777;--primary-color:#333;--primary-text:#fff;--secondary-color:#aaa;--accent-color:#555;--error-color:#222;--man-color:#444;--woman-color:#666;--shadow-color:rgba(0,0,0,.05);--border-color:#eee;--active-tab-glow:none}body.theme-pastel{--bg-color:#fef6e4;--bg-image:url(https://www.transparenttextures.com/patterns/subtle-dots.png);--card-bg:#fff;--text-color:#8d8d8d;--text-color-light:#aaa;--primary-color:#8bd3dd;--primary-text:#fff;--secondary-color:#fde2e4;--accent-color:#fad2e1;--error-color:#c5dedd;--man-color:#a2d2ff;--woman-color:#ffc8dd;--shadow-color:rgba(141,141,141,.1);--border-color:#fde2e4;--active-tab-glow:0 0 10px rgba(139, 211, 221, 0.4)}body.theme-high-contrast{--bg-color:#000;--bg-image:none;--card-bg:#000;--text-color:#fff;--text-color-light:#fff;--primary-color:#ff0;--primary-text:#000;--secondary-color:#0ff;--accent-color:#f0f;--error-color:#fff;--man-color:#ff0;--woman-color:#0ff;--shadow-color:rgba(255,255,255,.2);--border-color:#fff;--active-tab-glow:0 0 15px rgba(255, 255, 0, 0.7)}body.theme-nature{--bg-color:#edf6f9;--bg-image:url(https://www.transparenttextures.com/patterns/forest.png);--card-bg:rgba(255,255,255,.9);--text-color:#006d77;--text-color-light:#006d77;--primary-color:#83c5be;--primary-text:#006d77;--secondary-color:#e29578;--accent-color:#ffddd2;--error-color:#e29578;--man-color:#83c5be;--woman-color:#e29578;--shadow-color:rgba(0,109,119,.15);--border-color:#83c5be;--active-tab-glow:0 0 10px rgba(131, 197, 190, 0.4)}body.theme-cyberpunk{--bg-color:#0a0f18;--bg-image:url(https://www.transparenttextures.com/patterns/hexellence.png);--card-bg:rgba(23,29,42,.85);--text-color:#00f0ff;--text-color-light:#00f0ff;--primary-color:#ff005d;--primary-text:#0a0f18;--secondary-color:#7b00e0;--accent-color:#fcee0a;--error-color:#fcee0a;--man-color:#00f0ff;--woman-color:#ff005d;--shadow-color:rgba(123,0,224,.4);--border-color:var(--secondary-color);--active-tab-glow:0 0 15px rgba(255, 0, 93, 0.6)}
+         body.theme-cyberpunk .card { border: 1px solid var(--border-color); box-shadow: 0 0 15px var(--shadow-color); }
 
         /* ---------------- Estilos Generales ---------------- */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        html, body {
-            height: 100%;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; }
 
         body {
-            font-family: var(--font-family);
+            font-family: var(--font-main);
             background-color: var(--bg-color);
             color: var(--text-color);
             display: flex;
@@ -180,343 +102,402 @@
             background-image: var(--bg-image);
             background-attachment: fixed;
             background-blend-mode: overlay;
-            background-color: rgba(255, 255, 255, 0.85); /* Opacidad de fondo */
         }
         
         .main-container {
             width: 100%;
             max-width: 1200px;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            opacity: 1; /* Para transiciones de vista */
+            transition: opacity 0.5s ease-in-out;
         }
 
         .card {
             background-color: var(--card-bg);
-            border-radius: 12px;
+            border-radius: 16px;
             padding: 1.5rem;
-            box-shadow: 0 4px 15px var(--shadow-color);
+            box-shadow: 0 8px 30px var(--shadow-color);
             transition: var(--theme-transition);
-            border: 1px solid transparent;
+            border: 1px solid var(--border-color);
         }
 
-        h1, h2, h3 {
-            margin-bottom: 1rem;
-            font-weight: 700;
-        }
-
-        h1 {
-            color: var(--primary-color);
-            text-align: center;
-        }
+        h1, h2, h3 { margin-bottom: 1rem; font-weight: 700; }
+        h1 { color: var(--primary-color); text-align: center; }
         
-        /* ---------------- Cabecera y Controles ---------------- */
-        .header-controls {
+        /* ---------------- Pestañas de Multi-Contador (VISIBILIDAD MEJORADA Y SIN CORTES) ---------------- */
+        #counters-tabs-container {
+            width: 100%;
+            max-width: 1200px;
             display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        #clock-date {
-            font-size: 0.9rem;
-            font-weight: 300;
-        }
-
-        .controls-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            align-items: center;
-        }
-
-        .input-group {
-            display: flex;
-            align-items: center;
+            flex-wrap: wrap; /* Permite que las pestañas salten a la siguiente línea */
+            align-items: center; /* Alinea las pestañas en el centro verticalmente */
             gap: 0.5rem;
-        }
-        
-        label {
-            font-weight: 400;
-        }
-        
-        input[type="number"], select {
             padding: 0.5rem;
-            border-radius: 6px;
-            border: 1px solid var(--secondary-color);
-            background: var(--card-bg);
-            color: var(--text-color);
-            transition: var(--theme-transition);
+            background-color: var(--border-color); /* Fondo claro para contraste */
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 15px var(--shadow-color); /* Sombra para destacarlo */
+            min-height: 60px; /* Altura mínima para que no colapse */
+            align-items: stretch; /* Asegura que todas tengan la misma altura */
+            position: relative; /* Para el drag & drop */
         }
         
-        /* ---------------- Contadores Principales ---------------- */
-        .counters-wrapper {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-        }
-
-        .counter-card {
+        .counter-tab {
+            position: relative;
             display: flex;
-            flex-direction: column;
             align-items: center;
-            text-align: center;
-        }
-
-        .counter-card h2 {
-            font-size: 1.5rem;
-        }
-
-        .counter-value {
-            font-size: 5rem;
-            font-weight: 700;
-            margin: 1rem 0;
-            transition: transform 0.2s ease, color 0.2s;
+            gap: 0.75rem; /* Espacio entre nombre e iconos */
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            cursor: grab; /* Cursor para indicar arrastrable */
+            transition: all 0.25s ease;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            white-space: nowrap;
+            color: var(--text-color);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            user-select: none; /* Evita selección de texto al arrastrar */
         }
         
+        .counter-tab:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px var(--shadow-color);
+        }
+        
+        /* Estilo para la pestaña que se está arrastrando */
+        .counter-tab.dragging {
+            opacity: 0.5;
+            border: 2px dashed var(--primary-color);
+            transform: scale(0.95);
+            background-color: var(--card-bg); /* Mantener color de fondo */
+        }
+
+        .counter-tab.active {
+            background-color: var(--primary-color);
+            color: var(--primary-text);
+            font-weight: 700;
+            box-shadow: 0 5px 15px var(--active-tab-glow); /* Usar glow variable */
+            border-color: var(--primary-color); /* Borde del mismo color */
+        }
+        /* Subrayado animado para la pestaña activa */
+        .counter-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 10%;
+            width: 80%;
+            height: 3px;
+            background-color: var(--accent-color);
+            border-radius: 2px;
+            animation: grow-underline 0.3s ease-out;
+        }
+        @keyframes grow-underline { from { width: 0; left: 50%; } to { width: 80%; left: 10%; } }
+
+        .tab-name {
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: pointer; /* Para indicar que es editable */
+        }
+
+        .tab-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-left: auto;
+        }
+        
+        .tab-icon {
+            cursor: pointer;
+            opacity: 0.7; /* Siempre visible, pero más suave */
+            transform: scale(1);
+            transition: all 0.2s ease;
+            font-size: 0.9em;
+            padding: 0.25rem;
+            border-radius: 50%;
+            color: var(--text-color-light); /* Color de icono más discreto */
+        }
+
+        .counter-tab:hover .tab-icon {
+            opacity: 1;
+            transform: scale(1.1);
+            background-color: var(--shadow-color);
+        }
+        .tab-icon:hover {
+            opacity: 1;
+            background-color: var(--shadow-color);
+        }
+        .counter-tab.active .tab-icon {
+            opacity: 1; /* Iconos más visibles en pestaña activa */
+            color: var(--primary-text);
+            background-color: rgba(0,0,0,0.2);
+        }
+
+        #add-counter-btn {
+            font-size: 1.5rem;
+            padding: 0.5rem 1rem;
+            border: 2px dashed var(--accent-color);
+            background: transparent;
+            color: var(--accent-color);
+            border-radius: 8px;
+            transition: all 0.25s ease;
+        }
+        #add-counter-btn:hover {
+            background-color: var(--accent-color);
+            color: var(--primary-text);
+            transform: scale(1.05);
+        }
+
+        /* Indicador de estado para simulación/fiesta */
+        .status-indicator {
+            width: 10px; /* Más grande */
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--accent-color);
+            transition: transform 0.3s ease, background-color 0.3s ease;
+            transform: scale(0);
+            position: absolute; /* Posicionado dentro de la pestaña */
+            top: 5px;
+            right: 5px;
+            box-shadow: 0 0 5px var(--accent-color);
+        }
+        .counter-tab.is-simulating .status-indicator {
+            transform: scale(1);
+            animation: pulse-indicator 1.5s infinite;
+            background-color: var(--man-color); /* Color distintivo para simulación */
+            box-shadow: 0 0 8px var(--man-color);
+        }
+        .counter-tab.is-party-mode .status-indicator { /* Indicador para modo fiesta */
+            transform: scale(1);
+            animation: pulse-indicator 0.7s infinite alternate;
+            background-color: var(--error-color); /* Color distintivo para fiesta */
+            box-shadow: 0 0 8px var(--error-color);
+        }
+        @keyframes pulse-indicator { 50% { opacity: 0.4; transform: scale(0.8); } }
+        
+        /* ---------------- Estilos de la App (sin cambios mayores) ---------------- */
+        .header-controls { 
+            display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; 
+            position: relative; /* Para el botón de configuración */
+        }
+        #clock-date { font-size: 0.9rem; color: var(--text-color-light); }
+        .controls-group, .input-group { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; }
+        label { font-weight: 400; }
+        input[type="number"], select {
+            padding: 0.6rem; border-radius: 8px; border: 1px solid var(--border-color);
+            background: var(--card-bg); color: var(--text-color); transition: var(--theme-transition);
+        }
+        .counters-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .counter-card { display: flex; flex-direction: column; align-items: center; text-align: center; }
+        .counter-card h2 { font-size: 1.5rem; color: var(--text-color-light); }
+        .counter-value { font-size: 5rem; font-weight: 700; margin: 1rem 0; transition: transform 0.2s ease, color 0.4s ease; }
         .counter-value.man-color { color: var(--man-color); }
         .counter-value.woman-color { color: var(--woman-color); }
         
+        /* Contenedor para los botones de suma/resta */
         .buttons-group {
             display: flex;
             gap: 1rem;
-        }
-
-        .btn {
-            font-size: 1.5rem;
-            padding: 0.5rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: transform 0.1s ease, box-shadow 0.2s ease, background-color 0.3s ease;
-            display: flex;
-            align-items: center;
             justify-content: center;
         }
 
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px var(--shadow-color);
+        .btn {
+            font-size: 1.5rem; padding: 0.75rem 1.75rem; border: none; border-radius: 12px;
+            cursor: pointer; transition: all 0.2s ease;
+            display: flex; align-items: center; justify-content: center;
         }
-
-        .btn:active {
-            transform: translateY(1px);
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
+        .btn:hover { transform: translateY(-3px); box-shadow: 0 6px 12px var(--shadow-color); }
+        .btn:active { transform: translateY(0); box-shadow: 0 2px 4px var(--shadow-color); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
         .btn-plus { background-color: var(--accent-color); color: var(--primary-text); }
         .btn-minus { background-color: var(--error-color); color: var(--primary-text); }
         .btn-primary { background-color: var(--primary-color); color: var(--primary-text); }
         .btn-secondary { background-color: var(--secondary-color); color: var(--primary-text); }
-
-        /* ---------------- Totales y Estadísticas ---------------- */
-        .stats-wrapper {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1rem;
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+        #status-message { min-height: 20px; }
+        
+        /* ... (Resto de CSS sin cambios, omitido por brevedad) ... */
+        .total-counter{text-align:center}#total-value{font-size:4rem;font-weight:700}#status-message{margin-top:.5rem;font-style:italic;min-height:20px;color:var(--accent-color)}.percentage-bar{width:100%;height:30px;background-color:var(--woman-color);border-radius:15px;overflow:hidden;display:flex;margin-top:1rem;border:1px solid var(--border-color)}#men-percentage-fill{background-color:var(--man-color);height:100%;transition:width .5s ease-in-out}.percentage-labels{width:100%;display:flex;justify-content:space-between;margin-top:.5rem;font-size:.9rem}#chart{max-width:100%;max-height:150px}.advanced-stats-panel{display:flex;flex-direction:column;gap:1rem}.stat-item{display:flex;justify-content:space-between;align-items:baseline;font-size:1.1rem}.stat-item .label{color:var(--text-color-light)}.stat-item .value{font-weight:700;color:var(--primary-color)}.progress-bar{width:100%;height:10px;background-color:var(--border-color);border-radius:5px;overflow:hidden}.progress-bar-fill{height:100%;background-color:var(--accent-color);transition:width .5s ease}.actions-and-help-wrapper{display:grid;grid-template-columns:2fr 1fr;gap:1.5rem}#history-log{list-style:none;height:150px;overflow-y:auto;border:1px solid var(--border-color);padding:.5rem;border-radius:6px;display:flex;flex-direction:column-reverse}#history-log li{padding:.25rem;border-bottom:1px dashed var(--shadow-color);font-size:.9rem}.actions-group{display:flex;flex-wrap:wrap;gap:1rem;justify-content:center}.voice-commands-help ul{list-style:none;font-size:.85rem}.voice-commands-help li{margin-bottom:.5rem}.voice-commands-help code{background:var(--shadow-color);padding:2px 5px;border-radius:4px}@keyframes zoom-in-out{0%{transform:scale(1)}50%{transform:scale(1.2)}100%{transform:scale(1)}}.animate-zoom{animation:zoom-in-out .3s ease-in-out}@keyframes shake-error{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}.animate-shake{animation:shake-error .4s ease-in-out}@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.1)}100%{transform:scale(1)}}.btn#voice-btn.listening{background-color:var(--error-color);animation:pulse 1s infinite}#voice-feedback{position:fixed;top:20px;left:50%;background-color:var(--card-bg);color:var(--text-color);padding:1rem;border-radius:8px;box-shadow:0 4px 15px var(--shadow-color);opacity:0;transition:all .5s ease;z-index:1001;transform:translate(-50%,-150%);pointer-events:none}#voice-feedback.show{opacity:1;transform:translate(-50%,0)}#toast-container{position:fixed;top:20px;right:20px;z-index:1002;display:flex;flex-direction:column;gap:10px}.toast{padding:1rem;border-radius:8px;box-shadow:0 4px 15px var(--shadow-color);opacity:0;transform:translateX(100%);transition:all .5s cubic-bezier(.68,-.55,.27,1.55);background-color:var(--card-bg);color:var(--text-color);border-left:5px solid var(--primary-color)}.toast.show{opacity:1;transform:translateX(0)}.toast.success{border-left-color:var(--accent-color)}.toast.error{border-left-color:var(--error-color)}#party-overlay{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;overflow:hidden;display:none}body.party-mode #party-overlay{display:block;animation:party-lights .5s infinite}@keyframes party-lights{0%{box-shadow:inset 0 0 100px #f0d}25%{box-shadow:inset 0 0 100px #0ff}50%{box-shadow:inset 0 0 100px #ff0}75%{box-shadow:inset 0 0 100px #2f0}100%{box-shadow:inset 0 0 100px #f0d}}.confetti{position:absolute;width:10px;height:10px;background-color:#f00;opacity:.7;animation:fall linear infinite}@keyframes fall{to{transform:translateY(100vh) rotate(360deg)}}@media (max-width:900px){.actions-and-help-wrapper{grid-template-columns:1fr}}@media (max-width:768px){.counters-wrapper,.stats-grid{grid-template-columns:1fr}.header-controls{flex-direction:column;align-items:stretch}.counter-value{font-size:4rem}body{padding:.5rem}}
+        
+        /* ---------------- Modal de Configuración (NUEVO) ---------------- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
         }
-
-        .total-counter {
+        .modal-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: var(--card-bg);
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px var(--shadow-color);
+            width: 90%;
+            max-width: 500px;
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.visible .modal-content {
+            transform: translateY(0);
+        }
+        .modal-content h3 {
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
             text-align: center;
         }
-
-        #total-value {
-            font-size: 4rem;
-            font-weight: 700;
+        .modal-settings-group {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            background-color: rgba(0,0,0,0.02);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
         }
-
-        #status-message {
-            margin-top: 0.5rem;
-            font-style: italic;
-            height: 20px;
-            color: var(--accent-color);
-        }
-
-        .stats-details, .chart-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .percentage-bar {
-            width: 100%;
-            height: 30px;
-            background-color: var(--woman-color);
-            border-radius: 15px;
-            overflow: hidden;
-            display: flex;
-            margin-top: 1rem;
-            border: 1px solid var(--secondary-color);
-        }
-
-        #men-percentage-fill {
-            background-color: var(--man-color);
-            height: 100%;
-            transition: width 0.5s ease-in-out;
-        }
-        
-        .percentage-labels {
-            width: 100%;
+        .modal-setting-item {
             display: flex;
             justify-content: space-between;
-            margin-top: 0.5rem;
-            font-size: 0.9rem;
+            align-items: center;
+            margin-bottom: 0.75rem;
         }
-
-        #chart {
-            max-width: 100%;
-            max-height: 150px;
-        }
-        
-        /* ---------------- Historial y Acciones ---------------- */
-        .history-actions-wrapper {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 1rem;
-        }
-        
-        .actions-and-help-wrapper {
-             display: grid;
-             grid-template-columns: 2fr 1fr;
-             gap: 1rem;
-        }
-
-        #history-log {
-            list-style: none;
-            height: 150px;
-            overflow-y: auto;
-            border: 1px solid var(--secondary-color);
-            padding: 0.5rem;
-            border-radius: 6px;
-            display: flex;
-            flex-direction: column-reverse; /* Mostrar lo nuevo arriba */
-        }
-
-        #history-log li {
-            padding: 0.25rem;
-            border-bottom: 1px dashed var(--shadow-color);
-            font-size: 0.9rem;
-        }
-
-        .actions-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            justify-content: center;
-        }
-        
-        .voice-commands-help ul {
-            list-style: none;
-            font-size: 0.85rem;
-        }
-        .voice-commands-help li {
-            margin-bottom: 0.5rem;
-        }
-        .voice-commands-help code {
-            background: var(--shadow-color);
-            padding: 2px 5px;
-            border-radius: 4px;
-        }
-
-
-        /* ---------------- Animaciones ---------------- */
-        @keyframes zoom-in-out {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); }
-        }
-        .animate-zoom {
-            animation: zoom-in-out 0.3s ease-in-out;
-        }
-
-        @keyframes shake-error {
-            0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-5px); }
-            40%, 80% { transform: translateX(5px); }
-        }
-        .animate-shake {
-            animation: shake-error 0.4s ease-in-out;
-        }
-
-        /* ---------------- Control por Voz ---------------- */
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
-        .btn#voice-btn.listening {
-            background-color: var(--error-color);
-            animation: pulse 1s infinite;
-        }
-
-        #voice-feedback {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            background-color: var(--card-bg);
+        .modal-setting-item:last-child { margin-bottom: 0; }
+        .modal-setting-item label {
+            font-size: 1rem;
             color: var(--text-color);
-            padding: 1rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px var(--shadow-color);
-            opacity: 0;
-            transition: opacity 0.5s, transform 0.5s;
-            z-index: 1001;
-            transform: translate(-50%, -150%);
-            pointer-events: none; /* No interfiere con clics */
+            flex-grow: 1;
         }
-        #voice-feedback.show {
-            opacity: 1;
-            transform: translate(-50%, 0);
+        .modal-setting-item input[type="number"],
+        .modal-setting-item select {
+            width: 120px;
+            text-align: center;
         }
-        
-        /* ---------------- Logros / Trofeos ---------------- */
-        #achievements-container {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
+        .modal-buttons {
             display: flex;
-            flex-direction: column;
-            gap: 10px;
-            z-index: 1000;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 1.5rem;
         }
-        .achievement {
-            background-color: var(--accent-color);
+        .modal-close-btn {
+            background-color: var(--error-color);
             color: var(--primary-text);
-            padding: 1rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px var(--shadow-color);
-            opacity: 0;
-            transform: translateX(100%);
-            transition: opacity 0.5s, transform 0.5s;
         }
-        .achievement.show {
-            opacity: 1;
-            transform: translateX(0);
+        .modal-save-btn {
+            background-color: var(--primary-color);
+            color: var(--primary-text);
         }
 
-        /* ---------------- Modo Presentación ---------------- */
-        body.presentation-mode {
-            justify-content: center;
+        /* ---------------- Dashboard View (CORREGIDO) ---------------- */
+        #dashboard-view {
+            display: none; /* Oculto por defecto */
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            width: 100%;
         }
-        body.presentation-mode .main-container > *:not(.stats-wrapper) {
-            display: none;
-        }
-        body.presentation-mode .stats-wrapper {
+
+        /* Reglas para alternar visibilidad (CORREGIDO) */
+        .main-content-area {
+            display: grid; /* La vista principal es un grid por defecto */
             grid-template-columns: 1fr;
-        }
-        body.presentation-mode .total-counter {
-            transform: scale(2);
+            gap: 1.5rem;
         }
 
-        /* ---------------- Easter Egg: Modo Fiesta ---------------- */
+        body.dashboard-mode .main-content-area {
+            display: none; /* Oculta la vista principal en modo dashboard */
+        }
+
+        body.dashboard-mode #dashboard-view {
+            display: grid; /* Muestra la vista de dashboard */
+        }
+
+
+        .dashboard-card {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px var(--shadow-color);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px var(--shadow-color);
+        }
+        .dashboard-card h4 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
+            padding-right: 2rem; /* Espacio para el icono de stats */
+        }
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+        }
+        .dashboard-stats div span:first-child { color: var(--text-color-light); }
+        .dashboard-stats div span:last-child { font-weight: 700; color: var(--text-color); }
+        .dashboard-occupancy {
+            width: 100%;
+            height: 10px;
+            background-color: var(--border-color);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .dashboard-occupancy-fill {
+            height: 100%;
+            background-color: var(--accent-color);
+            transition: width 0.5s ease;
+        }
+        .dashboard-card .total-display {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-color);
+            text-align: center;
+            margin-top: 1rem;
+        }
+        .dashboard-card .stat-icon {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 1.2rem;
+            color: var(--secondary-color);
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        .dashboard-card .stat-icon:hover {
+            transform: scale(1.2);
+            color: var(--primary-color);
+        }
+
+        /* Indicador de estado para Dashboard Card */
+        .dashboard-card .status-indicator {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 12px;
+            height: 12px;
+            transform: scale(1);
+        }
+
+        /* Overlay de fiesta */
         #party-overlay {
             position: fixed;
             top: 0;
@@ -527,76 +508,239 @@
             z-index: 9999;
             overflow: hidden;
             display: none;
-        }
-        body.party-mode #party-overlay {
-            display: block;
-            animation: party-lights 0.5s infinite;
-        }
-        @keyframes party-lights {
-            0% { box-shadow: inset 0 0 100px #ff00de; }
-            25% { box-shadow: inset 0 0 100px #00f6ff; }
-            50% { box-shadow: inset 0 0 100px #fffa00; }
-            75% { box-shadow: inset 0 0 100px #2bff00; }
-            100% { box-shadow: inset 0 0 100px #ff00de; }
-        }
-        .confetti {
-            position: absolute;
-            width: 10px;
-            height: 10px;
-            background-color: #f00;
-            opacity: 0.7;
-            animation: fall linear infinite;
-        }
-        @keyframes fall {
-            to {
-                transform: translateY(100vh) rotate(360deg);
-            }
-        }
-        
-        /* ---------------- Responsividad ---------------- */
-        @media (max-width: 900px) {
-            .actions-and-help-wrapper {
-                grid-template-columns: 1fr;
-            }
+            /* background: linear-gradient(45deg, #f06, #f0f, #60f, #00f, #0f0, #ff0, #f00); */
+            background-size: 400% 400%;
+            animation: gradient-anim 10s ease infinite;
         }
 
+        body.party-mode #party-overlay {
+            display: block;
+        }
+
+        @keyframes gradient-anim {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .confetti, .emoji {
+            position: absolute;
+            animation: fall linear infinite;
+        }
+        .confetti {
+            width: 10px;
+            height: 10px;
+            background-color: red; /* se cambiará en JS */
+            opacity: 0.7;
+            border-radius: 2px;
+        }
+        .emoji {
+            font-size: 20px;
+            opacity: 0.8;
+        }
+
+        /* Botón de configuración */
+        #settings-btn {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            font-size: 1.8rem;
+            background: none;
+            border: none;
+            color: var(--text-color-light);
+            cursor: pointer;
+            transition: transform 0.2s ease, color 0.2s ease;
+            z-index: 100;
+        }
+        #settings-btn:hover {
+            transform: rotate(30deg) scale(1.1);
+            color: var(--primary-color);
+        }
+
+        /* Botón para detener fiesta (NUEVO) */
+        #fixed-stop-party-btn {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10000; /* Por encima del overlay de fiesta */
+            background-color: var(--error-color);
+            color: var(--primary-text);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.7);
+            animation: pulse 1.5s infinite;
+        }
+        
+        /* Media Queries para Responsividad */
+        @media (max-width: 900px) {
+            .actions-and-help-wrapper { grid-template-columns: 1fr; }
+            #dashboard-view { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+        }
         @media (max-width: 768px) {
-            .counters-wrapper {
-                grid-template-columns: 1fr;
-            }
-            .stats-wrapper {
-                grid-template-columns: 1fr;
-            }
-            .header-controls {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .counter-value {
-                font-size: 4rem;
-            }
-            body {
-                padding: 0.5rem;
-            }
+            .counters-wrapper, .stats-grid { grid-template-columns: 1fr; }
+            .header-controls { flex-direction: column; align-items: stretch; }
+            .counter-value { font-size: 4rem; }
+            body { padding: 0.5rem; }
+            #settings-btn { top: 0.8rem; right: 0.8rem; font-size: 1.5rem; }
+            .modal-content { padding: 1.5rem; }
         }
     </style>
 </head>
-<body class="theme-light">
+<body>
+    <button id="settings-btn" aria-label="Abrir configuración">⚙️</button>
+
+    <!-- CONTENEDOR DE PESTAÑAS PARA MULTI-CONTADOR -->
+    <div id="counters-tabs-container">
+        <!-- Las pestañas se generarán aquí con JS -->
+    </div>
 
     <div class="main-container">
-        <!-- CABECERA Y CONTROLES GLOBALES -->
-        <header class="card header-controls">
-            <div class="title-group">
-                <h1>📊 Contador de Personas</h1>
-                <div id="clock-date"></div>
-            </div>
-            <div class="controls-group">
-                <div class="input-group">
-                    <label for="capacity">Aforo Máx:</label>
-                    <input type="number" id="capacity" min="0" value="50">
+        <!-- Contenido principal (vista de contador individual) -->
+        <div class="main-content-area">
+            <header class="card header-controls">
+                <div class="title-group">
+                    <h1 id="main-title">📊 Contador de Personas</h1>
+                    <div id="clock-date"></div>
                 </div>
-                <div class="input-group">
-                    <label for="theme-selector">Tema:</label>
-                    <select id="theme-selector">
+                <div class="controls-group">
+                    <div class="input-group">
+                        <label for="capacity">Aforo Máx:</label>
+                        <input type="number" id="capacity" min="0" value="50">
+                    </div>
+                    <div class="input-group">
+                        <label for="theme-selector">Tema:</label>
+                        <select id="theme-selector" aria-label="Selector de tema">
+                            <option value="auto">Automático</option>
+                            <option value="light">Claro</option>
+                            <option value="dark">Oscuro</option>
+                            <option value="retro">Retro</option>
+                            <option value="minimalist">Minimalista</option>
+                            <option value="pastel">Pastel</option>
+                            <option value="high-contrast">Alto Contraste</option>
+                            <option value="nature">Naturaleza</option>
+                            <option value="cyberpunk">Cyberpunk</option>
+                        </select>
+                    </div>
+                </div>
+            </header>
+            
+            <main class="counters-wrapper">
+                <section class="card counter-card">
+                    <h2>Hombres 👨</h2>
+                    <div class="counter-value man-color" id="men-count">0</div>
+                    <div class="buttons-group">
+                        <button class="btn btn-plus" id="add-man" aria-label="Añadir hombre">+1</button>
+                        <button class="btn btn-minus" id="remove-man" aria-label="Quitar hombre">-1</button>
+                    </div>
+                </section>
+                <section class="card counter-card">
+                    <h2>Mujeres 👩</h2>
+                    <div class="counter-value woman-color" id="women-count">0</div>
+                    <div class="buttons-group">
+                        <button class="btn btn-plus" id="add-woman" aria-label="Añadir mujer">+1</button>
+                        <button class="btn btn-minus" id="remove-woman" aria-label="Quitar mujer">-1</button>
+                    </div>
+                </section>
+            </main>
+            
+            <section class="stats-grid">
+                <div class="card total-counter">
+                    <h3>Total</h3>
+                    <div id="total-value" aria-live="polite">0</div>
+                    <p id="status-message" role="status">No hay nadie.</p>
+                </div>
+                <div class="card stats-details">
+                    <h3>Porcentajes</h3>
+                    <div class="percentage-bar"><div id="men-percentage-fill"></div></div>
+                    <div class="percentage-labels">
+                        <span id="men-percentage">Hombres: 0%</span>
+                        <span id="women-percentage">Mujeres: 0%</span>
+                    </div>
+                </div>
+                <div class="card chart-container">
+                    <h3>Gráfico</h3>
+                    <canvas id="chart" width="300" height="150"></canvas>
+                </div>
+            </section>
+
+            <section class="card advanced-stats-panel">
+                <h3>Estadísticas Avanzadas</h3>
+                <div class="stat-item">
+                    <span class="label">Ocupación del Aforo</span>
+                    <span id="occupancy-value" class="value">0%</span>
+                </div>
+                <div class="progress-bar"><div id="occupancy-bar" class="progress-bar-fill"></div></div>
+                <div class="stat-item">
+                    <span class="label">Diferencia (H vs M)</span>
+                    <span id="difference-value" class="value">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="label">Entradas / Minuto (Sim)</span>
+                    <span id="avg-entries-value" class="value">N/A</span>
+                </div>
+            </section>
+
+            <section class="actions-and-help-wrapper">
+                <div class="card">
+                    <h3>Historial y Acciones</h3>
+                    <ul id="history-log"></ul>
+                    <div class="card actions-group" style="margin-top: 1rem; padding: 1rem; box-shadow: none;">
+                        <button class="btn btn-secondary" id="undo-btn">Deshacer</button>
+                        <button class="btn btn-primary" id="reset-btn">Reset</button>
+                        <button class="btn btn-secondary" id="export-json-btn">Exportar JSON</button>
+                        <button class="btn btn-secondary" id="export-csv-btn">Exportar CSV</button>
+                        <button class="btn btn-secondary" id="sim-btn">Iniciar Simulación</button>
+                        <button class="btn btn-secondary" id="voice-btn" aria-label="Control por voz">🎙️</button>
+                        <button class="btn btn-secondary" id="speak-btn" aria-label="Leer en voz alta">📢</button>
+                        <button class="btn btn-secondary" id="mute-feedback-btn" aria-label="Silenciar feedback hablado">🔊</button>
+                        <button class="btn btn-secondary" id="dashboard-toggle-btn" aria-label="Vista global de contadores">📊 Vista Global</button>
+                    </div>
+                </div>
+                <div class="card voice-commands-help">
+                    <h3>Comandos de Voz</h3>
+                    <ul>
+                        <li><code>+/- [num] hombre(s)</code></li>
+                        <li><code>+/- [num] mujer(es)</code></li>
+                        <li><code>reset</code> o <code>reiniciar</code></li>
+                        <li><code>aforo máximo [num]</code></li>
+                        <li><code>iniciar/detener simulación</code></li>
+                        <li><code>activar/desactivar modo fiesta</code></li>
+                        <li><code>vista global</code> / <code>vista contador</code></li>
+                    </ul>
+                </div>
+            </section>
+        </div>
+
+        <!-- Dashboard View (NUEVO) -->
+        <div id="dashboard-view">
+            <!-- Las tarjetas de los contadores se generarán aquí con JS -->
+        </div>
+
+    </div>
+
+    <div id="toast-container"></div>
+    <div id="voice-feedback"></div>
+    <div id="party-overlay"></div>
+    
+    <button id="fixed-stop-party-btn" class="btn" style="display: none;">🎉 Detener Fiesta</button>
+
+    <audio id="party-audio" loop>
+        <!-- MÚSICA CAMBIADA a techno más intenso -->
+        <source src="https://cdn.pixabay.com/download/audio/2023/05/02/audio_1e998a729e.mp3" type="audio/mpeg">
+        Tu navegador no soporta el elemento de audio.
+    </audio>
+
+    <!-- Modal de Configuración (NUEVO) -->
+    <div id="settings-modal-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Configuración Global</h3>
+            <div class="modal-settings-group">
+                <div class="modal-setting-item">
+                    <label for="modal-default-capacity">Aforo Máx. por defecto:</label>
+                    <input type="number" id="modal-default-capacity" min="0">
+                </div>
+                <div class="modal-setting-item">
+                    <label for="modal-theme-selector">Tema de la interfaz:</label>
+                    <select id="modal-theme-selector" aria-label="Selector de tema global">
                         <option value="auto">Automático</option>
                         <option value="light">Claro</option>
                         <option value="dark">Oscuro</option>
@@ -608,567 +752,981 @@
                         <option value="cyberpunk">Cyberpunk</option>
                     </select>
                 </div>
-            </div>
-        </header>
-        
-        <!-- CONTADORES INDIVIDUALES -->
-        <main class="counters-wrapper">
-            <section class="card counter-card" id="men-drop-area">
-                <h2>Hombres 👨</h2>
-                <div class="counter-value man-color" id="men-count">0</div>
-                <div class="buttons-group">
-                    <button class="btn btn-plus" id="add-man" aria-label="Añadir hombre">+1</button>
-                    <button class="btn btn-minus" id="remove-man" aria-label="Quitar hombre">-1</button>
+                <div class="modal-setting-item">
+                    <label for="modal-voice-control-toggle">Control por voz:</label>
+                    <input type="checkbox" id="modal-voice-control-toggle">
                 </div>
-            </section>
-
-            <section class="card counter-card" id="women-drop-area">
-                <h2>Mujeres 👩</h2>
-                <div class="counter-value woman-color" id="women-count">0</div>
-                <div class="buttons-group">
-                    <button class="btn btn-plus" id="add-woman" aria-label="Añadir mujer">+1</button>
-                    <button class="btn btn-minus" id="remove-woman" aria-label="Quitar mujer">-1</button>
-                </div>
-            </section>
-        </main>
-        
-        <!-- TOTALES, ESTADÍSTICAS Y GRÁFICO -->
-        <section class="stats-wrapper">
-            <div class="card total-counter">
-                <h3>Total</h3>
-                <div id="total-value">0</div>
-                <p id="status-message">No hay nadie.</p>
-            </div>
-            <div class="card stats-details">
-                <h3>Porcentajes</h3>
-                <div class="percentage-bar">
-                    <div id="men-percentage-fill"></div>
-                </div>
-                <div class="percentage-labels">
-                    <span id="men-percentage">Hombres: 0%</span>
-                    <span id="women-percentage">Mujeres: 0%</span>
+                <div class="modal-setting-item">
+                    <label for="modal-speech-feedback-toggle">Feedback hablado:</label>
+                    <input type="checkbox" id="modal-speech-feedback-toggle">
                 </div>
             </div>
-            <div class="card chart-container">
-                <h3>Gráfico</h3>
-                <canvas id="chart" width="300" height="150"></canvas>
-            </div>
-        </section>
-
-        <!-- HISTORIAL Y ACCIONES -->
-        <section class="history-actions-wrapper">
-            <div class="actions-and-help-wrapper">
-                <div class="card">
-                    <h3>Historial y Acciones</h3>
-                    <ul id="history-log">
-                        <!-- Las acciones se añadirán aquí con JS -->
-                    </ul>
-                    <div class="card actions-group" style="margin-top: 1rem; padding: 1rem; box-shadow: none;">
-                        <button class="btn btn-secondary" id="undo-btn">Deshacer</button>
-                        <button class="btn btn-primary" id="reset-btn">Reset</button>
-                        <button class="btn btn-secondary" id="export-json-btn">Exportar JSON</button>
-                        <button class="btn btn-secondary" id="export-csv-btn">Exportar CSV</button>
-                        <button class="btn btn-secondary" id="sim-btn">Iniciar Simulación</button>
-                        <button class="btn btn-secondary" id="present-btn">Modo Presentación</button>
-                        <button class="btn btn-secondary" id="voice-btn" aria-label="Control por voz">🎙️</button>
-                        <button class="btn btn-secondary" id="speak-btn" aria-label="Leer en voz alta">🔊</button>
-                    </div>
-                </div>
-                 <div class="card voice-commands-help">
-                    <h3>Comandos de Voz</h3>
-                    <ul>
-                        <li><code>+/- [número] hombre(s)</code></li>
-                        <li><code>+/- [número] mujer(es)</code></li>
-                        <li><code>reset</code> o <code>reiniciar</code></li>
-                        <li><code>aforo máximo [número]</code></li>
-                        <li><code>iniciar/detener simulación</code></li>
-                        <li><code>activar/desactivar modo fiesta</code></li>
-                    </ul>
+            <div class="modal-settings-group">
+                <h4>Gestión de Datos</h4>
+                <div class="modal-setting-item">
+                    <button class="btn btn-secondary" id="modal-export-all-btn">Exportar Todo (JSON)</button>
+                    <input type="file" id="modal-import-all-input" accept=".json" style="display: none;">
+                    <button class="btn btn-secondary" id="modal-import-all-btn">Importar Todo (JSON)</button>
                 </div>
             </div>
-        </section>
+            <div class="modal-buttons">
+                <button class="btn modal-close-btn" id="modal-close-btn">Cerrar</button>
+                <button class="btn modal-save-btn" id="modal-save-settings-btn">Guardar</button>
+            </div>
+        </div>
     </div>
-
-    <!-- Contenedor para feedback de voz -->
-    <div id="voice-feedback"></div>
-    <!-- Contenedor para notificaciones de logros -->
-    <div id="achievements-container"></div>
-    <!-- Contenedor para Easter Egg: Modo Fiesta -->
-    <div id="party-overlay"></div>
-    <!-- Audio para Modo Fiesta (necesita una fuente válida) -->
-    <audio id="party-audio" loop>
-        <!-- ¡IMPORTANTE! Debes reemplazar 'path/to/sandstorm.mp3' por una URL o archivo local válido -->
-        <source src="https://github.com/heberthburbano/ContadorDePersonas/blob/main/cancion.mp3" type="audio/mpeg">
-    </audio>
 
 
     <script>
     /*
-     * =============================================
-     * JavaScript - Lógica del Contador
-     * =============================================
+     * ==========================================================
+     * JavaScript - Lógica del Contador con Multi-Contador
+     * ==========================================================
      */
     document.addEventListener('DOMContentLoaded', () => {
 
-        // ----------------- 1. Selección de Elementos del DOM -----------------
-        const menCountEl = document.getElementById('men-count');
-        const womenCountEl = document.getElementById('women-count');
-        const totalValueEl = document.getElementById('total-value');
-        const capacityInput = document.getElementById('capacity');
-        const statusMessageEl = document.getElementById('status-message');
-        
-        const addManBtn = document.getElementById('add-man');
-        const removeManBtn = document.getElementById('add-man');
-        const addWomanBtn = document.getElementById('add-woman');
-        const removeWomanBtn = document.getElementById('remove-woman');
+        // ----------------- 1. Selección de Elementos del DOM (constantes) -----------------
+        const dom = {
+            mainContainer: document.querySelector('.main-container'),
+            mainTitle: document.getElementById('main-title'),
+            menCount: document.getElementById('men-count'),
+            womenCount: document.getElementById('women-count'),
+            totalValue: document.getElementById('total-value'),
+            capacityInput: document.getElementById('capacity'),
+            statusMessage: document.getElementById('status-message'),
+            addManBtn: document.getElementById('add-man'),
+            removeManBtn: document.getElementById('remove-man'),
+            addWomanBtn: document.getElementById('add-woman'),
+            removeWomanBtn: document.getElementById('remove-woman'),
+            menPercentage: document.getElementById('men-percentage'),
+            womenPercentage: document.getElementById('women-percentage'),
+            menPercentageFill: document.getElementById('men-percentage-fill'),
+            chartCanvas: document.getElementById('chart'),
+            historyLog: document.getElementById('history-log'),
+            undoBtn: document.getElementById('undo-btn'),
+            resetBtn: document.getElementById('reset-btn'),
+            themeSelector: document.getElementById('theme-selector'),
+            clockDate: document.getElementById('clock-date'),
+            exportJsonBtn: document.getElementById('export-json-btn'),
+            exportCsvBtn: document.getElementById('export-csv-btn'),
+            simBtn: document.getElementById('sim-btn'),
+            speakBtn: document.getElementById('speak-btn'),
+            muteFeedbackBtn: document.getElementById('mute-feedback-btn'),
+            voiceBtn: document.getElementById('voice-btn'),
+            voiceFeedback: document.getElementById('voice-feedback'),
+            partyOverlay: document.getElementById('party-overlay'),
+            partyAudio: document.getElementById('party-audio'),
+            fixedStopPartyBtn: document.getElementById('fixed-stop-party-btn'), // NUEVO
+            occupancyValue: document.getElementById('occupancy-value'),
+            occupancyBar: document.getElementById('occupancy-bar'),
+            differenceValue: document.getElementById('difference-value'),
+            avgEntriesValue: document.getElementById('avg-entries-value'),
+            tabsContainer: document.getElementById('counters-tabs-container'),
+            dashboardToggleBtn: document.getElementById('dashboard-toggle-btn'),
+            mainContentArea: document.querySelector('.main-content-area'),
+            dashboardView: document.getElementById('dashboard-view'),
 
-        const menPercentageEl = document.getElementById('men-percentage');
-        const womenPercentageEl = document.getElementById('women-percentage');
-        const menPercentageFillEl = document.getElementById('men-percentage-fill');
-        
-        const chartCanvas = document.getElementById('chart');
-        const ctx = chartCanvas.getContext('2d');
-        
-        const historyLogEl = document.getElementById('history-log');
-        const undoBtn = document.getElementById('undo-btn');
-        const resetBtn = document.getElementById('reset-btn');
+            // Elementos del modal de configuración
+            settingsBtn: document.getElementById('settings-btn'),
+            settingsModalOverlay: document.getElementById('settings-modal-overlay'),
+            modalCloseBtn: document.getElementById('modal-close-btn'),
+            modalSaveSettingsBtn: document.getElementById('modal-save-settings-btn'),
+            modalDefaultCapacity: document.getElementById('modal-default-capacity'),
+            modalThemeSelector: document.getElementById('modal-theme-selector'),
+            modalVoiceControlToggle: document.getElementById('modal-voice-control-toggle'),
+            modalSpeechFeedbackToggle: document.getElementById('modal-speech-feedback-toggle'),
+            modalExportAllBtn: document.getElementById('modal-export-all-btn'),
+            modalImportAllBtn: document.getElementById('modal-import-all-btn'),
+            modalImportAllInput: document.getElementById('modal-import-all-input'),
+        };
+        const ctx = dom.chartCanvas.getContext('2d');
 
-        const themeSelector = document.getElementById('theme-selector');
-        const clockDateEl = document.getElementById('clock-date');
-
-        const exportJsonBtn = document.getElementById('export-json-btn');
-        const exportCsvBtn = document.getElementById('export-csv-btn');
-        const simBtn = document.getElementById('sim-btn');
-        const presentBtn = document.getElementById('present-btn');
-        const speakBtn = document.getElementById('speak-btn');
-        const voiceBtn = document.getElementById('voice-btn');
-        const voiceFeedbackEl = document.getElementById('voice-feedback');
-        const achievementsContainer = document.getElementById('achievements-container');
-        const partyOverlay = document.getElementById('party-overlay');
-        const partyAudio = document.getElementById('party-audio');
-
-
-        // ----------------- 2. Estado de la Aplicación -----------------
-        let state = {
-            men: 0,
-            women: 0,
-            capacity: 50,
-            history: [],
-            simulationInterval: null,
-            achievements: new Set(),
-            isListening: false,
+        // ----------------- 2. Estado Global de la Aplicación -----------------
+        let appState = {
+            counters: [],
+            activeCounterId: null,
             isPartyMode: false,
+            globalSettings: {
+                defaultCapacity: 50,
+                theme: 'auto',
+                voiceControlEnabled: true,
+                speechFeedbackEnabled: true,
+            },
+            currentView: 'tabs',
         };
 
-        // Web Audio API para sonidos
         let audioCtx;
-        const initAudio = () => {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-        };
-        
-        // ----------------- 3. Lógica del Contador y Actualizaciones -----------------
+        const initAudio = () => { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); };
+
+        // ----------------- 3. Lógica Principal y Renderizado -----------------
+
+        const getActiveCounter = () => appState.counters.find(c => c.id === appState.activeCounterId);
 
         function updateUI() {
-            const total = state.men + state.women;
-            menCountEl.textContent = state.men;
-            womenCountEl.textContent = state.women;
-            totalValueEl.textContent = total;
-            document.getElementById('remove-man').disabled = state.men <= 0;
-            document.getElementById('remove-woman').disabled = state.women <= 0;
-            const atCapacity = total >= state.capacity;
-            addManBtn.disabled = atCapacity;
-            addWomanBtn.disabled = atCapacity;
-            if (atCapacity) {
-                statusMessageEl.textContent = "¡Aforo completo!";
-            } else if (total === 0) {
-                statusMessageEl.textContent = "No hay nadie.";
-            } else if (state.men === state.women) {
-                statusMessageEl.textContent = "Equilibrio perfecto.";
-            } else {
-                statusMessageEl.textContent = "";
+            if (appState.currentView === 'dashboard') {
+                renderDashboardView();
+                return;
             }
-            const menPercent = total > 0 ? (state.men / total) * 100 : 0;
-            const womenPercent = total > 0 ? 100 - menPercent : 0;
-            menPercentageEl.textContent = `Hombres: ${menPercent.toFixed(1)}%`;
-            womenPercentageEl.textContent = `Mujeres: ${womenPercent.toFixed(1)}%`;
-            menPercentageFillEl.style.width = `${menPercent}%`;
-            drawChart(menPercent, womenPercent);
-            undoBtn.disabled = state.history.length === 0;
+
+            const counter = getActiveCounter();
+            if (!counter) return;
+
+            applyTheme(appState.globalSettings.theme);
+            
+            dom.mainTitle.textContent = `📊 ${counter.name}`;
+            dom.menCount.textContent = counter.men;
+            dom.womenCount.textContent = counter.women;
+            const total = counter.men + counter.women;
+            dom.totalValue.textContent = total;
+            dom.capacityInput.value = counter.capacity;
+            
+            dom.removeManBtn.disabled = counter.men <= 0;
+            dom.removeWomanBtn.disabled = counter.women <= 0;
+            const atCapacity = total >= counter.capacity;
+            dom.addManBtn.disabled = atCapacity;
+            dom.addWomanBtn.disabled = atCapacity;
+            dom.undoBtn.disabled = counter.history.length === 0;
+
+            if (atCapacity) {
+                dom.statusMessage.textContent = "¡Aforo completo!";
+                if (total === counter.capacity) speakFeedback('Aforo completo.');
+            }
+            else if (total === 0) dom.statusMessage.textContent = "No hay nadie.";
+            else if (counter.men === counter.women) dom.statusMessage.textContent = "Equilibrio perfecto.";
+            else dom.statusMessage.textContent = "";
+
+            const menPercent = total > 0 ? (counter.men / total) * 100 : 0;
+            dom.menPercentage.textContent = `Hombres: ${menPercent.toFixed(1)}%`;
+            dom.womenPercentage.textContent = `Mujeres: ${(100 - menPercent).toFixed(1)}%`;
+            dom.menPercentageFill.style.width = `${menPercent}%`;
+            
+            const occupancy = counter.capacity > 0 ? (total / counter.capacity) * 100 : 0;
+            dom.occupancyValue.textContent = `${occupancy.toFixed(1)}%`;
+            dom.occupancyBar.style.width = `${occupancy}%`;
+            dom.differenceValue.textContent = Math.abs(counter.men - counter.women);
+
+            if (occupancy >= 80 && occupancy < 100) {
+                dom.occupancyBar.style.backgroundColor = 'orange';
+                if (!counter.nearCapacityAlerted) {
+                    speakFeedback(`Aforo al ${occupancy.toFixed(0)} por ciento.`);
+                    counter.nearCapacityAlerted = true;
+                }
+            } else if (occupancy >= 100) {
+                dom.occupancyBar.style.backgroundColor = getComputedStyle(document.body).getPropertyValue('--error-color').trim();
+            }
+            else {
+                dom.occupancyBar.style.backgroundColor = getComputedStyle(document.body).getPropertyValue('--accent-color').trim();
+                counter.nearCapacityAlerted = false;
+            }
+            
+            if (counter.simulation.interval) {
+                const elapsedMinutes = (Date.now() - counter.simulation.startTime) / 60000;
+                const avg = elapsedMinutes > 0 ? (counter.simulation.entries / elapsedMinutes).toFixed(2) : 0;
+                dom.avgEntriesValue.textContent = avg;
+            } else {
+                dom.avgEntriesValue.textContent = 'N/A';
+            }
+            
+            dom.simBtn.textContent = counter.simulation.interval ? 'Detener Simulación' : 'Iniciar Simulación';
+            dom.themeSelector.value = appState.globalSettings.theme;
+
+            drawChart(menPercent, 100 - menPercent);
+            renderHistoryLog();
+            
+            dom.voiceBtn.disabled = !appState.globalSettings.voiceControlEnabled;
+            updateMuteButtonState();
+            
             saveStateToLocalStorage();
-            checkAchievements(total);
+        }
+
+        let draggedTab = null;
+        function renderTabs() {
+            dom.tabsContainer.innerHTML = '';
+            appState.counters.forEach(counter => {
+                const tab = document.createElement('div');
+                tab.className = 'counter-tab';
+                tab.dataset.id = counter.id;
+                tab.setAttribute('draggable', 'true');
+                
+                if (counter.id === appState.activeCounterId) tab.classList.add('active');
+                if (counter.simulation.interval) tab.classList.add('is-simulating');
+                if (appState.isPartyMode && counter.id === appState.activeCounterId) tab.classList.add('is-party-mode');
+
+                const statusIndicator = document.createElement('span');
+                statusIndicator.className = 'status-indicator';
+                tab.appendChild(statusIndicator);
+
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'tab-name';
+                nameSpan.textContent = counter.name;
+                nameSpan.title = counter.name;
+                nameSpan.ondblclick = (e) => { e.stopPropagation(); editCounterName(counter.id); };
+                tab.appendChild(nameSpan);
+                
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'tab-actions';
+
+                const editIcon = document.createElement('span');
+                editIcon.className = 'tab-icon';
+                editIcon.textContent = '✏️';
+                editIcon.title = 'Editar nombre';
+                editIcon.onclick = (e) => { e.stopPropagation(); editCounterName(counter.id); };
+                actionsDiv.appendChild(editIcon);
+
+                const deleteIcon = document.createElement('span');
+                deleteIcon.className = 'tab-icon';
+                deleteIcon.textContent = '🗑️';
+                deleteIcon.title = 'Eliminar contador';
+                deleteIcon.onclick = (e) => { e.stopPropagation(); deleteCounter(counter.id); };
+                actionsDiv.appendChild(deleteIcon);
+
+                tab.appendChild(actionsDiv);
+                tab.onclick = () => switchCounter(counter.id);
+                
+                tab.addEventListener('dragstart', (e) => {
+                    draggedTab = tab;
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', counter.id);
+                    setTimeout(() => tab.classList.add('dragging'), 0);
+                });
+                tab.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    const targetTab = e.target.closest('.counter-tab');
+                    if (targetTab && targetTab !== draggedTab) {
+                        const tabs = Array.from(dom.tabsContainer.querySelectorAll('.counter-tab:not(.dragging)'));
+                        const draggedIndex = tabs.indexOf(draggedTab);
+                        const targetIndex = tabs.indexOf(targetTab);
+                        
+                        if (targetIndex > draggedIndex) {
+                            dom.tabsContainer.insertBefore(draggedTab, targetTab.nextSibling);
+                        } else {
+                            dom.tabsContainer.insertBefore(draggedTab, targetTab);
+                        }
+                    }
+                });
+                tab.addEventListener('dragend', () => {
+                    if (draggedTab) draggedTab.classList.remove('dragging');
+                    draggedTab = null;
+                    const newOrderIds = Array.from(dom.tabsContainer.querySelectorAll('.counter-tab')).map(el => parseInt(el.dataset.id));
+                    appState.counters.sort((a, b) => newOrderIds.indexOf(a.id) - newOrderIds.indexOf(b.id));
+                    saveStateToLocalStorage();
+                });
+
+                dom.tabsContainer.appendChild(tab);
+            });
+
+            const addButton = document.createElement('button');
+            addButton.id = 'add-counter-btn';
+            addButton.className = 'btn';
+            addButton.textContent = '➕';
+            addButton.title = 'Añadir nuevo contador';
+            addButton.onclick = addNewCounter;
+            dom.tabsContainer.appendChild(addButton);
+        }
+
+        function renderDashboardView() {
+            dom.dashboardView.innerHTML = '';
+
+            if (appState.counters.length === 0) {
+                dom.dashboardView.innerHTML = '<p class="card" style="text-align: center;">No hay contadores. ¡Crea uno nuevo!</p>';
+                return;
+            }
+
+            appState.counters.forEach(counter => {
+                const card = document.createElement('div');
+                card.className = 'dashboard-card';
+                card.dataset.id = counter.id;
+                card.onclick = () => {
+                    switchCounter(counter.id);
+                };
+
+                const statusIndicator = document.createElement('span');
+                statusIndicator.className = 'status-indicator';
+                if (counter.simulation.interval) statusIndicator.classList.add('is-simulating');
+                if (appState.isPartyMode) statusIndicator.classList.add('is-party-mode');
+                card.appendChild(statusIndicator);
+
+                const title = document.createElement('h4');
+                title.textContent = counter.name;
+                card.appendChild(title);
+
+                const statsDiv = document.createElement('div');
+                statsDiv.className = 'dashboard-stats';
+                statsDiv.innerHTML = `
+                    <div><span>Hombres:</span> <span>${counter.men}</span></div>
+                    <div><span>Mujeres:</span> <span>${counter.women}</span></div>
+                `;
+                card.appendChild(statsDiv);
+
+                const occupancy = counter.capacity > 0 ? ((counter.men + counter.women) / counter.capacity) * 100 : 0;
+                const occupancyBar = document.createElement('div');
+                occupancyBar.className = 'dashboard-occupancy';
+                occupancyBar.innerHTML = `<div class="dashboard-occupancy-fill" style="width: ${occupancy.toFixed(1)}%;"></div>`;
+                card.appendChild(occupancyBar);
+
+                const occupancyText = document.createElement('p');
+                occupancyText.innerHTML = `Ocupación: <strong>${occupancy.toFixed(1)}%</strong>`;
+                card.appendChild(occupancyText);
+
+                const totalDisplay = document.createElement('div');
+                totalDisplay.className = 'total-display';
+                totalDisplay.textContent = counter.men + counter.women;
+                card.appendChild(totalDisplay);
+
+                const historicalStatsIcon = document.createElement('span');
+                historicalStatsIcon.className = 'stat-icon';
+                historicalStatsIcon.textContent = '📈';
+                historicalStatsIcon.title = 'Ver estadísticas históricas';
+                historicalStatsIcon.onclick = (e) => {
+                    e.stopPropagation();
+                    showHistoricalStats(counter);
+                };
+                card.appendChild(historicalStatsIcon);
+
+                dom.dashboardView.appendChild(card);
+            });
         }
         
+        // ----------------- 4. Lógica de Gestión de Contadores -----------------
+        
+        function createNewCounter(name) {
+            speakFeedback(`Nuevo contador creado: ${name}`);
+            return {
+                id: Date.now(),
+                name: name,
+                men: 0,
+                women: 0,
+                capacity: appState.globalSettings.defaultCapacity,
+                history: [],
+                simulation: { interval: null, startTime: null, entries: 0 },
+                creationDate: new Date().toISOString(),
+                totalEntriesExits: 0,
+                maxOccupancy: 0,
+                nearCapacityAlerted: false,
+            };
+        }
+        
+        function addNewCounter() {
+            const name = prompt("Introduce el nombre del nuevo contador:", `Contador ${appState.counters.length + 1}`);
+            if (name) {
+                const newCounter = createNewCounter(name);
+                appState.counters.push(newCounter);
+                appState.activeCounterId = newCounter.id;
+                renderTabs();
+                updateUI();
+            }
+        }
+        
+        function switchCounter(id) {
+            if (id === appState.activeCounterId && appState.currentView === 'tabs') return;
+            appState.activeCounterId = id;
+            if (appState.currentView !== 'tabs') {
+                 toggleDashboardView();
+            } else {
+                renderTabs();
+                updateUI();
+            }
+        }
+
+        function editCounterName(id) {
+            const counter = appState.counters.find(c => c.id === id);
+            const newName = prompt("Introduce el nuevo nombre:", counter.name);
+            if (newName && newName.trim() !== "") {
+                counter.name = newName.trim();
+                renderTabs();
+                if(id === appState.activeCounterId) dom.mainTitle.textContent = `📊 ${counter.name}`;
+                saveStateToLocalStorage();
+                speakFeedback(`Contador ${newName} renombrado.`);
+            }
+        }
+
+        function deleteCounter(id) {
+            if (confirm("¿Estás seguro de que quieres eliminar este contador?")) {
+                const deletedCounterName = appState.counters.find(c => c.id === id)?.name || 'un contador';
+                appState.counters = appState.counters.filter(c => c.id !== id);
+                if (appState.activeCounterId === id) {
+                    appState.activeCounterId = appState.counters.length > 0 ? appState.counters[0].id : null;
+                }
+                if (appState.counters.length === 0) {
+                   addNewCounter();
+                } else {
+                   renderTabs();
+                   updateUI();
+                }
+                speakFeedback(`Contador ${deletedCounterName} eliminado.`);
+            }
+        }
+
+        function showHistoricalStats(counter) {
+            const creationDate = new Date(counter.creationDate).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+            let message = `
+Estadísticas de "${counter.name}"
+- Fecha de creación: ${creationDate}
+- Total de movimientos: ${counter.totalEntriesExits}
+- Pico de ocupación: ${counter.maxOccupancy} personas
+            `;
+            alert(message);
+        }
+
+        // ----------------- 5. Lógica de Interacción -----------------
+
         function changeCount(type, value) {
             initAudio();
-            const amount = Math.abs(value);
-            for(let i=0; i < amount; i++) {
-                if (value > 0 && state.men + state.women >= state.capacity) {
-                    animateElement(totalValueEl, 'shake');
-                    playSound(100, 0.2, 'square');
-                    return;
-                }
-                if (value < 0 && state[type] === 0) {
-                    animateElement(type === 'men' ? menCountEl : womenCountEl, 'shake');
-                    playSound(100, 0.2, 'square');
-                    return;
-                }
-                state[type] += Math.sign(value);
-                const action = {
-                    type,
-                    value: Math.sign(value),
-                    timestamp: new Date().toISOString()
-                };
-                state.history.push(action);
-                updateHistoryLog(action);
+            const counter = getActiveCounter();
+            if (!counter) return;
+
+            const total = counter.men + counter.women;
+            if (value > 0 && total >= counter.capacity) {
+                animateElement(dom.totalValue, 'shake');
+                playSound(100, 0.2, 'square');
+                if (total === counter.capacity) showToast('Aforo máximo alcanzado', 'error');
+                return;
             }
-            animateElement(type === 'men' ? menCountEl : womenCountEl, 'zoom');
+            if (value < 0 && counter[type] <= 0) {
+                animateElement(type === 'men' ? dom.menCount : dom.womenCount, 'shake');
+                playSound(100, 0.2, 'square');
+                return;
+            }
+            
+            counter[type] += value;
+            counter.history.push({ type, value, timestamp: new Date().toISOString() });
+            counter.totalEntriesExits++;
+
+            const newTotal = counter.men + counter.women;
+            if (newTotal > counter.maxOccupancy) {
+                counter.maxOccupancy = newTotal;
+            }
+
+            if (counter.simulation.interval && value > 0) counter.simulation.entries++;
+            
+            animateElement(type === 'men' ? dom.menCount : dom.womenCount, 'zoom');
             playSound(type === 'men' ? 261.63 : 392.00, 0.1, 'sine');
             updateUI();
         }
 
-        // ----------------- 4. Funciones Auxiliares (Gráfico, Historial, etc.) -----------------
-
-        function drawChart(menPercent, womenPercent) {
-            const manColor = getComputedStyle(document.body).getPropertyValue('--man-color');
-            const womanColor = getComputedStyle(document.body).getPropertyValue('--woman-color');
-            
-            ctx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
-            const totalBarWidth = chartCanvas.width * 0.8;
-            const barHeight = 50;
-            const y = (chartCanvas.height - barHeight) / 2;
-            
-            const menWidth = (totalBarWidth * menPercent) / 100;
-            const womenWidth = (totalBarWidth * womenPercent) / 100;
-            
-            ctx.fillStyle = manColor;
-            ctx.fillRect((chartCanvas.width - totalBarWidth) / 2, y, menWidth, barHeight);
-            
-            ctx.fillStyle = womanColor;
-            ctx.fillRect(((chartCanvas.width - totalBarWidth) / 2) + menWidth, y, womenWidth, barHeight);
-        }
-        
-        function updateHistoryLog(action) {
-            const li = document.createElement('li');
-            const time = new Date(action.timestamp).toLocaleTimeString();
-            const icon = action.type === 'men' ? '👨' : '👩';
-            const operation = action.value === 1 ? 'Añadido' : 'Quitado';
-            li.textContent = `[${time}] ${operation} ${icon}`;
-            historyLogEl.prepend(li);
-        }
-
-        function renderFullHistory() {
-            historyLogEl.innerHTML = '';
-            [...state.history].reverse().forEach(action => {
-                updateHistoryLog(action);
-            });
+        function resetAll() {
+            const counter = getActiveCounter();
+            if (!counter) return;
+            counter.men = 0;
+            counter.women = 0;
+            counter.history = [];
+            counter.totalEntriesExits = 0;
+            counter.maxOccupancy = 0;
+            showToast('Contador reiniciado');
+            speakFeedback('Contador reiniciado.');
+            updateUI();
         }
         
         function undoLastAction() {
-            if (state.history.length === 0) return;
-            const lastAction = state.history.pop();
-            state[lastAction.type] -= lastAction.value;
-            if (historyLogEl.firstChild) {
-                historyLogEl.removeChild(historyLogEl.firstChild);
-            }
+            const counter = getActiveCounter();
+            if (!counter || counter.history.length === 0) return;
+            const lastAction = counter.history.pop();
+            counter[lastAction.type] -= lastAction.value;
+            counter.totalEntriesExits--;
             updateUI();
         }
 
-        function resetAll() {
-            state.men = 0;
-            state.women = 0;
-            state.history = [];
-            state.achievements.clear();
-            historyLogEl.innerHTML = '';
-            if (state.isPartyMode) togglePartyMode();
-            updateUI();
-        }
-
-        // ----------------- 5. Gestión de Temas y Reloj -----------------
-
-        function applyTheme(theme) {
-            document.body.className = state.isPartyMode ? 'party-mode' : '';
-            if (theme !== 'light') {
-                document.body.classList.add(`theme-${theme}`);
-            }
-            updateUI();
-        }
-        
-        function handleAutoTheme() {
-            const hour = new Date().getHours();
-            const isDayTime = hour > 6 && hour < 20;
-            const theme = isDayTime ? 'light' : 'dark';
-            applyTheme(theme);
-        }
-
-        function updateClock() {
-            const now = new Date();
-            clockDateEl.textContent = now.toLocaleString('es-ES', {
-                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        function renderHistoryLog() {
+            const counter = getActiveCounter();
+            dom.historyLog.innerHTML = '';
+            if(!counter) return;
+            [...counter.history].reverse().forEach(action => {
+                const li = document.createElement('li');
+                li.textContent = `[${new Date(action.timestamp).toLocaleTimeString()}] ${action.value===1?'Añadido':'Quitado'} ${action.type==='men'?'👨':'👩'}`;
+                dom.historyLog.appendChild(li);
             });
         }
+        
+        function drawChart(menPercent, womenPercent) {
+            const manColor = getComputedStyle(document.body).getPropertyValue('--man-color').trim();
+            const womanColor = getComputedStyle(document.body).getPropertyValue('--woman-color').trim();
+            
+            ctx.clearRect(0, 0, dom.chartCanvas.width, dom.chartCanvas.height);
+            const totalBarWidth = dom.chartCanvas.width * 0.8;
+            const barHeight = 50;
+            const xOffset = (dom.chartCanvas.width - totalBarWidth) / 2;
+            const y = (dom.chartCanvas.height - barHeight) / 2;
+            const menWidth = (totalBarWidth * menPercent) / 100;
+            
+            if (menPercent === 0 && womenPercent === 0) {
+                ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--border-color').trim();
+                ctx.fillRect(xOffset, y, totalBarWidth, barHeight);
+            } else {
+                ctx.fillStyle = manColor;
+                ctx.fillRect(xOffset, y, menWidth, barHeight);
+                ctx.fillStyle = womanColor;
+                ctx.fillRect(xOffset + menWidth, y, (totalBarWidth - menWidth), barHeight);
+            }
+        }
 
-        // ----------------- 6. Persistencia (LocalStorage) -----------------
+        function applyTheme(themeName) {
+            let themeClass = '';
+            let currentTheme = themeName;
+
+            if (themeName === 'auto') {
+                const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                currentTheme = prefersDark ? 'dark' : 'light';
+            }
+            
+            if (currentTheme !== 'light') {
+                themeClass = `theme-${currentTheme}`;
+            }
+            
+            document.body.className = themeClass;
+            if (appState.isPartyMode) document.body.classList.add('party-mode');
+        }
+
+        // ----------------- 6. Persistencia y Carga Inicial -----------------
 
         function saveStateToLocalStorage() {
-            const dataToSave = {
-                men: state.men, women: state.women, capacity: state.capacity, history: state.history,
-                theme: themeSelector.value, achievements: Array.from(state.achievements)
-            };
-            localStorage.setItem('peopleCounterState', JSON.stringify(dataToSave));
+            localStorage.setItem('multiCounterState', JSON.stringify(appState));
         }
 
         function loadStateFromLocalStorage() {
-            const savedState = localStorage.getItem('peopleCounterState');
+            const savedState = localStorage.getItem('multiCounterState');
+            let parsedState = {};
             if (savedState) {
-                const parsedState = JSON.parse(savedState);
-                state.men = parsedState.men || 0;
-                state.women = parsedState.women || 0;
-                state.capacity = parsedState.capacity || 50;
-                state.history = parsedState.history || [];
-                state.achievements = new Set(parsedState.achievements || []);
-                capacityInput.value = state.capacity;
-                themeSelector.value = parsedState.theme || 'auto';
-                if (themeSelector.value === 'auto') {
-                    handleAutoTheme();
-                } else {
-                    applyTheme(themeSelector.value);
+                try {
+                   parsedState = JSON.parse(savedState);
+                } catch(e) {
+                    console.error("Error parsing localStorage state:", e);
+                    parsedState = {};
                 }
-                renderFullHistory();
-                updateUI();
-            } else {
-                handleAutoTheme();
             }
-        }
-        
-        // ----------------- 7. Funcionalidades Extra -----------------
-        
-        function animateElement(element, animationType) {
-            const className = animationType === 'zoom' ? 'animate-zoom' : 'animate-shake';
-            element.classList.add(className);
-            setTimeout(() => element.classList.remove(className), 400);
+            
+            if(parsedState.counters && parsedState.counters.length > 0) {
+                appState.counters = parsedState.counters;
+            }
+            
+            if (appState.counters.length === 0) {
+                const defaultCounter = createNewCounter('Entrada Principal');
+                appState.counters.push(defaultCounter);
+                appState.activeCounterId = defaultCounter.id;
+            }
+            
+            appState.activeCounterId = parsedState.activeCounterId || (appState.counters[0] ? appState.counters[0].id : null);
+            
+            if (parsedState.globalSettings) {
+                Object.assign(appState.globalSettings, parsedState.globalSettings);
+            }
+
+            if (parsedState.currentView) {
+                appState.currentView = parsedState.currentView;
+            }
+            
+            applyTheme(appState.globalSettings.theme);
+            dom.themeSelector.value = appState.globalSettings.theme;
+            
+            renderTabs();
         }
 
-        function playSound(frequency, duration, type) {
-            if (!audioCtx) return;
-            const oscillator = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-            oscillator.type = type;
-            oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
-            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-            oscillator.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            oscillator.start();
-            oscillator.stop(audioCtx.currentTime + duration);
-        }
+        // ----------------- Funcionalidades Adicionales -----------------
 
-        function exportData(format) {
-            const data = {
-                hombres: state.men, mujeres: state.women, total: state.men + state.women,
-                aforo: state.capacity, fecha: new Date().toISOString(), historial: state.history
-            };
-            let content = '', mimeType = '', fileExtension = '';
-            if (format === 'json') {
-                content = JSON.stringify(data, null, 2);
-                mimeType = 'application/json';
-                fileExtension = 'json';
-            } else {
-                content = `Categoria,Cantidad\nHombres,${state.men}\nMujeres,${state.women}\nTotal,${state.men + state.women}\n`;
-                mimeType = 'text/csv'; fileExtension = 'csv';
-            }
-            const blob = new Blob([content], { type: mimeType });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `contador_datos_${new Date().getTime()}.${fileExtension}`;
-            document.body.appendChild(a); a.click(); document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-        
-        function toggleSimulation(force) {
-            if (force === 'start' && !state.simulationInterval) {
-                simBtn.textContent = 'Detener Simulación';
-                state.simulationInterval = setInterval(() => {
-                    if (state.men + state.women < state.capacity) {
-                        changeCount(Math.random() > 0.5 ? 'men' : 'women', 1);
-                    } else {
-                        toggleSimulation('stop');
-                    }
-                }, 1500);
-            } else if (force === 'stop' && state.simulationInterval) {
-                clearInterval(state.simulationInterval);
-                state.simulationInterval = null;
-                simBtn.textContent = 'Iniciar Simulación';
-            }
-        }
-        
-        function togglePresentationMode() { document.body.classList.toggle('presentation-mode'); }
+        function toggleDashboardView() {
+            const isSwitchingToDashboard = appState.currentView === 'tabs';
+            
+            dom.mainContainer.style.opacity = 0;
 
-        function speakStatus() {
-            if ('speechSynthesis' in window) {
-                const text = `Actualmente hay ${state.men + state.women} personas. ${state.men} hombres y ${state.women} mujeres.`;
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'es-ES';
-                speechSynthesis.speak(utterance);
-            } else {
-                alert('Tu navegador no soporta la lectura en voz alta.');
-            }
-        }
-        
-        const achievementList = { 1: '¡El primero! 🎉', 10: '¡Diez personas! 🔟', 50: '¡Cincuenta y contando! 🔥', 100: '¡Centena! 💯' };
-        function checkAchievements(total) {
-            if (achievementList[total] && !state.achievements.has(total)) {
-                state.achievements.add(total);
-                showAchievement(achievementList[total]);
-            }
-        }
-
-        function showAchievement(message) {
-            const el = document.createElement('div');
-            el.className = 'achievement'; el.textContent = message;
-            achievementsContainer.appendChild(el);
-            setTimeout(() => { el.classList.add('show'); }, 10);
             setTimeout(() => {
-                el.classList.remove('show');
-                setTimeout(() => { el.remove(); }, 500);
-            }, 4000);
-        }
-        
-        function togglePartyMode() {
-            state.isPartyMode = !state.isPartyMode;
-            if (state.isPartyMode) {
-                document.body.classList.add('party-mode');
-                partyAudio.play();
-                for (let i = 0; i < 50; i++) createConfetti();
-            } else {
-                document.body.classList.remove('party-mode');
-                partyAudio.pause();
-                partyAudio.currentTime = 0;
-                partyOverlay.innerHTML = '';
-            }
-        }
-        
-        function createConfetti() {
-            const confetti = document.createElement('div');
-            confetti.className = 'confetti';
-            confetti.style.left = `${Math.random() * 100}vw`;
-            confetti.style.animationDuration = `${Math.random() * 3 + 2}s`;
-            confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
-            partyOverlay.appendChild(confetti);
-            setTimeout(() => confetti.remove(), 5000);
-        }
-
-        // ----------------- 7a. Control por Voz (Web Speech API) -----------------
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        let recognition;
-
-        function setupVoiceControl() {
-            if (SpeechRecognition) {
-                recognition = new SpeechRecognition();
-                recognition.lang = 'es-ES'; recognition.continuous = false; recognition.interimResults = false;
-                recognition.onstart = () => { state.isListening = true; voiceBtn.classList.add('listening'); };
-                recognition.onend = () => { state.isListening = false; voiceBtn.classList.remove('listening'); };
-                recognition.onerror = (e) => { console.error('Error de voz:', e.error); showVoiceFeedback(`Error: ${e.error}`); };
-                recognition.onresult = (e) => {
-                    const command = e.results[0][0].transcript.trim().toLowerCase();
-                    showVoiceFeedback(`🎙️ Voz reconocida: "${command}"`);
-                    parseVoiceCommand(command);
-                };
-            } else {
-                voiceBtn.disabled = true; voiceBtn.title = "Control por voz no disponible.";
-                alert("El control por voz no está disponible en este navegador.");
-            }
-        }
-
-        function toggleVoiceListening() {
-            if (!recognition || state.isListening) return;
-            try { recognition.start(); } catch (e) { console.error("Error al iniciar reconocimiento:", e); }
-        }
-
-        function parseVoiceCommand(command) {
-            const numMatch = command.match(/(\d+)/);
-            const num = numMatch ? parseInt(numMatch[1], 10) : 1;
-
-            if (command.includes('hombre')) {
-                changeCount('men', command.startsWith('-') ? -num : num);
-            } else if (command.includes('mujer')) {
-                changeCount('women', command.startsWith('-') ? -num : num);
-            } else if (command.includes('reset') || command.includes('reiniciar')) {
-                resetAll();
-            } else if (command.includes('iniciar simulación')) {
-                toggleSimulation('start');
-            } else if (command.includes('detener simulación')) {
-                toggleSimulation('stop');
-            } else if (command.includes('aforo máximo')) {
-                if (numMatch) {
-                    state.capacity = num;
-                    capacityInput.value = num;
-                    updateUI();
+                if (isSwitchingToDashboard) {
+                    appState.currentView = 'dashboard';
+                    document.body.classList.add('dashboard-mode');
+                    dom.dashboardToggleBtn.textContent = '🏠 Vista Contador';
+                    renderDashboardView();
+                    speakFeedback('Vista global activada.');
                 } else {
-                    showVoiceFeedback('No se entendió el número del aforo.');
+                    appState.currentView = 'tabs';
+                    document.body.classList.remove('dashboard-mode');
+                    dom.dashboardToggleBtn.textContent = '📊 Vista Global';
+                    updateUI();
+                    speakFeedback('Vista de contador activada.');
                 }
-            } else if (command.includes('activar modo fiesta')) {
-                if (!state.isPartyMode) togglePartyMode();
-            } else if (command.includes('desactivar modo fiesta')) {
-                if (state.isPartyMode) togglePartyMode();
-            } else {
-                showVoiceFeedback('Comando no reconocido.');
-            }
-        }
-
-        function showVoiceFeedback(message) {
-            voiceFeedbackEl.textContent = message;
-            voiceFeedbackEl.classList.add('show');
-            setTimeout(() => { voiceFeedbackEl.classList.remove('show'); }, 3000);
-        }
-
-        // ----------------- 8. Event Listeners -----------------
-        
-        document.getElementById('add-man').addEventListener('click', () => changeCount('men', 1));
-        document.getElementById('remove-man').addEventListener('click', () => changeCount('men', -1));
-        document.getElementById('add-woman').addEventListener('click', () => changeCount('women', 1));
-        document.getElementById('remove-woman').addEventListener('click', () => changeCount('women', -1));
-        
-        resetBtn.addEventListener('click', resetAll);
-        undoBtn.addEventListener('click', undoLastAction);
-        
-        capacityInput.addEventListener('change', (e) => { state.capacity = parseInt(e.target.value, 10) || 0; updateUI(); });
-        
-        themeSelector.addEventListener('change', (e) => {
-            if (e.target.value === 'auto') handleAutoTheme(); else applyTheme(e.target.value);
+                dom.mainContainer.style.opacity = 1;
+            }, 500);
+            
             saveStateToLocalStorage();
-        });
+        }
 
-        exportJsonBtn.addEventListener('click', () => exportData('json'));
-        exportCsvBtn.addEventListener('click', () => exportData('csv'));
-        simBtn.addEventListener('click', () => toggleSimulation(state.simulationInterval ? 'stop' : 'start'));
-        presentBtn.addEventListener('click', togglePresentationMode);
-        speakBtn.addEventListener('click', speakStatus);
-        voiceBtn.addEventListener('click', toggleVoiceListening);
 
-        document.addEventListener('keydown', (e) => {
-            switch(e.key) {
-                case 'ArrowUp': e.preventDefault(); changeCount('men', 1); break;
-                case 'ArrowDown': e.preventDefault(); changeCount('men', -1); break;
-                case 'ArrowRight': e.preventDefault(); changeCount('women', 1); break;
-                case 'ArrowLeft': e.preventDefault(); changeCount('women', -1); break;
-                case 'r': case 'R': if (e.ctrlKey || e.metaKey) { e.preventDefault(); resetAll(); } break;
-                case 'z': case 'Z': if (e.ctrlKey || e.metaKey) { e.preventDefault(); undoLastAction(); } break;
+        function toggleSimulation() {
+            const counter = getActiveCounter();
+            if(!counter) return;
+
+            const start = !counter.simulation.interval;
+
+            if (start) {
+                counter.simulation.startTime = Date.now();
+                counter.simulation.entries = 0;
+                
+                const simCounter = counter;
+
+                simCounter.simulation.interval = setInterval(() => {
+                    if (simCounter.men + simCounter.women < simCounter.capacity) {
+                        const type = Math.random() > 0.5 ? 'men' : 'women';
+                        
+                        simCounter[type] += 1;
+                        simCounter.history.push({ type, value: 1, timestamp: new Date().toISOString() });
+                        simCounter.totalEntriesExits++;
+                        if ((simCounter.men + simCounter.women) > simCounter.maxOccupancy) {
+                            simCounter.maxOccupancy = simCounter.men + simCounter.women;
+                        }
+                        simCounter.simulation.entries++;
+
+                        if (simCounter.id === appState.activeCounterId && appState.currentView === 'tabs') {
+                            updateUI();
+                            animateElement(type === 'men' ? dom.menCount : dom.womenCount, 'zoom');
+                            playSound(type === 'men' ? 261.63 : 392.00, 0.1, 'sine');
+                        } else if (appState.currentView === 'dashboard') {
+                            renderDashboardView();
+                        }
+                    } else {
+                        clearInterval(simCounter.simulation.interval);
+                        simCounter.simulation.interval = null;
+                        speakFeedback(`Simulación para ${simCounter.name} detenida por aforo completo.`);
+                        
+                        renderTabs();
+                        if (appState.currentView === 'dashboard') renderDashboardView();
+                        if (simCounter.id === appState.activeCounterId) updateUI();
+                    }
+                    saveStateToLocalStorage();
+                }, 1500);
+
+                speakFeedback(`Simulación iniciada para ${simCounter.name}.`);
+
+            } else {
+                clearInterval(counter.simulation.interval);
+                counter.simulation.interval = null;
+                speakFeedback(`Simulación detenida para ${counter.name}.`);
+            }
+            renderTabs();
+            updateUI();
+        }
+
+        // ----------------- Funciones de Party Mode (Mejorado) -----------------
+        let confettiInterval;
+        const emojis = ['🎉', '🥳', '✨', '🎶', '🕺', '💃'];
+        const confettiColors = ['#f00', '#0f0', '#00f', '#ff0', '#0ff', '#f0f'];
+
+        function generatePartyEffect() {
+            const type = Math.random() < 0.5 ? 'confetti' : 'emoji';
+            const element = document.createElement('div');
+            element.classList.add(type);
+            
+            element.style.left = `${Math.random() * 100}vw`;
+            element.style.animationDuration = `${Math.random() * 3 + 2}s`;
+            element.style.animationDelay = `${Math.random() * 2}s`;
+            element.style.opacity = Math.random() * 0.5 + 0.5;
+
+            if (type === 'confetti') {
+                element.style.backgroundColor = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+            } else {
+                element.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                element.style.fontSize = `${Math.random() * 15 + 15}px`;
+            }
+            
+            dom.partyOverlay.appendChild(element);
+
+            element.addEventListener('animationend', () => {
+                element.remove();
+            });
+        }
+
+        function togglePartyMode() {
+            appState.isPartyMode = !appState.isPartyMode;
+            document.body.classList.toggle('party-mode', appState.isPartyMode);
+            dom.partyOverlay.style.background = appState.isPartyMode ? 'linear-gradient(45deg, #f06, #f0f, #60f, #00f, #0f0, #ff0, #f00)' : 'none';
+            dom.partyOverlay.style.backgroundSize = appState.isPartyMode ? '400% 400%' : 'auto';
+            dom.fixedStopPartyBtn.style.display = appState.isPartyMode ? 'inline-flex' : 'none'; // CORREGIDO
+
+            if(appState.isPartyMode){
+                dom.partyAudio.play().catch(e=>console.error("Audio no pudo iniciar:",e));
+                confettiInterval = setInterval(generatePartyEffect, 100);
+                showToast("🎉 ¡Modo Fiesta Activado! 🎉","success");
+                speakFeedback('Modo fiesta activado. ¡A bailar!');
+            } else {
+                dom.partyAudio.pause();
+                dom.partyAudio.currentTime=0;
+                clearInterval(confettiInterval);
+                dom.partyOverlay.innerHTML = '';
+                showToast("Modo Fiesta Desactivado","info");
+                speakFeedback('Modo fiesta desactivado. Volvemos a la normalidad.');
+            }
+            renderTabs();
+            if (appState.currentView === 'dashboard') renderDashboardView();
+        }
+
+        // ----------------- Funciones de Configuración y Mute (NUEVO / MODIFICADO) -----------------
+        
+        function toggleMuteFeedback() {
+            appState.globalSettings.speechFeedbackEnabled = !appState.globalSettings.speechFeedbackEnabled;
+            if (!appState.globalSettings.speechFeedbackEnabled) {
+                window.speechSynthesis.cancel();
+            }
+            updateMuteButtonState();
+            saveStateToLocalStorage();
+            showToast(`Feedback hablado ${appState.globalSettings.speechFeedbackEnabled ? 'activado' : 'desactivado'}.`, 'info');
+        }
+
+        function updateMuteButtonState() {
+            if (appState.globalSettings.speechFeedbackEnabled) {
+                dom.muteFeedbackBtn.innerHTML = '🔊';
+                dom.muteFeedbackBtn.setAttribute('aria-label', 'Silenciar feedback hablado');
+            } else {
+                dom.muteFeedbackBtn.innerHTML = '🔇';
+                dom.muteFeedbackBtn.setAttribute('aria-label', 'Activar feedback hablado');
+            }
+            dom.speakBtn.disabled = !appState.globalSettings.speechFeedbackEnabled;
+            if(dom.modalSpeechFeedbackToggle) dom.modalSpeechFeedbackToggle.checked = appState.globalSettings.speechFeedbackEnabled;
+        }
+
+        function openSettingsModal() {
+            dom.settingsModalOverlay.classList.add('visible');
+            dom.modalDefaultCapacity.value = appState.globalSettings.defaultCapacity;
+            dom.modalThemeSelector.value = appState.globalSettings.theme;
+            dom.modalVoiceControlToggle.checked = appState.globalSettings.voiceControlEnabled;
+            dom.modalSpeechFeedbackToggle.checked = appState.globalSettings.speechFeedbackEnabled;
+        }
+
+        function closeSettingsModal() {
+            dom.settingsModalOverlay.classList.remove('visible');
+        }
+
+        function saveSettings() {
+            appState.globalSettings.defaultCapacity = parseInt(dom.modalDefaultCapacity.value, 10) || 0;
+            appState.globalSettings.theme = dom.modalThemeSelector.value;
+            appState.globalSettings.voiceControlEnabled = dom.modalVoiceControlToggle.checked;
+            appState.globalSettings.speechFeedbackEnabled = dom.modalSpeechFeedbackToggle.checked;
+            
+            applyTheme(appState.globalSettings.theme);
+            dom.themeSelector.value = appState.globalSettings.theme;
+            
+            if (!appState.globalSettings.voiceControlEnabled) {
+                dom.voiceBtn.classList.remove('listening');
+                if (recognition && recognition.listening) recognition.stop();
+            }
+            
+            saveStateToLocalStorage();
+            updateUI();
+            showToast('Configuración guardada.', 'success');
+            speakFeedback('Configuración guardada.');
+            closeSettingsModal();
+        }
+
+        function exportAllData() {
+            const dataToExport = { appState: appState, exportDate: new Date().toISOString(), version: '1.0' };
+            exportData('json', dataToExport, 'full_app_state');
+            showToast('Todos los datos exportados.', 'success');
+            speakFeedback('Todos los datos han sido exportados.');
+        }
+
+        function importAllData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (importedData.appState && importedData.appState.counters) {
+                        if (!Array.isArray(importedData.appState.counters)) {
+                            importedData.appState.counters = Object.values(importedData.appState.counters);
+                        }
+                        appState = importedData.appState;
+                        loadStateFromLocalStorage();
+                        updateUI(); // Forzar actualización completa
+                        showToast('Datos importados con éxito.', 'success');
+                        speakFeedback('Datos importados con éxito.');
+                    } else {
+                        throw new Error('Estructura de archivo JSON no válida.');
+                    }
+                } catch (error) {
+                    console.error('Error al importar datos:', error);
+                    showToast('Error al importar datos: ' + error.message, 'error');
+                    speakFeedback('Error al importar datos.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // ----------------- Funciones de Voz y Feedback Hablado -----------------
+        const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;let recognition;
+        
+        function setupVoiceControl(){
+            if(!SpeechRecognition) {
+                dom.voiceBtn.disabled=!0;
+                showToast("Control por voz no disponible en este navegador.","error");
+                return;
+            }
+            recognition=new SpeechRecognition;
+            recognition.lang="es-ES";
+            recognition.continuous=!1;
+            recognition.interimResults=!1;
+            
+            recognition.onstart=()=>{ dom.voiceBtn.classList.add("listening"); showToast("Escuchando comandos de voz...", "info"); };
+            recognition.onend=()=>{ dom.voiceBtn.classList.remove("listening"); };
+            recognition.onerror=e=>{
+                dom.voiceBtn.classList.remove("listening");
+                showVoiceFeedback(`Error de voz: ${e.error}`);
+                showToast(`Error de voz: ${e.error}`, "error");
+            };
+            recognition.onresult=e=>{
+                const t=e.results[0][0].transcript.trim().toLowerCase();
+                showVoiceFeedback(`🎙️ "${t}"`);
+                parseVoiceCommand(t);
+            };
+        }
+        
+        function toggleVoiceListening(){
+            if (!appState.globalSettings.voiceControlEnabled) {
+                showToast("El control por voz está desactivado en la configuración.", "info");
+                return;
+            }
+            if(recognition) {
+                if (!dom.voiceBtn.classList.contains("listening")) {
+                    recognition.start();
+                } else {
+                    recognition.stop();
+                    showToast("Control por voz detenido.", "info");
+                }
+            }
+        }
+        
+        function parseVoiceCommand(c){
+            const n=c.match(/(\d+)/);
+            const o=n?parseInt(n[1],10):1;
+
+            if (c.includes("vista global")) { if (appState.currentView !== 'dashboard') toggleDashboardView(); return; }
+            if (c.includes("vista contador")) { if (appState.currentView !== 'tabs') toggleDashboardView(); return; }
+
+            if (appState.currentView === 'tabs') {
+                if(c.includes("hombre")){ changeCount("men",c.includes("quitar")||c.startsWith("-")?-o:o); return; }
+                if(c.includes("mujer")){ changeCount("women",c.includes("quitar")||c.startsWith("-")?-o:o); return; }
+                if(c.includes("reset")||c.includes("reiniciar")){ resetAll(); return; }
+                if(c.includes("aforo máximo")){
+                    if(n){
+                        const counter = getActiveCounter();
+                        if(counter) {
+                            counter.capacity = o;
+                            updateUI();
+                            speakFeedback(`Aforo máximo establecido a ${o}.`);
+                        }
+                    } else { showVoiceFeedback("Número de aforo no entendido."); speakFeedback("Número de aforo no entendido."); }
+                    return;
+                }
+                if(c.includes("iniciar simulación")){ toggleSimulation(); return; }
+                if(c.includes("detener simulación")){ toggleSimulation(); return; }
+            }
+
+            if(c.includes("activar modo fiesta")){ !appState.isPartyMode&&togglePartyMode(); return; }
+            if(c.includes("desactivar modo fiesta") || c.includes("detener fiesta")){ appState.isPartyMode&&togglePartyMode(); return; }
+
+            showVoiceFeedback("Comando no reconocido.");
+            speakFeedback("Comando no reconocido.");
+        }
+        
+        function showVoiceFeedback(m){
+            dom.voiceFeedback.textContent=m;
+            dom.voiceFeedback.classList.add("show");
+            setTimeout(()=>{dom.voiceFeedback.classList.remove("show")},3e3);
+        }
+
+        function speakFeedback(message) {
+            if (appState.globalSettings.speechFeedbackEnabled && 'speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(message);
+                utterance.lang = 'es-ES';
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function updateClock(){
+            dom.clockDate.textContent=(new Date).toLocaleString("es-ES",{weekday:"long",year:"numeric",month:"long",day:"numeric",hour:"2-digit",minute:"2-digit"});
+        }
+
+        function showToast(m,t='success'){const c=document.getElementById('toast-container'),o=document.createElement('div');o.className=`toast ${t}`,o.textContent=m,c.appendChild(o),setTimeout(()=>o.classList.add('show'),10),setTimeout(()=>{o.classList.remove('show'),o.addEventListener('transitionend',()=>o.remove())},4e3)}
+        function animateElement(e,t){const n=t==='zoom'?'animate-zoom':'animate-shake';e.classList.add(n),setTimeout(()=>e.classList.remove(n),400)}
+        function playSound(f,d,t){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=t,o.frequency.setValueAtTime(f,audioCtx.currentTime),g.gain.setValueAtTime(.1,audioCtx.currentTime),g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+d),o.connect(g),g.connect(audioCtx.destination),o.start(),o.stop(audioCtx.currentTime+d)}
+        function exportData(f,d,fileNameBase='datos_contador'){
+            let content = "", mimeType = "", extension = "";
+            if (fileNameBase === 'full_app_state') {
+                content = JSON.stringify(d, null, 2);
+                mimeType = "application/json";
+                extension = "json";
+            } else {
+                const c = d;
+                const data = { nombre: c.name, hombres: c.men, mujeres: c.women, total: c.men + c.women, aforo: c.capacity, fecha: new Date().toISOString(), historial: c.history, fechaCreacion: new Date(c.creationDate).toLocaleDateString(), totalMovimientos: c.totalEntriesExits, picoOcupacion: c.maxOccupancy };
+                if(f==="json"){
+                    content=JSON.stringify(data,null,2); mimeType="application/json"; extension="json";
+                } else {
+                    content=`Categoria,Cantidad\nNombre,${data.nombre}\nHombres,${data.hombres}\nMujeres,${data.mujeres}\nTotal,${data.total}\nAforo,${data.aforo}\nFecha Exportacion,${data.fecha}\nFecha Creacion,${data.fechaCreacion}\nTotal Movimientos,${data.totalMovimientos}\nPico Ocupacion,${data.picoOcupacion}\n`; mimeType="text/csv"; extension="csv";
+                }
+            }
+            const blob=new Blob([content],{type:mimeType}), url=URL.createObjectURL(blob), a=document.createElement("a");
+            a.href=url; a.download=`${fileNameBase}_${new Date().getTime()}.${extension}`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+        }
+
+        // ----------------- 9. Event Listeners -----------------
+        dom.addManBtn.addEventListener('click', () => changeCount('men', 1));
+        dom.removeManBtn.addEventListener('click', () => changeCount('men', -1));
+        dom.addWomanBtn.addEventListener('click', () => changeCount('women', 1));
+        dom.removeWomanBtn.addEventListener('click', () => changeCount('women', -1));
+        dom.resetBtn.addEventListener('click', resetAll);
+        dom.undoBtn.addEventListener('click', undoLastAction);
+        dom.capacityInput.addEventListener('change', (e) => {
+            const counter = getActiveCounter();
+            if(counter) {
+                counter.capacity = parseInt(e.target.value, 10) || 0;
+                updateUI();
+                speakFeedback(`Aforo del contador actual cambiado a ${counter.capacity}.`);
             }
         });
-        
-        // ----------------- 9. Inicialización -----------------
-        
-        setupVoiceControl();
+        dom.themeSelector.addEventListener('change', (e) => {
+            appState.globalSettings.theme = e.target.value;
+            applyTheme(appState.globalSettings.theme);
+            saveStateToLocalStorage();
+            speakFeedback(`Tema cambiado a ${e.target.value}.`);
+        });
+        dom.simBtn.addEventListener('click', toggleSimulation);
+        dom.exportJsonBtn.addEventListener('click', () => { const c = getActiveCounter(); if(c) exportData('json', c); showToast('Datos del contador exportados.', 'success'); speakFeedback('Datos del contador exportados.'); });
+        dom.exportCsvBtn.addEventListener('click', () => { const c = getActiveCounter(); if(c) exportData('csv', c); showToast('Datos del contador exportados.', 'success'); speakFeedback('Datos del contador exportados.'); });
+        dom.speakBtn.addEventListener('click', () => {
+            if (appState.globalSettings.speechFeedbackEnabled) {
+                const c = getActiveCounter();
+                if(c && 'speechSynthesis' in window) {
+                    speakFeedback(`Contador ${c.name}: Hay ${c.men + c.women} personas. ${c.men} hombres y ${c.women} mujeres.`);
+                }
+            } else {
+                showToast("Feedback hablado desactivado en la configuración.", "info");
+            }
+        });
+        dom.muteFeedbackBtn.addEventListener('click', toggleMuteFeedback);
+        dom.voiceBtn.addEventListener('click', () => toggleVoiceListening());
+        dom.dashboardToggleBtn.addEventListener('click', toggleDashboardView);
+        dom.fixedStopPartyBtn.addEventListener('click', togglePartyMode); // CORREGIDO
+        dom.settingsBtn.addEventListener('click', openSettingsModal);
+        dom.modalCloseBtn.addEventListener('click', closeSettingsModal);
+        dom.modalSaveSettingsBtn.addEventListener('click', saveSettings);
+        dom.modalExportAllBtn.addEventListener('click', exportAllData);
+        dom.modalImportAllBtn.addEventListener('click', () => dom.modalImportAllInput.click());
+        dom.modalImportAllInput.addEventListener('change', importAllData);
+        dom.settingsModalOverlay.addEventListener('click', (e) => {
+            if (e.target === dom.settingsModalOverlay) closeSettingsModal();
+        });
+
+        // ----------------- 10. Inicialización -----------------
         loadStateFromLocalStorage();
         updateClock();
         setInterval(updateClock, 30000);
+        setupVoiceControl();
+        
+        if (appState.currentView === 'dashboard') {
+            document.body.classList.add('dashboard-mode');
+        } else {
+            document.body.classList.remove('dashboard-mode');
+        }
+        updateUI();
     });
     </script>
 </body>
 </html>
-
-
 
