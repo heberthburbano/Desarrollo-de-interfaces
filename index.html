@@ -132,15 +132,13 @@
             max-width: 1200px;
             display: flex;
             flex-wrap: wrap; /* Permite que las pestañas salten a la siguiente línea */
-            align-items: center; /* Alinea las pestañas en el centro verticalmente */
+            align-items: flex-start; /* Alinea las pestañas al inicio para un flujo natural */
             gap: 0.5rem;
             padding: 0.5rem;
             background-color: var(--border-color); /* Fondo claro para contraste */
             border-radius: 12px;
             margin-bottom: 1rem;
             box-shadow: 0 4px 15px var(--shadow-color); /* Sombra para destacarlo */
-            min-height: 60px; /* Altura mínima para que no colapse */
-            align-items: stretch; /* Asegura que todas tengan la misma altura */
             position: relative; /* Para el drag & drop */
         }
         
@@ -557,13 +555,13 @@
             color: var(--primary-color);
         }
 
-        /* Botón para detener fiesta (NUEVO) */
+        /* Botón para detener fiesta (NUEVO Y CORREGIDO) */
         #fixed-stop-party-btn {
             position: fixed;
             bottom: 2rem;
             left: 50%;
             transform: translateX(-50%);
-            z-index: 10000; /* Por encima del overlay de fiesta */
+            z-index: 10001; /* Por encima del overlay de fiesta */
             background-color: var(--error-color);
             color: var(--primary-text);
             box-shadow: 0 0 20px rgba(255, 255, 255, 0.7);
@@ -656,7 +654,9 @@
             }
 
             #fixed-stop-party-btn {
-                width: 90%;
+                width: auto; /* Dejar que el padding defina el ancho */
+                font-size: 1.2rem;
+                padding: 0.8rem 1.5rem;
             }
         }
     </style>
@@ -892,7 +892,7 @@
             voiceFeedback: document.getElementById('voice-feedback'),
             partyOverlay: document.getElementById('party-overlay'),
             partyAudio: document.getElementById('party-audio'),
-            fixedStopPartyBtn: document.getElementById('fixed-stop-party-btn'), // NUEVO
+            fixedStopPartyBtn: document.getElementById('fixed-stop-party-btn'),
             occupancyValue: document.getElementById('occupancy-value'),
             occupancyBar: document.getElementById('occupancy-bar'),
             differenceValue: document.getElementById('difference-value'),
@@ -1778,7 +1778,7 @@ Estadísticas de "${counter.name}"
         dom.muteFeedbackBtn.addEventListener('click', toggleMuteFeedback);
         dom.voiceBtn.addEventListener('click', () => toggleVoiceListening());
         dom.dashboardToggleBtn.addEventListener('click', toggleDashboardView);
-        dom.fixedStopPartyBtn.addEventListener('click', togglePartyMode); // CORREGIDO
+        dom.fixedStopPartyBtn.addEventListener('click', togglePartyMode);
         dom.settingsBtn.addEventListener('click', openSettingsModal);
         dom.modalCloseBtn.addEventListener('click', closeSettingsModal);
         dom.modalSaveSettingsBtn.addEventListener('click', saveSettings);
@@ -1805,9 +1805,4 @@ Estadísticas de "${counter.name}"
     </script>
 </body>
 </html>
-
-
-
-
-
 
