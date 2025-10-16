@@ -428,6 +428,40 @@
           color: var(--text-secondary);
           opacity: 0.7;
         }
+        
+        /* NUEVO: Estilos para el slider de volumen */
+        .volume-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: transparent; /* The inset shadow will provide the track look */
+            outline: none;
+            padding: 0;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            border: 4px solid var(--bg-color);
+            box-shadow: 0 0 5px rgba(0,0,0,0.2);
+        }
+
+        .volume-slider::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            border: 4px solid var(--bg-color);
+            box-shadow: 0 0 5px rgba(0,0,0,0.2);
+        }
 
         /* --- Modals --- */
         .modal {
@@ -659,7 +693,6 @@
                         <option value="dark">Oscuro</option>
                     </select>
                 </div>
-                 <!-- NUEVO: Interruptor de Notificaciones -->
                 <div class="control-group" style="display: flex; justify-content: space-between; align-items: center;">
                     <label for="notifications-toggle" style="margin-bottom: 0;">Notificaciones</label>
                     <label class="switch">
@@ -677,6 +710,11 @@
                     </select>
                     <input type="file" id="custom-music-input" accept="audio/*" style="display: none;">
                     <label for="custom-music-input" id="custom-music-label" class="custom-file-label neumorphic-inset" style="display: none;">Seleccionar archivo de música</label>
+                </div>
+                <!-- NUEVO: Control de Volumen -->
+                <div class="control-group">
+                    <label for="music-volume">Volumen de Música</label>
+                    <input type="range" id="music-volume" min="0" max="100" class="volume-slider neumorphic-inset">
                 </div>
                 <div class="control-group">
                     <label for="alarm-sound-select">Sonido de Alarma</label>
@@ -899,6 +937,7 @@
             const calendarTooltip = document.getElementById('calendar-tooltip');
             const fontSizeControls = document.getElementById('font-size-controls');
             const notificationsToggle = document.getElementById('notifications-toggle');
+            const musicVolumeSlider = document.getElementById('music-volume');
 
 
             const radius = progressCircle.r.baseVal.value;
@@ -918,7 +957,8 @@
                 customMusicURL: null,
                 customMusicFilename: null,
                 fontSize: 'medium',
-                notificationsEnabled: true
+                notificationsEnabled: true,
+                musicVolume: 0.5,
             };
 
             let calendarDate = new Date();
@@ -1237,6 +1277,9 @@
                     notepadTextarea.value = state.notepadContent || '';
                     alarmSoundSelect.value = state.alarmSound || 'default';
                     notificationsToggle.checked = state.notificationsEnabled;
+                    state.musicVolume = savedState.musicVolume ?? 0.5;
+                    musicVolumeSlider.value = state.musicVolume * 100;
+                    bgMusic.volume = state.musicVolume;
                     if (state.music === 'custom-music' && state.customMusicFilename) {
                         customMusicLabel.textContent = `Archivo: ${state.customMusicFilename}`;
                     }
@@ -1389,6 +1432,13 @@
                     handleCustomMusicFile(e.target.files[0]);
                 }
             });
+            
+            musicVolumeSlider.addEventListener('input', (e) => {
+                const volume = e.target.value / 100;
+                state.musicVolume = volume;
+                bgMusic.volume = volume;
+                saveState();
+            });
 
             newTaskForm.addEventListener('submit', e => {
                 e.preventDefault();
@@ -1475,6 +1525,7 @@
                 renderStats();
                 changeTheme(themeSelect.value);
                 setFontSize(state.fontSize);
+                bgMusic.volume = state.musicVolume;
                 handleAlarmSoundChange(alarmSoundSelect.value);
                 handleMusicSelectChange(musicSelect.value);
                 switchMode(state.currentMode);
@@ -1489,5 +1540,4 @@
     </script>
 </body>
 </html>
-
 
