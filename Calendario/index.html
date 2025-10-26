@@ -7,13 +7,12 @@
     <!--
         Kairós: Master Your Spoken Record.
         
-        Versión 2.0 - Rediseño con Reproductor Fijo
-        - Reproductor de audio global fijo en la parte inferior.
-        - Reproducción automática al hacer clic en un día con audio.
+        Versión 2.1 - Menú Contextual para Detalles
+        - Clic Izquierdo: Reproduce audio en barra fija.
+        - Clic Derecho: Abre modal con detalles (Transcripción, IA).
         - Iconos en el calendario para días con audio.
         - Notificaciones "Toast" al reproducir.
         - Panel lateral actualizado a "Biblioteca de audios".
-        - El modal ahora se usa para "Detalles de IA" y "Añadir Audio".
     -->
     <style>
         :root {
@@ -265,6 +264,16 @@
             border-radius: 50%;
             cursor: pointer;
         }
+         /* Estilo para Firefox */
+        .player-progress-bar::-moz-range-thumb {
+             width: 15px;
+            height: 15px;
+            background: var(--accent-primary);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none; /* Firefox añade un borde por defecto */
+        }
+       
         .player-volume-controls {
             flex-basis: 150px;
             display: flex;
@@ -288,6 +297,15 @@
             background: var(--accent-secondary);
             border-radius: 50%;
             cursor: pointer;
+        }
+        /* Estilo para Firefox */
+        .player-volume-slider::-moz-range-thumb {
+             width: 15px;
+            height: 15px;
+            background: var(--accent-secondary);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
         }
         .player-extra-controls button {
             background: none;
@@ -323,31 +341,50 @@
             transform: translateX(0);
         }
 
-        /* ----- NUEVO: Pop-up del Día ----- */
-        /* Reutilizamos el modal-overlay, pero con un contenido más pequeño */
-        #day-popup .modal-content {
-            max-width: 350px;
-            max-height: auto;
-        }
-        #day-popup-content h3 {
-            font-size: 1.1rem;
-            color: var(--accent-secondary);
-            margin-bottom: 0.5rem;
-        }
-        #day-popup-content p {
-            color: var(--text-secondary);
-            margin-bottom: 1.25rem;
-        }
-        #day-popup-content .day-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-        #day-popup-content .btn-secondary {
+        /* ----- NUEVO: Menú Contextual (Clic Derecho) ----- */
+        .custom-context-menu {
+            position: fixed; /* Se posicionará con JS */
+            display: none;
             background-color: var(--bg-tertiary);
-            color: var(--text-primary);
+            border-radius: 8px;
             border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 5000;
+            padding: 0.5rem;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            min-width: 200px;
         }
+        .custom-context-menu.show {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .custom-context-menu button {
+            display: block;
+            width: 100%;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            padding: 0.75rem 1.25rem;
+            text-align: left;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        .custom-context-menu button:hover {
+            background-color: var(--accent-primary);
+            color: var(--bg-primary);
+        }
+        .custom-context-menu hr {
+            border: none;
+            height: 1px;
+            background-color: var(--border-color);
+            margin: 0.5rem 0;
+        }
+        /* ----- FIN CAMBIOS ----- */
+
 
         /* Media Queries */
         @media (max-width: 768px) {
@@ -501,6 +538,16 @@
         </div>
     </div>
 
+    <!-- ----- INICIO CAMBIO: Menú Contextual ----- -->
+    <div id="custom-context-menu" class="custom-context-menu">
+        <button data-action="details-summary">Ver Resumen IA</button>
+        <button data-action="details-transcription">Ver Transcripción</button>
+        <hr>
+        <button data-action="download">Descargar Audio</button>
+    </div>
+    <!-- ----- FIN CAMBIO ----- -->
+
+
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         let current_date = new Date();
@@ -612,6 +659,9 @@
         const add_audio_form = document.getElementById('add-audio-form');
         const processing_indicator = document.getElementById('processing-indicator');
         const toast_container = document.getElementById('toast-container');
+        // ----- INICIO CAMBIO -----
+        const contextMenu = document.getElementById('custom-context-menu');
+        // ----- FIN CAMBIO -----
 
         // --- ELEMENTOS DEL REPRODUCTOR GLOBAL ---
         const global_audio_player = document.getElementById('global-audio-player');
@@ -631,6 +681,9 @@
         let last_focused_element = null;
         let current_audio_data = null;
         let current_date_key = null;
+        // ----- INICIO CAMBIO -----
+        let contextMenuDateKey = null; // Para saber en qué día se hizo clic derecho
+        // ----- FIN CAMBIO -----
 
         // --- LÓGICA DE NOTIFICACIÓN TOAST ---
         function showToast(message) {
@@ -721,7 +774,7 @@
                 day_cell.appendChild(events_container);
 
                 const data = audio_data[date_key];
-                if (data) {
+                if (data && data.audios.length > 0) { // Check specifically for audios
                     day_cell.dataset.hasAudio = 'true'; // Para el icono 🎵
                     const is_filtered_out = active_tag_filter && !data.audios.some(a => a.tags.includes(active_tag_filter));
                     if (is_filtered_out) {
@@ -742,19 +795,30 @@
                 const date_obj = new Date(year, month, i);
                 let ariaLabel = `${date_obj.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.`;
                 
-                if (data) {
-                    ariaLabel += ` Contiene ${data.audios.length} grabación(es) de audio y ${data.mock_events.length} evento(s).`;
+                if (data && data.audios.length > 0) {
+                     ariaLabel += ` Contiene ${data.audios.length} grabación(es) de audio`;
+                    if(data.mock_events && data.mock_events.length > 0) {
+                        ariaLabel += ` y ${data.mock_events.length} evento(s).`;
+                    } else {
+                        ariaLabel += `.`;
+                    }
+                    ariaLabel += " Clic izquierdo para reproducir, clic derecho para opciones."
+                } else if (data && data.mock_events && data.mock_events.length > 0) {
+                    ariaLabel += ` Contiene ${data.mock_events.length} evento(s). Sin grabaciones.`;
                 } else {
-                    ariaLabel += ` Sin eventos ni grabaciones.`;
+                    ariaLabel += ` Sin eventos ni grabaciones. Clic para añadir audio.`;
                 }
                 day_cell.setAttribute('aria-label', ariaLabel);
 
                 day_cell.addEventListener('click', () => onDayClick(date_key));
+                // ----- INICIO CAMBIO: Context Menu -----
+                day_cell.addEventListener('contextmenu', (e) => onDayRightClick(e, date_key));
+                // ----- FIN CAMBIO -----
                 calendar_grid.appendChild(day_cell);
             }
         }
 
-        // --- LÓGICA DE CLIC EN DÍA (NUEVA) ---
+        // --- LÓGICA DE CLIC EN DÍA (ACTUALIZADA) ---
         function onDayClick(dateKey) {
             current_selected_date = dateKey;
             const data = audio_data[dateKey];
@@ -764,9 +828,33 @@
                 playAudio(data.audios[0], dateKey);
             } else {
                 // Si el día está vacío, abre el modal para añadir un audio
-                openAddAudioModal(dateKey);
+                openAddAudioModalPrompt(dateKey); // Usamos el modal de detalles, pero adaptado
             }
         }
+
+        // ----- INICIO CAMBIO: Clic Derecho -----
+        function onDayRightClick(event, dateKey) {
+            event.preventDefault(); // Prevenir menú contextual del navegador
+            hideContextMenu(); // Ocultar si ya hay uno abierto
+            const data = audio_data[dateKey];
+            
+            if (data && data.audios.length > 0) {
+                // Si hay audio, abrir el menú contextual
+                contextMenuDateKey = dateKey; // Guardar la fecha para las acciones
+                
+                // Posicionar el menú
+                contextMenu.style.left = `${event.clientX}px`;
+                contextMenu.style.top = `${event.clientY}px`;
+                contextMenu.classList.add('show');
+            } 
+            // Si no hay audio, no hacer nada en clic derecho (solo clic izquierdo funciona)
+        }
+
+        function hideContextMenu() {
+            contextMenu.classList.remove('show');
+            contextMenuDateKey = null;
+        }
+        // ----- FIN CAMBIO -----
 
         // --- KEYBOARD NAVIGATION (CALENDAR) ---
         calendar_grid.addEventListener('keydown', (e) => {
@@ -783,8 +871,33 @@
                 case 'Enter':
                 case ' ':
                     e.preventDefault();
-                    focusedDay.click();
+                    focusedDay.click(); // Simular clic izquierdo
                     return;
+                 // ----- INICIO CAMBIO: Context Menu con Teclado -----
+                case 'ContextMenu': // Tecla de menú contextual (si existe)
+                    e.preventDefault();
+                    onDayRightClick(e, focusedDay.dataset.date);
+                    // Mover foco al primer item del menú
+                    contextMenu.querySelector('button')?.focus();
+                    return;
+                case 'Shift': // Shift+F10 es común
+                    if (e.keyCode === 121 || e.key === 'F10') { // F10
+                         if(e.shiftKey) {
+                             e.preventDefault();
+                             // Simular evento en el centro del día
+                             const rect = focusedDay.getBoundingClientRect();
+                             const mockEvent = { 
+                                 clientX: rect.left + rect.width / 2, 
+                                 clientY: rect.top + rect.height / 2,
+                                 preventDefault: () => {}
+                             };
+                             onDayRightClick(mockEvent, focusedDay.dataset.date);
+                             // Mover foco al primer item del menú
+                             contextMenu.querySelector('button')?.focus();
+                         }
+                    }
+                    return;
+                // ----- FIN CAMBIO -----
                 default: return;
             }
             e.preventDefault();
@@ -801,7 +914,7 @@
             current_date_key = dateKey;
             
             global_audio_player.src = audio.url;
-            global_audio_player.play();
+            global_audio_player.play().catch(e => console.error("Error al reproducir audio:", e)); // Añadido control de errores
             
             player_bar.style.display = 'flex';
             player_play_pause_btn.textContent = '⏸️';
@@ -813,8 +926,10 @@
         }
 
         function togglePlayPause() {
+            if(!current_audio_data) return; // No hacer nada si no hay audio cargado
+            
             if (global_audio_player.paused) {
-                global_audio_player.play();
+                global_audio_player.play().catch(e => console.error("Error al reproducir audio:", e));
                 player_play_pause_btn.textContent = '⏸️';
                 player_play_pause_btn.setAttribute('aria-label', 'Pausar');
                 announce("Audio reproducido.");
@@ -837,57 +952,65 @@
             if (isNaN(global_audio_player.duration)) return;
             player_current_time.textContent = formatTime(global_audio_player.currentTime);
             player_total_time.textContent = formatTime(global_audio_player.duration);
-            player_progress_bar.value = (global_audio_player.currentTime / global_audio_player.duration) * 100;
+            // Evitar actualizar si el usuario está arrastrando la barra
+            if (!player_progress_bar.matches(':active')) {
+                 player_progress_bar.value = (global_audio_player.currentTime / global_audio_player.duration) * 100;
+            }
         }
 
-        // --- LÓGICA DE MODALES (REDISEÑADA) ---
+        // --- LÓGICA DE MODALES (ACTUALIZADA) ---
         
-        // Abre el modal de "Detalles" (IA, Transcripción)
-        function openAudioDetailsModal(dateKey) {
+        // Abre el modal de "Detalles" (IA, Transcripción) - Llamado por Clic Derecho o Botón Detalles
+        // ----- INICIO CAMBIO: Aceptar 'defaultTab' -----
+        function openAudioDetailsModal(dateKey, defaultTab = 'summary') {
+        // ----- FIN CAMBIO -----
             const data = audio_data[dateKey];
-            if (!data) return;
+             // Intentar obtener los datos del audio actualmente en reproducción si no se pasan
+            if (!data && current_date_key === dateKey && current_audio_data) {
+                 // Simular la estructura de datos si solo tenemos el audio actual
+                 data = { audios: [current_audio_data] }; 
+            } else if (!data || !data.audios || data.audios.length === 0) {
+                console.error("No hay datos de audio para mostrar detalles en la fecha:", dateKey);
+                announce("No hay detalles de audio disponibles para este día.");
+                return; // No abrir modal si no hay nada que mostrar
+            }
 
-            const audio = data.audios[0]; // Asumimos un audio por simplicidad
+            const audio = data.audios[0]; // Asumimos un audio por día por simplicidad
             const day_audio_list = document.getElementById('day-audio-list');
             
-            // Ocultar el botón de "Añadir Audio"
-            open_add_audio_modal_btn.style.display = 'none';
+            open_add_audio_modal_btn.style.display = 'none'; // Ocultar botón 'Añadir'
             day_audio_list.innerHTML = ''; // Limpiar
 
             const date = new Date(dateKey + 'T00:00:00');
             document.getElementById('day-view-title').textContent = `Detalles de ${audio.name}`;
 
-            // Renderizar solo los detalles, sin reproductor
+            // Renderizar solo los detalles
             const entry = document.createElement('div');
             entry.classList.add('audio-entry');
             entry.innerHTML = `
                 <h3>${audio.name}</h3>
                 <p><strong>Etiquetas:</strong> ${audio.tags.join(', ')}</p>
                 <div class="ai-tabs">
-                    <button class="ai-tab-btn active" data-target="summary">Resumen IA</button>
-                    <button class="ai-tab-btn" data-target="transcription">Transcripción</button>
+                    <button class="ai-tab-btn" data-target="summary" role="tab" aria-selected="false">Resumen IA</button>
+                    <button class="ai-tab-btn" data-target="transcription" role="tab" aria-selected="false">Transcripción</button>
                 </div>
                 <div class="ai-content-container">
-                    <div class="ai-content" id="summary-content">
+                    <div class="ai-content" id="summary-content" role="tabpanel" style="display:none;">
                         <h4>Resumen Ejecutivo</h4>
-                        <p>${audio.summary}</p>
+                        <p>${audio.summary || 'No disponible.'}</p>
                         <h4>Puntos de Acción</h4>
-                        <ul>${audio.action_items.map(item => `<li>${item}</li>`).join('')}</ul>
+                        <ul>${audio.action_items && audio.action_items.length > 0 ? audio.action_items.map(item => `<li>${item}</li>`).join('') : '<li>Ninguno.</li>'}</ul>
                         <h4>Decisiones Clave</h4>
-                        <ul>${audio.decisions.map(item => `<li>${item}</li>`).join('')}</ul>
+                        <ul>${audio.decisions && audio.decisions.length > 0 ? audio.decisions.map(item => `<li>${item}</li>`).join('') : '<li>Ninguna.</li>'}</ul>
                     </div>
-                    <div class="ai-content" id="transcription-content" style="display:none;"></div>
+                    <div class="ai-content" id="transcription-content" role="tabpanel" style="display:none;"></div>
                 </div>
-                <div id="feedback-section">
-                    <h4>Añadir Feedback</h4>
-                    <p class="text-secondary" style="font-size: 0.9rem;">(Actualmente en reproducción. Añade comentarios desde el reproductor principal.)</p>
-                    <!-- Funcionalidad de feedback simplificada, podría mejorarse -->
-                </div>
+                <!-- Sección de Feedback eliminada temporalmente por simplicidad -->
             `;
             
             // Renderizar transcripción
             const transcription_container = entry.querySelector('#transcription-content');
-            if (audio.transcription && Array.isArray(audio.transcription)) {
+            if (audio.transcription && Array.isArray(audio.transcription) && audio.transcription.length > 0) {
                 audio.transcription.forEach(word => {
                     const span = document.createElement('span');
                     span.className = 'transcription-word';
@@ -895,7 +1018,15 @@
                     span.dataset.start = word.startTime;
                     span.addEventListener('click', () => {
                         // Saltar a ese punto en el reproductor GLOBAL
-                        global_audio_player.currentTime = word.startTime;
+                        if (current_audio_data && current_audio_data.id === audio.id) { // Solo si es el audio actual
+                             global_audio_player.currentTime = word.startTime;
+                             closeModal(day_view_modal); // Cerrar modal al hacer clic
+                        } else {
+                            // Si no es el audio actual, reproducirlo y saltar
+                            playAudio(audio, dateKey);
+                            global_audio_player.currentTime = word.startTime;
+                            closeModal(day_view_modal); // Cerrar modal al hacer clic
+                        }
                     });
                     transcription_container.appendChild(span);
                 });
@@ -904,18 +1035,33 @@
             }
             
             day_audio_list.appendChild(entry);
+            
+            // ----- INICIO CAMBIO: Activar 'defaultTab' -----
+            const tabButton = entry.querySelector(`.ai-tab-btn[data-target="${defaultTab}"]`);
+            const tabContent = entry.querySelector(`#${defaultTab}-content`);
+            if (tabButton && tabContent) {
+                tabButton.classList.add('active');
+                tabButton.setAttribute('aria-selected', 'true');
+                tabContent.style.display = 'block';
+            } else {
+                // Fallback por si la defaultTab no existe
+                entry.querySelector('.ai-tab-btn[data-target="summary"]').classList.add('active');
+                entry.querySelector('#summary-content').style.display = 'block';
+            }
+            // ----- FIN CAMBIO -----
+
             openModal(day_view_modal);
         }
 
-        // Abre el modal para días vacíos
-        function openAddAudioModal(dateKey) {
+        // Abre el modal para días vacíos - Llamado por Clic Izquierdo en día vacío
+        function openAddAudioModalPrompt(dateKey) {
             const date = new Date(dateKey + 'T00:00:00');
             document.getElementById('day-view-title').textContent = date.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
             
             document.getElementById('day-audio-list').innerHTML = '<p>No hay audios asociados a este día.</p>';
-            open_add_audio_modal_btn.style.display = 'block'; // Mostrar botón
+            open_add_audio_modal_btn.style.display = 'block'; // Mostrar botón 'Añadir'
             
-            openModal(day_view_modal);
+            openModal(day_view_modal); // Reutilizamos el modal de detalles
         }
 
         function openModal(modal) {
@@ -935,6 +1081,7 @@
             if (e.key === 'Escape') {
                 const openModal = document.querySelector('.modal-overlay[style*="display: flex"]');
                 if (openModal) closeModal(openModal);
+                hideContextMenu(); // También cerrar menú contextual con Escape
             }
         });
         
@@ -1012,15 +1159,15 @@
             tag_list.addEventListener('click', (e) => {
                 if (e.target.tagName === 'BUTTON') {
                     const tag = e.target.dataset.tag;
-                    if (active_tag_filter === tag) {
-                        active_tag_filter = null;
-                        e.target.classList.remove('active');
-                        announce("Filtro de etiquetas eliminado.");
-                    } else {
+                    if (tag) { // Si es un tag
                         active_tag_filter = tag;
                         document.querySelectorAll('#tag-list button').forEach(b => b.classList.remove('active'));
                         e.target.classList.add('active');
                         announce(`Filtrando por etiqueta: ${tag}.`);
+                    } else { // Es el botón "Mostrar Todo"
+                         active_tag_filter = null;
+                         document.querySelectorAll('#tag-list button').forEach(b => b.classList.remove('active'));
+                         announce("Filtro de etiquetas eliminado.");
                     }
                     renderCalendar();
                 }
@@ -1028,7 +1175,7 @@
 
             // Abrir modal de añadir audio (desde el modal de día vacío)
             open_add_audio_modal_btn.addEventListener('click', () => {
-                closeModal(day_view_modal);
+                // Ya no necesitamos cerrar el day_view_modal porque ahora es el mismo
                 openModal(add_audio_modal);
                 document.getElementById('add-audio-form').reset();
                 processing_indicator.style.display = 'none';
@@ -1043,9 +1190,9 @@
                 const file = document.getElementById('audio-file').files[0];
                 const tags = document.getElementById('audio-tags').value.split(',').map(t => t.trim()).filter(Boolean);
                 
-                if (!file) {
+                if (!file || !current_selected_date) { // Asegurarse que hay una fecha seleccionada
                     processing_indicator.style.display = 'none';
-                    announce("No se seleccionó ningún archivo.");
+                    announce("Error: No se seleccionó archivo o fecha.");
                     return;
                 }
                 
@@ -1055,11 +1202,11 @@
                     id: Date.now().toString(),
                     name: file.name,
                     tags: tags,
-                    url: fileURL,
+                    url: fileURL, // Guardamos la URL local
                     summary: "Resumen de IA simulado para tu audio.",
                     action_items: ["Punto de acción simulado 1.", "Punto de acción simulado 2."],
                     decisions: ["Decisión simulada tomada."],
-                    transcription: [
+                    transcription: [ // Transcripción simulada
                         { "word": "Esta", "startTime": 0.1, "endTime": 0.5 },
                         { "word": "es", "startTime": 0.5, "endTime": 0.7 },
                         { "word": "una", "startTime": 0.8, "endTime": 1.0 },
@@ -1072,18 +1219,20 @@
                 // Simular el procesamiento de IA
                 setTimeout(() => {
                     if (!audio_data[current_selected_date]) {
-                        audio_data[current_selected_date] = { status: 'uploaded', audios: [], mock_events: [] };
+                        audio_data[current_selected_date] = { status: 'uploaded', audios: [], mock_events: getMockEventsForDate(new Date(current_selected_date + 'T00:00:00')) };
                     }
-                    audio_data[current_selected_date].audios.push(newAudio);
+                    // Reemplazar audio si ya existe uno, o añadir si es el primero
+                    audio_data[current_selected_date].audios = [newAudio]; 
                     audio_data[current_selected_date].status = 'uploaded';
 
                     processing_indicator.style.display = 'none';
-                    closeModal(add_audio_modal);
-                    renderCalendar();
-                    updateTagFilters();
-                    // Reproducir el audio recién subido
-                    playAudio(newAudio, current_selected_date);
+                    closeModal(add_audio_modal); // Cerrar modal de añadir
+                    renderCalendar(); // Actualizar calendario con icono
+                    updateTagFilters(); // Actualizar lista de tags
+                    playAudio(newAudio, current_selected_date); // Reproducir el audio recién subido
                     announce("Audio añadido y procesado.");
+                    // Cerrar el modal de día si estaba abierto (ahora se cierra add_audio_modal)
+                    closeModal(day_view_modal);
                 }, 2500);
             });
 
@@ -1093,9 +1242,17 @@
                 if (e.target.classList.contains('ai-tab-btn')) {
                     const audioEntry = e.target.closest('.audio-entry');
                     if (!audioEntry) return;
+                    
                     const targetId = e.target.dataset.target;
-                    audioEntry.querySelectorAll('.ai-tab-btn').forEach(btn => btn.classList.remove('active'));
+                    
+                    // Manejar atributos ARIA para pestañas
+                    audioEntry.querySelectorAll('.ai-tab-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                        btn.setAttribute('aria-selected', 'false');
+                    });
                     e.target.classList.add('active');
+                    e.target.setAttribute('aria-selected', 'true');
+
                     audioEntry.querySelectorAll('.ai-content').forEach(content => {
                         content.style.display = content.id.startsWith(targetId) ? 'block' : 'none';
                     });
@@ -1112,10 +1269,25 @@
                 player_play_pause_btn.textContent = '▶️';
                 player_play_pause_btn.setAttribute('aria-label', 'Reproducir');
                 // Podríamos implementar "siguiente" automático aquí
+                 player_progress_bar.value = 0; // Reset progress bar visualmente
+                 player_current_time.textContent = formatTime(0);
+            });
+             global_audio_player.addEventListener('error', (e) => {
+                console.error("Error al cargar o reproducir el audio:", e);
+                showToast("❌ Error al cargar el audio.");
+                player_bar.style.display = 'none'; // Ocultar barra si falla
+                current_audio_data = null;
+                current_date_key = null;
             });
 
-            // Sincronizar barra de progreso con clic
-            player_progress_bar.addEventListener('input', (e) => {
+            // Sincronizar barra de progreso con input del usuario (mientras arrastra)
+             player_progress_bar.addEventListener('input', (e) => {
+                 if (isNaN(global_audio_player.duration)) return;
+                 const newTime = (e.target.value / 100) * global_audio_player.duration;
+                 player_current_time.textContent = formatTime(newTime); // Actualizar tiempo visualmente
+             });
+             // Aplicar cambio de tiempo cuando el usuario suelta la barra
+            player_progress_bar.addEventListener('change', (e) => {
                 if (isNaN(global_audio_player.duration)) return;
                 const newTime = (e.target.value / 100) * global_audio_player.duration;
                 global_audio_player.currentTime = newTime;
@@ -1130,24 +1302,84 @@
             player_details_btn.addEventListener('click', () => {
                 if (current_date_key) {
                     openAudioDetailsModal(current_date_key);
+                } else {
+                    announce("No hay audio seleccionado para ver detalles.");
                 }
             });
 
             // (Lógica para Prev/Next no implementada, requeriría una lista de reproducción)
-            player_prev_btn.style.opacity = '0.5';
-            player_next_btn.style.opacity = '0.5';
+            player_prev_btn.style.opacity = '0.5'; player_prev_btn.disabled = true;
+            player_next_btn.style.opacity = '0.5'; player_next_btn.disabled = true;
+
+            // ----- INICIO CAMBIO: Listeners Menú Contextual -----
+            // Clic en una acción del menú
+            contextMenu.addEventListener('click', (e) => {
+                if (!contextMenuDateKey) return;
+                const action = e.target.dataset.action;
+                const audio = audio_data[contextMenuDateKey]?.audios[0];
+
+                if (!audio) return;
+
+                switch (action) {
+                    case 'details-summary':
+                        openAudioDetailsModal(contextMenuDateKey, 'summary');
+                        break;
+                    case 'details-transcription':
+                        openAudioDetailsModal(contextMenuDateKey, 'transcription');
+                        break;
+                    case 'download':
+                        const a = document.createElement('a');
+                        a.href = audio.url;
+                        a.download = audio.name;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        announce(`Descargando ${audio.name}`);
+                        break;
+                }
+                hideContextMenu();
+            });
+
+            // Cerrar el menú si se hace clic fuera
+            document.addEventListener('click', (e) => {
+                if (!contextMenu.contains(e.target)) {
+                    hideContextMenu();
+                }
+            });
+            // ----- FIN CAMBIO -----
         }
         
         // --- FUNCIONES DE FILTRO ---
         function updateTagFilters() {
             const allTags = new Set();
             Object.values(audio_data).forEach(day => {
-                day.audios.forEach(audio => {
-                    audio.tags.forEach(tag => allTags.add(tag));
-                });
+                if(day.audios) { // Añadir comprobación
+                    day.audios.forEach(audio => {
+                        if(audio.tags) { // Añadir comprobación
+                            audio.tags.forEach(tag => allTags.add(tag));
+                        }
+                    });
+                }
             });
 
             tag_list.innerHTML = '';
+            // Botón para quitar filtro
+             const clearLi = document.createElement('li');
+             const clearButton = document.createElement('button');
+             clearButton.textContent = 'Mostrar Todo';
+             clearButton.dataset.tag = ""; // Data-tag vacío
+             /*
+             clearButton.onclick = () => {
+                 active_tag_filter = null;
+                 document.querySelectorAll('#tag-list button').forEach(b => b.classList.remove('active'));
+                 renderCalendar();
+                 announce("Filtro de etiquetas eliminado.");
+             };
+             */
+             clearLi.appendChild(clearButton);
+             tag_list.appendChild(clearLi);
+
+            // Botones de tags
             allTags.forEach(tag => {
                 const li = document.createElement('li');
                 const button = document.createElement('button');
@@ -1192,11 +1424,13 @@
             const allEntries = [];
 
             Object.keys(audio_data).forEach(dateKey => {
-                audio_data[dateKey].audios.forEach(audio => {
-                    if (audio.tags.includes(tag)) {
-                        allEntries.push({ date: new Date(dateKey + 'T00:00:00'), audio, dateKey });
-                    }
-                });
+                 if (audio_data[dateKey].audios) { // Comprobación
+                    audio_data[dateKey].audios.forEach(audio => {
+                        if (audio.tags && audio.tags.includes(tag)) { // Comprobación
+                            allEntries.push({ date: new Date(dateKey + 'T00:00:00'), audio, dateKey });
+                        }
+                    });
+                 }
             });
 
             allEntries.sort((a, b) => a.date - b.date);
@@ -1218,12 +1452,16 @@
                 timeline_content.appendChild(item);
             });
 
-            timeline_content.addEventListener('click', (e) => {
+            // Limpiar listener anterior para evitar duplicados
+            const new_timeline_content = timeline_content.cloneNode(true);
+            timeline_content.parentNode.replaceChild(new_timeline_content, timeline_content);
+            
+            new_timeline_content.addEventListener('click', (e) => {
                 const dateKey = e.target.dataset.datekey;
                 if (!dateKey) return;
                 
                 const data = audio_data[dateKey];
-                if (!data) return;
+                if (!data || !data.audios || !data.audios.length) return;
 
                 if (e.target.classList.contains('btn-play-timeline')) {
                     switchView('calendar');
