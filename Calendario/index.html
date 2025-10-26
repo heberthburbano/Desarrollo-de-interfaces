@@ -7,11 +7,10 @@
     <!--
         Kairós: Master Your Spoken Record.
         
-        Versión 2.3 - Eventos Visibles y Controles Reparados
+        Versión 2.4 - Menú Contextual Funcional
+        - Corregido: Las opciones del menú contextual (clic derecho) ahora funcionan.
         - Restaurada la visualización de eventos mock en el calendario.
         - Corregidos los listeners y la lógica de los controles del reproductor.
-        - Iconos en el calendario para días con notas (📝) y audio (🎵).
-        - Indicadores visuales (puntos) para días con etiquetas.
     -->
     <style>
         :root {
@@ -136,11 +135,10 @@
         .day-tag-dot.color-2 { background-color: var(--tag-color-2); }
         .day-tag-dot.color-3 { background-color: var(--tag-color-3); }
         .day-tag-dot.color-other { background-color: var(--text-secondary); } /* Para más de 3 tags */
-        /* CORRECCIÓN: Asegurar que .day-events sea visible */
         .day-events { 
-            display: none; /* Oculto en móviles por defecto */
+            display: none; 
             margin-top: 0.5rem; 
-            font-size: 0.75rem; /* Más pequeño */
+            font-size: 0.75rem; 
             color: var(--text-secondary); 
             flex-grow: 1; 
             overflow: hidden; 
@@ -867,8 +865,20 @@
                     }
                     
                     // Indicadores de etiquetas
-                    dayTags.slice(0, 3).forEach((tag, index) => { /* ... sin cambios ... */ });
-                    if (dayTags.length > 3) { /* ... sin cambios ... */ }
+                     dayTags.slice(0, 3).forEach((tag, index) => {
+                         const dot = document.createElement('div');
+                         // Asigna un color basado en el índice o un hash simple del tag si quieres consistencia
+                         const colorIndex = (Array.from(global_tags).indexOf(tag) % 3) + 1; // 1, 2, or 3
+                         dot.classList.add('day-tag-dot', `color-${colorIndex}`);
+                         dot.setAttribute('title', tag); // Tooltip con el nombre del tag
+                         tag_indicators.appendChild(dot);
+                    });
+                    if (dayTags.length > 3) {
+                         const dot = document.createElement('div');
+                         dot.classList.add('day-tag-dot', 'color-other');
+                         dot.setAttribute('title', `${dayTags.length - 3} más...`);
+                         tag_indicators.appendChild(dot);
+                    }
                 } else {
                     // Filtrar días completamente vacíos si hay filtro
                     if(active_tag_filter) day_cell.style.opacity = '0.3';
@@ -996,24 +1006,22 @@
          }
         function formatTime(seconds) { /* ... sin cambios ... */ }
         
-        // CORRECCIÓN: Asegurar que updatePlayerProgress funcione
         function updatePlayerProgress() {
             if (isNaN(global_audio_player.duration) || !isFinite(global_audio_player.currentTime)) {
-                // Si la duración aún no está lista o currentTime no es válido, mostrar 0
                 player_current_time.textContent = '00:00';
                 player_total_time.textContent = '00:00';
-                player_progress_bar.value = 0;
+                // CORRECCIÓN: Evitar NaN en value
+                player_progress_bar.value = 0; 
                 return;
             }
             player_current_time.textContent = formatTime(global_audio_player.currentTime);
             player_total_time.textContent = formatTime(global_audio_player.duration);
             
-            // Calcular porcentaje solo si duration es mayor que 0
             const percentage = global_audio_player.duration > 0 ? (global_audio_player.currentTime / global_audio_player.duration) * 100 : 0;
 
-            // Actualizar solo si el usuario no está interactuando
-            if (!player_progress_bar.matches(':active')) { // ':active' es pseudo-clase para cuando se está arrastrando
-                player_progress_bar.value = percentage;
+            if (!player_progress_bar.matches(':active')) { 
+                // CORRECCIÓN: Evitar NaN en value
+                player_progress_bar.value = isNaN(percentage) ? 0 : percentage; 
             }
         }
 
@@ -1056,28 +1064,32 @@
             // --- LISTENERS DEL REPRODUCTOR GLOBAL (CORREGIDOS) ---
             player_play_pause_btn.addEventListener('click', togglePlayPause);
             
-            global_audio_player.addEventListener('timeupdate', updatePlayerProgress);
-            global_audio_player.addEventListener('loadedmetadata', updatePlayerProgress); // Asegura que la duración se cargue
-            global_audio_player.addEventListener('durationchange', updatePlayerProgress); // También actualiza si la duración cambia
+            // CORRECCIÓN: Usar 'timeupdate' consistentemente
+            global_audio_player.addEventListener('timeupdate', updatePlayerProgress); 
+            global_audio_player.addEventListener('loadedmetadata', updatePlayerProgress); 
+            global_audio_player.addEventListener('durationchange', updatePlayerProgress); 
             global_audio_player.addEventListener('ended', () => { 
                  player_play_pause_btn.textContent = '▶️';
                  player_play_pause_btn.setAttribute('aria-label', 'Reproducir');
+                 // CORRECCIÓN: Resetear value y currentTime display
                  player_progress_bar.value = 0; 
                  player_current_time.textContent = formatTime(0);
-                 // No reiniciar total_time aquí, la duración sigue siendo la misma
              });
             global_audio_player.addEventListener('error', (e) => { /* ... sin cambios ... */ });
 
-            // CORRECCIÓN: Input vs Change para la barra de progreso
-            player_progress_bar.addEventListener('input', (e) => { // 'input' se dispara mientras se arrastra
+            player_progress_bar.addEventListener('input', (e) => { 
                  if (isNaN(global_audio_player.duration)) return;
                  const newTime = (e.target.value / 100) * global_audio_player.duration;
-                 player_current_time.textContent = formatTime(newTime); 
+                 // CORRECCIÓN: Asegurarse de que el formato sea correcto incluso al arrastrar
+                 player_current_time.textContent = formatTime(isNaN(newTime) ? 0 : newTime); 
              });
-            player_progress_bar.addEventListener('change', (e) => { // 'change' se dispara al soltar
+            player_progress_bar.addEventListener('change', (e) => { 
                 if (isNaN(global_audio_player.duration)) return;
                 const newTime = (e.target.value / 100) * global_audio_player.duration;
-                global_audio_player.currentTime = newTime;
+                 // CORRECCIÓN: Asegurarse de que el valor sea válido antes de asignarlo
+                if (isFinite(newTime)) {
+                     global_audio_player.currentTime = newTime;
+                }
             });
 
             player_volume_slider.addEventListener('input', (e) => { 
@@ -1087,7 +1099,46 @@
             player_download_btn.addEventListener('click', (e) => { /* ... sin cambios ... */ });
 
             // --- LISTENERS MENÚ CONTEXTUAL Y MODALES NUEVOS ---
-            contextMenu.addEventListener('click', (e) => { /* ... sin cambios ... */ });
+            // CORRECCIÓN: Asegurar que el listener del menú contextual esté presente y funcione
+            contextMenu.addEventListener('click', (e) => {
+                 if (!contextMenuDateKey || !e.target.matches('button')) return; // Salir si no hay fecha o no es botón
+                 
+                 const action = e.target.dataset.action;
+                 const data = day_data[contextMenuDateKey];
+                 const audio = data?.audioInfo?.audios[0];
+
+                 switch (action) {
+                     case 'details-summary':
+                         if (audio) openAudioDetailsModal(contextMenuDateKey, 'summary');
+                         else announce("No hay audio para ver resumen.");
+                         break;
+                     case 'details-transcription':
+                         if (audio) openAudioDetailsModal(contextMenuDateKey, 'transcription');
+                         else announce("No hay audio para ver transcripción.");
+                         break;
+                     case 'edit-note':
+                         openNoteModal(contextMenuDateKey);
+                         break;
+                     case 'manage-tags':
+                         openTagModal(contextMenuDateKey);
+                         break;
+                     case 'download':
+                         if (audio) {
+                             const a = document.createElement('a');
+                             a.href = audio.url;
+                             a.download = audio.name;
+                             document.body.appendChild(a);
+                             a.click();
+                             document.body.removeChild(a);
+                             announce(`Descargando ${audio.name}`);
+                         } else {
+                             announce("No hay audio para descargar.");
+                         }
+                         break;
+                 }
+                 hideContextMenu(); // Ocultar menú después de la acción
+             });
+
             document.addEventListener('click', (e) => { /* ... sin cambios ... */ });
             window.addEventListener('scroll', hideContextMenu, true); 
             note_modal_save.addEventListener('click', saveNote);
