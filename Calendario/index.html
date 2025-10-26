@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kairós - Accessible App</title>
+    <title>Kairós - Audio Calendario</title>
     <!--
         Kairós: Master Your Spoken Record.
         
-        VERSIÓN CON ACCESIBILIDAD MEJORADA:
-        - Soporte para navegación por teclado (flechas en calendario, Tab, Esc).
-        - Atributos ARIA para compatibilidad con lectores de pantalla.
-        - Transcripción sincronizada palabra por palabra.
-        - Indicadores de foco visibles y claros.
-        - Selector de temas (Claro, Oscuro, Alto Contraste).
+        Versión 2.0 - Rediseño con Reproductor Fijo
+        - Reproductor de audio global fijo en la parte inferior.
+        - Reproducción automática al hacer clic en un día con audio.
+        - Iconos en el calendario para días con audio.
+        - Notificaciones "Toast" al reproducir.
+        - Panel lateral actualizado a "Biblioteca de audios".
+        - El modal ahora se usa para "Detalles de IA" y "Añadir Audio".
     -->
     <style>
         :root {
@@ -21,8 +22,8 @@
             --bg-tertiary: #2a2a2a;
             --text-primary: #e0e0e0;
             --text-secondary: #a0a0a0;
-            --accent-primary: #4a90e2;
-            --accent-secondary: #50e3c2;
+            --accent-primary: #4a90e2; /* Azul principal */
+            --accent-secondary: #50e3c2; /* Cian/Turquesa */
             --focus-outline: #50e3c2;
             --status-uploaded: #4a90e2;
             --status-feedback: #f5a623;
@@ -30,6 +31,8 @@
             --border-color: #383838;
             --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             --header-height: 60px;
+            /* Nuevo: Altura del reproductor fijo */
+            --player-height: 85px; 
         }
 
         html.theme-light {
@@ -58,7 +61,18 @@
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { height: 100%; }
-        body { font-family: var(--font-family); background-color: var(--bg-primary); color: var(--text-primary); display: flex; flex-direction: column; font-size: 16px; }
+        
+        /* Modificación: Añadir padding inferior para dejar espacio al reproductor */
+        body { 
+            font-family: var(--font-family); 
+            background-color: var(--bg-primary); 
+            color: var(--text-primary); 
+            display: flex; 
+            flex-direction: column; 
+            font-size: 16px; 
+            /* Espacio para el reproductor fijo */
+            padding-bottom: var(--player-height);
+        }
 
         /* --- ACCESSIBILITY STYLES --- */
         .visually-hidden {
@@ -110,6 +124,13 @@
         .calendar-day-header { text-align: center; color: var(--text-secondary); font-weight: 600; padding-bottom: 0.5rem; font-size: 0.8rem; }
         .calendar-day { background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; padding: 0.25rem; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; min-height: 90px; display: flex; flex-direction: column; }
         .calendar-day:hover { transform: translateY(-2px); border-color: var(--accent-primary); }
+        /* Nuevo: Icono de nota musical para días con audio */
+        .calendar-day[data-has-audio="true"] .day-number::after {
+            content: '🎵';
+            font-size: 0.7rem;
+            margin-left: 4px;
+            color: var(--accent-secondary);
+        }
         .calendar-day.other-month { background-color: var(--bg-primary); color: #555; cursor: default; }
         .calendar-day.other-month:hover { transform: none; border-color: var(--border-color); }
         .day-number { font-weight: 600; font-size: 0.8rem; }
@@ -133,64 +154,12 @@
         .modal-content { background-color: var(--bg-secondary); padding: 1.5rem; border-radius: 12px; width: 100%; max-width: 800px; max-height: 90vh; display: flex; flex-direction: column; border: 1px solid var(--border-color); position: relative; }
         .modal-close { position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer; z-index: 10; padding: 0.25rem; }
         
-        /* Contenido del Modal de Día */
+        /* Contenido del Modal de Día (Ahora es "Detalles" o "Añadir") */
         #day-view-modal-content h2 { margin-bottom: 1.25rem; font-size: 1.3rem; }
         #day-audio-list { overflow-y: auto; flex-grow: 1; }
+        /* El reproductor se ha ido de aquí */
         .audio-entry { background-color: var(--bg-tertiary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
         .audio-entry h3 { margin-bottom: 0.5rem; color: var(--accent-secondary); }
-        .audio-player-container { margin-top: 1rem; }
-        .progress-bar-container { width: 100%; height: 20px; background-color: var(--bg-primary); border-radius: 10px; cursor: pointer; position: relative; margin: 0.75rem 0; }
-        .progress-bar { width: 0%; height: 100%; background-color: var(--accent-primary); border-radius: 10px; }
-        .comment-marker { position: absolute; top: -5px; width: 10px; height: 30px; background-color: var(--status-feedback); border-radius: 2px; transform: translateX(-50%); cursor: pointer; z-index: 10; }
-        .comment-marker-tooltip { visibility: hidden; width: 200px; background-color: var(--bg-primary); color: #fff; text-align: center; border-radius: 6px; padding: 0.25rem; position: absolute; z-index: 1; bottom: 150%; left: 50%; margin-left: -100px; opacity: 0; transition: opacity 0.3s; }
-        .comment-marker:hover .comment-marker-tooltip { visibility: visible; opacity: 1; }
-        
-        /* ----- INICIO DE CAMBIOS ----- */
-        .audio-controls { 
-            display: flex; 
-            align-items: center; 
-            gap: 0.75rem; 
-            margin-top: 0.5rem; 
-            flex-wrap: wrap; 
-        }
-        .audio-controls button { 
-            background-color: var(--bg-tertiary); 
-            border: 1px solid var(--border-color); 
-            color: var(--text-primary); 
-            padding: 0.5rem 0.75rem; 
-            border-radius: 6px; 
-            cursor: pointer; 
-        }
-        .volume-slider {
-            width: 80px;
-            cursor: pointer;
-            -webkit-appearance: none;
-            appearance: none;
-            height: 5px;
-            background: var(--bg-primary);
-            border-radius: 5px;
-        }
-        .volume-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 15px;
-            height: 15px;
-            background: var(--accent-secondary);
-            border-radius: 50%;
-            cursor: pointer;
-        }
-        .volume-slider::-moz-range-thumb {
-            width: 15px;
-            height: 15px;
-            background: var(--accent-secondary);
-            border-radius: 50%;
-            cursor: pointer;
-        }
-        .download-btn {
-            margin-left: auto; /* Empuja el botón de descarga a la derecha */
-        }
-        /* ----- FIN DE CAMBIOS ----- */
-
         .ai-tabs { display: flex; border-bottom: 1px solid var(--border-color); margin: 1.25rem 0 1rem 0; }
         .ai-tabs button { background: none; border: none; color: var(--text-secondary); padding: 0.5rem 1rem; cursor: pointer; font-size: 1rem; border-bottom: 2px solid transparent; }
         .ai-tabs button.active { color: var(--accent-primary); border-bottom-color: var(--accent-primary); }
@@ -199,7 +168,6 @@
         .ai-content ul { padding-left: 1.25rem; }
         .transcription-word { cursor: pointer; padding: 0 0.1em; border-radius: 3px; }
         .transcription-word.highlight { background-color: var(--accent-primary); color: var(--bg-primary); }
-
         #feedback-section { margin-top: 1.25rem; }
         .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
         #feedback-input { width: 100%; padding: 0.5rem; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); resize: vertical; }
@@ -215,7 +183,179 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .day-actions { margin-top: 1.25rem; display: flex; gap: 0.5rem; }
         
+        /* ----- NUEVO: Reproductor Fijo Inferior ----- */
+        .fixed-player-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: var(--player-height);
+            background-color: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            z-index: 2001;
+            display: none; /* Oculto por defecto */
+            align-items: center;
+            padding: 0.75rem 1rem;
+            gap: 1rem;
+        }
+        .player-track-info {
+            flex-basis: 250px;
+            min-width: 150px;
+        }
+        .player-track-info h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .player-track-info p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .player-controls {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .player-buttons {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        .player-buttons button {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+        #player-play-pause-btn {
+            font-size: 2rem;
+            color: var(--accent-secondary);
+        }
+        .player-progress-container {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        .player-progress-bar {
+            flex-grow: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 5px;
+            background: var(--bg-tertiary);
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .player-progress-bar::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            background: var(--accent-primary);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .player-volume-controls {
+            flex-basis: 150px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .player-volume-slider {
+            width: 80px;
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 5px;
+            background: var(--bg-tertiary);
+            border-radius: 5px;
+        }
+        .player-volume-slider::-webkit-slider-thumb {
+             -webkit-appearance: none;
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            background: var(--accent-secondary);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .player-extra-controls button {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+        
+        /* ----- NUEVO: Notificación Toast ----- */
+        #toast-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 4000;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .toast-notification {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            padding: 0.75rem 1.25rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.4s ease;
+        }
+        .toast-notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* ----- NUEVO: Pop-up del Día ----- */
+        /* Reutilizamos el modal-overlay, pero con un contenido más pequeño */
+        #day-popup .modal-content {
+            max-width: 350px;
+            max-height: auto;
+        }
+        #day-popup-content h3 {
+            font-size: 1.1rem;
+            color: var(--accent-secondary);
+            margin-bottom: 0.5rem;
+        }
+        #day-popup-content p {
+            color: var(--text-secondary);
+            margin-bottom: 1.25rem;
+        }
+        #day-popup-content .day-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        #day-popup-content .btn-secondary {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
         /* Media Queries */
+        @media (max-width: 768px) {
+             /* Ocultar elementos menos importantes en el reproductor móvil */
+            .player-track-info { flex-basis: 120px; min-width: 100px; }
+            .player-volume-controls { display: none; }
+            .player-progress-container { max-width: 100%; }
+        }
         @media (min-width: 768px) {
             .content-area { padding: 1.25rem; }
             .calendar-header { flex-direction: row; justify-content: space-between; align-items: center; }
@@ -250,7 +390,8 @@
                 <button id="view-timeline-btn">⏳ Vista Línea de Tiempo</button>
             </div>
             <div class="tag-filters">
-                <h2 id="tag-filters-heading">Filtros por Etiqueta</h2>
+                <!-- Título actualizado -->
+                <h2 id="tag-filters-heading">Biblioteca de audios</h2>
                 <ul id="tag-list" class="tag-list" role="listbox" aria-labelledby="tag-filters-heading"></ul>
             </div>
             <div class="theme-switcher">
@@ -290,16 +431,21 @@
         </main>
     </div>
 
+    <!-- Modal de Detalles (el antiguo modal de día, ahora sin reproductor) -->
     <div id="day-view-modal" class="modal-overlay">
         <div id="day-view-modal-content" class="modal-content" role="dialog" aria-modal="true" aria-labelledby="day-view-title">
             <button class="modal-close" aria-label="Cerrar ventana">&times;</button>
             <h2 id="day-view-title"></h2>
-            <div id="day-audio-list"></div>
+            <div id="day-audio-list">
+                <!-- El contenido se generará por JS -->
+            </div>
             <div class="day-actions">
-                <button id="open-add-audio-modal-btn" class="btn-primary">+ Añadir Audio</button>
+                <button id="open-add-audio-modal-btn" class="btn-primary">+ Asignar Audio a este Día</button>
             </div>
         </div>
     </div>
+
+    <!-- Modal para Añadir Audio (simple) -->
     <div id="add-audio-modal" class="modal-overlay">
         <div id="add-audio-modal-content" class="modal-content" role="dialog" aria-modal="true" aria-labelledby="add-audio-heading">
             <button class="modal-close" aria-label="Cerrar ventana">&times;</button>
@@ -322,7 +468,38 @@
         </div>
     </div>
     
-    <div class="visually-hidden" role="status" aria-live="polite" id="aria-live-region"></div>
+    <!-- Contenedor para notificaciones Toast -->
+    <div id="toast-container"></div>
+    
+    <!-- Elemento de audio global (oculto) -->
+    <audio id="global-audio-player" style="display: none;"></audio>
+    
+    <!-- NUEVO: Reproductor Fijo -->
+    <div class="fixed-player-bar" id="player-bar">
+        <div class="player-track-info">
+            <h4 id="player-track-name"></h4>
+            <p id="player-track-tags"></p>
+        </div>
+        <div class="player-controls">
+            <div class="player-buttons">
+                <button id="player-prev-btn" aria-label="Audio anterior">⏮️</button>
+                <button id="player-play-pause-btn" aria-label="Reproducir">▶️</button>
+                <button id="player-next-btn" aria-label="Audio siguiente">⏭️</button>
+            </div>
+            <div class="player-progress-container">
+                <span id="player-current-time">00:00</span>
+                <input type="range" class="player-progress-bar" id="player-progress-bar" min="0" max="100" value="0" aria-label="Barra de progreso del audio">
+                <span id="player-total-time">00:00</span>
+            </div>
+        </div>
+        <div class="player-volume-controls">
+            <span>🔊</span>
+            <input type="range" class="player-volume-slider" id="player-volume-slider" min="0" max="1" step="0.05" value="1" aria-label="Control de volumen">
+        </div>
+        <div class="player-extra-controls">
+            <button id="player-details-btn" aria-label="Ver detalles (IA, Transcripción)">···</button>
+        </div>
+    </div>
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -330,15 +507,14 @@
         let active_tag_filter = null;
         let current_view = 'calendar';
         let audio_data = {};
-        
-        // --- MOCK DATA CON TRANSCRIPCIÓN ESTRUCTURADA ---
+
+        // --- DATOS DE EJEMPLO ---
         function getMockEventsForDate(date) {
             const day = date.getDate();
             const month = date.getMonth();
             const year = date.getFullYear();
 
-            // Solo para el mes y año actual de la demo
-            if (year === 2025 && month === 9) { // Octubre es mes 9
+            if (year === 2025 && month === 9) { // Octubre
                 if (day === 3) return ["14:00 - Q3 Review"];
                 if (day === 15) return ["09:00 - Stand-up Diario", "15:00 - Demo Cliente TechCorp"];
                 if (day === 21) return ["10:00 - Reunión Kick-off"];
@@ -347,16 +523,13 @@
         }
 
         function loadInitialData() {
-            // ----- INICIO DE CAMBIOS -----
-            // Usamos las rutas relativas a la carpeta 'media/' como especificaste.
-            
             const todayKey = '2025-10-21';
             audio_data[todayKey] = {
                 status: "feedback",
                 audios: [{
                     id: Date.now().toString(),
                     name: "Reunión Kick-off (cancion1.mp3)",
-                    url: "media/cancion1.mp3", // RUTA RELATIVA
+                    url: "media/cancion1.mp3",
                     tags: ["Proyecto: Kairós", "Cliente: Demo"],
                     summary: "El objetivo principal fue alinear al equipo sobre las metas del proyecto Kairós.",
                     action_items: ["Juan: Preparar borrador de arquitectura.", "Ana: Definir wireframes."],
@@ -381,7 +554,7 @@
                 audios: [{
                     id: (Date.now() - 1000).toString(),
                     name: "Podcast v1 (cancion2.mp3)",
-                    url: "media/cancion2.mp3", // RUTA RELATIVA
+                    url: "media/cancion2.mp3",
                     tags: ["Proyecto: Podcast", "Interno"],
                     summary: "Versión inicial del episodio 3 del podcast interno.",
                     action_items: [], decisions:[],
@@ -402,7 +575,7 @@
                 audios: [{
                     id: (Date.now() - 2000).toString(),
                     name: "Nota de voz (cancion3.mp3)",
-                    url: "media/cancion3.mp3", // RUTA RELATIVA
+                    url: "media/cancion3.mp3",
                     tags: ["Cliente: Demo", "Urgente"],
                     summary: "Nota de voz rápida sobre el cambio de requisitos.",
                     action_items: ["Contactar al cliente."], decisions:[],
@@ -415,37 +588,71 @@
                 }],
                 mock_events: getMockEventsForDate(new Date(2025, 9, 3))
             };
-            // ----- FIN DE CAMBIOS -----
         }
 
-        // --- DOM ELEMENTS ---
+        // --- ELEMENTOS DEL DOM ---
         const calendar_grid = document.getElementById('calendar-grid');
         const month_year_header = document.getElementById('month-year-header');
         const day_view_modal = document.getElementById('day-view-modal');
         const add_audio_modal = document.getElementById('add-audio-modal');
         const aria_live_region = document.getElementById('aria-live-region');
-        
         const sidebar = document.getElementById('sidebar');
         const menu_toggle_btn = document.getElementById('menu-toggle-btn');
         const backdrop = document.querySelector('.backdrop');
-
         const prev_month_btn = document.getElementById('prev-month-btn');
         const next_month_btn = document.getElementById('next-month-btn');
-
         const view_calendar_btn = document.getElementById('view-calendar-btn');
         const view_timeline_btn = document.getElementById('view-timeline-btn');
         const calendar_view = document.getElementById('calendar-view');
         const timeline_view = document.getElementById('timeline-view');
         const timeline_header = document.getElementById('timeline-header');
         const timeline_content = document.getElementById('timeline-content');
-
         const tag_list = document.getElementById('tag-list');
         const open_add_audio_modal_btn = document.getElementById('open-add-audio-modal-btn');
         const add_audio_form = document.getElementById('add-audio-form');
         const processing_indicator = document.getElementById('processing-indicator');
+        const toast_container = document.getElementById('toast-container');
+
+        // --- ELEMENTOS DEL REPRODUCTOR GLOBAL ---
+        const global_audio_player = document.getElementById('global-audio-player');
+        const player_bar = document.getElementById('player-bar');
+        const player_play_pause_btn = document.getElementById('player-play-pause-btn');
+        const player_prev_btn = document.getElementById('player-prev-btn');
+        const player_next_btn = document.getElementById('player-next-btn');
+        const player_track_name = document.getElementById('player-track-name');
+        const player_track_tags = document.getElementById('player-track-tags');
+        const player_current_time = document.getElementById('player-current-time');
+        const player_total_time = document.getElementById('player-total-time');
+        const player_progress_bar = document.getElementById('player-progress-bar');
+        const player_volume_slider = document.getElementById('player-volume-slider');
+        const player_details_btn = document.getElementById('player-details-btn');
 
         let current_selected_date = null;
         let last_focused_element = null;
+        let current_audio_data = null;
+        let current_date_key = null;
+
+        // --- LÓGICA DE NOTIFICACIÓN TOAST ---
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.classList.add('toast-notification');
+            toast.textContent = message;
+            toast_container.appendChild(toast);
+
+            // Trigger "show" class after a short delay to allow transition
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 100);
+
+            // Remove toast after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                // Remove from DOM after transition ends
+                toast.addEventListener('transitionend', () => {
+                    toast.remove();
+                });
+            }, 3000);
+        }
 
         // --- ACCESSIBILITY HELPERS ---
         function announce(message) {
@@ -515,6 +722,7 @@
 
                 const data = audio_data[date_key];
                 if (data) {
+                    day_cell.dataset.hasAudio = 'true'; // Para el icono 🎵
                     const is_filtered_out = active_tag_filter && !data.audios.some(a => a.tags.includes(active_tag_filter));
                     if (is_filtered_out) {
                         day_cell.style.opacity = '0.3';
@@ -536,27 +744,37 @@
                 
                 if (data) {
                     ariaLabel += ` Contiene ${data.audios.length} grabación(es) de audio y ${data.mock_events.length} evento(s).`;
-                    ariaLabel += ` Estado: ${data.status === 'feedback' ? 'Feedback pendiente' : data.status === 'approved' ? 'Aprobado' : 'Subido'}.`;
                 } else {
                     ariaLabel += ` Sin eventos ni grabaciones.`;
                 }
                 day_cell.setAttribute('aria-label', ariaLabel);
 
-                day_cell.addEventListener('click', () => openDayView(date_key));
+                day_cell.addEventListener('click', () => onDayClick(date_key));
                 calendar_grid.appendChild(day_cell);
             }
         }
 
+        // --- LÓGICA DE CLIC EN DÍA (NUEVA) ---
+        function onDayClick(dateKey) {
+            current_selected_date = dateKey;
+            const data = audio_data[dateKey];
+            
+            if (data && data.audios.length > 0) {
+                // Si el día tiene audio, reprodúcelo inmediatamente
+                playAudio(data.audios[0], dateKey);
+            } else {
+                // Si el día está vacío, abre el modal para añadir un audio
+                openAddAudioModal(dateKey);
+            }
+        }
 
         // --- KEYBOARD NAVIGATION (CALENDAR) ---
         calendar_grid.addEventListener('keydown', (e) => {
             const focusedDay = document.activeElement;
             if (!focusedDay.classList.contains('calendar-day')) return;
-
             const days = Array.from(calendar_grid.querySelectorAll('.calendar-day:not(.other-month)'));
             const currentIndex = days.findIndex(day => day === focusedDay);
             let nextIndex = -1;
-
             switch (e.key) {
                 case 'ArrowRight': nextIndex = currentIndex + 1; break;
                 case 'ArrowLeft': nextIndex = currentIndex - 1; break;
@@ -570,7 +788,6 @@
                 default: return;
             }
             e.preventDefault();
-            
             if (nextIndex >= 0 && nextIndex < days.length) {
                 focusedDay.setAttribute('tabindex', '-1');
                 days[nextIndex].setAttribute('tabindex', '0');
@@ -578,213 +795,129 @@
             }
         });
 
-        // --- PLAYER & TRANSCRIPTION LOGIC ---
-        function renderDayAudioList(dateKey) {
-            const day_audio_list = document.getElementById('day-audio-list');
-            day_audio_list.innerHTML = '';
-            const data = audio_data[dateKey];
-            if (!data || !data.audios || data.audios.length === 0) {
-                day_audio_list.innerHTML = '<p>No hay audios asociados a este día.</p>';
-                return;
-            }
+        // --- LÓGICA DEL REPRODUCTOR GLOBAL ---
+        function playAudio(audio, dateKey) {
+            current_audio_data = audio;
+            current_date_key = dateKey;
             
-            data.audios.forEach(audio => {
-                const entry = document.createElement('div');
-                entry.classList.add('audio-entry');
-                // ----- INICIO DE CAMBIOS -----
-                entry.innerHTML = `
-                    <h3>${audio.name}</h3>
-                    <p><strong>Etiquetas:</strong> ${audio.tags.join(', ')}</p>
-                    <div class="audio-player-container">
-                        <audio src="${audio.url || ''}" preload="metadata"></audio>
-                        <div class="progress-bar-container">
-                            <div class="progress-bar"></div>
-                            ${audio.comments.map(comment => `
-                                <div class="comment-marker" style="left: ${(comment.timestamp / (audio.duration || 5)) * 100}%" data-timestamp="${comment.timestamp}">
-                                    <div class="comment-marker-tooltip">${comment.text}</div>
-                                </div>
-                            `).join('')}
-                        </div>
-                        <div class="audio-controls">
-                            <button class="play-pause-btn" aria-label="Reproducir audio">▶️</button>
-                            <span class="time-display">00:00 / --:--</span>
-                            <span class="volume-icon">🔊</span>
-                            <input type="range" class="volume-slider" min="0" max="1" step="0.05" value="1" aria-label="Control de volumen">
-                            <button class="download-btn" aria-label="Descargar audio">📥</button>
-                        </div>
-                    </div>
-                    <div class="ai-tabs">
-                // ----- FIN DE CAMBIOS -----
-                        <button class="ai-tab-btn active" data-target="summary">Resumen IA</button>
-                        <button class="ai-tab-btn" data-target="transcription">Transcripción</button>
-                    </div>
-                    <div class="ai-content-container">
-                        <div class="ai-content" id="summary-content">
-                            <h4>Resumen Ejecutivo</h4>
-                            <p>${audio.summary}</p>
-                            <h4>Puntos de Acción</h4>
-                            <ul>${audio.action_items.map(item => `<li>${item}</li>`).join('')}</ul>
-                            <h4>Decisiones Clave</h4>
-                             <ul>${audio.decisions.map(item => `<li>${item}</li>`).join('')}</ul>
-                        </div>
-                        <div class="ai-content" id="transcription-content" style="display:none;"></div>
-                    </div>
-                    <div id="feedback-section">
-                        <h4>Añadir Feedback</h4>
-                        <div class="form-group">
-                           <label for="feedback-input-${audio.id}">Pausa el audio en el punto deseado y escribe tu comentario.</label>
-                           <textarea id="feedback-input-${audio.id}" class="feedback-input" rows="2" placeholder="Escribe un comentario..."></textarea>
-                           <button class="add-feedback-btn">Añadir Comentario</button>
-                        </div>
-                    </div>
-                `;
-                const transcription_container = entry.querySelector('#transcription-content');
-                if (audio.transcription && Array.isArray(audio.transcription)) {
-                    audio.transcription.forEach(word => {
-                        const span = document.createElement('span');
-                        span.className = 'transcription-word';
-                        span.textContent = word.word + ' ';
-                        span.dataset.start = word.startTime;
-                        span.addEventListener('click', () => {
-                            const audio_element = entry.querySelector('audio');
-                            audio_element.currentTime = word.startTime;
-                        });
-                        transcription_container.appendChild(span);
-                    });
-                } else {
-                    transcription_container.textContent = "Transcripción no disponible en el formato correcto.";
-                }
-                day_audio_list.appendChild(entry);
-                setupPlayer(entry, audio);
-            });
+            global_audio_player.src = audio.url;
+            global_audio_player.play();
+            
+            player_bar.style.display = 'flex';
+            player_play_pause_btn.textContent = '⏸️';
+            player_play_pause_btn.setAttribute('aria-label', 'Pausar');
+            player_track_name.textContent = audio.name;
+            player_track_tags.textContent = audio.tags.join(', ');
+            
+            showToast(`🎧 Reproduciendo: ${audio.name}`);
         }
 
-        function setupPlayer(player_container, audio) {
-            const audio_element = player_container.querySelector('audio');
-            const play_pause_btn = player_container.querySelector('.play-pause-btn');
-            const progress_bar_container = player_container.querySelector('.progress-bar-container');
-            const progress_bar = player_container.querySelector('.progress-bar');
-            const time_display = player_container.querySelector('.time-display');
-            const words = player_container.querySelectorAll('.transcription-word');
-            // ----- INICIO DE CAMBIOS -----
-            const volume_slider = player_container.querySelector('.volume-slider');
-            const download_btn = player_container.querySelector('.download-btn');
-            // ----- FIN DE CAMBIOS -----
-            let currentWordIndex = 0;
-
-            function formatTime(seconds) {
-                if (isNaN(seconds)) return '00:00';
-                const minutes = Math.floor(seconds / 60);
-                const secs = Math.floor(seconds % 60);
-                return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        function togglePlayPause() {
+            if (global_audio_player.paused) {
+                global_audio_player.play();
+                player_play_pause_btn.textContent = '⏸️';
+                player_play_pause_btn.setAttribute('aria-label', 'Pausar');
+                announce("Audio reproducido.");
+            } else {
+                global_audio_player.pause();
+                player_play_pause_btn.textContent = '▶️';
+                player_play_pause_btn.setAttribute('aria-label', 'Reproducir');
+                announce("Audio pausado.");
             }
-
-            function updateTranscriptionHighlight() {
-                const currentTime = audio_element.currentTime;
-                // Encuentra la palabra actual
-                let foundWord = false;
-                if (!audio.transcription) return; // Salir si no hay transcripción
-                for (let i = 0; i < audio.transcription.length; i++) {
-                    const word = audio.transcription[i];
-                    if (currentTime >= word.startTime && currentTime < word.endTime) {
-                        if (i !== currentWordIndex) {
-                            words[currentWordIndex]?.classList.remove('highlight');
-                            words[i]?.classList.add('highlight');
-                            currentWordIndex = i;
-                        }
-                        foundWord = true;
-                        break;
-                    }
-                }
-                // Si no se encuentra ninguna palabra (ej. silencio), des-resaltar
-                if (!foundWord && words[currentWordIndex]) {
-                     words[currentWordIndex].classList.remove('highlight');
-                     currentWordIndex = -1; // O un índice inválido
-                }
-            }
-
-            function updateProgress() {
-                if (!audio_element || isNaN(audio_element.duration)) return;
-                const percent = (audio_element.currentTime / audio_element.duration) * 100;
-                progress_bar.style.width = `${percent}%`;
-                time_display.textContent = `${formatTime(audio_element.currentTime)} / ${formatTime(audio_element.duration)}`;
-            }
-
-            // 'loadedmetadata' se dispara cuando la duración es conocida
-            audio_element.addEventListener('loadedmetadata', () => {
-                updateProgress();
-                // Actualizar la duración estimada para los marcadores
-                const markers = player_container.querySelectorAll('.comment-marker');
-                markers.forEach(marker => {
-                    const timestamp = parseFloat(marker.dataset.timestamp);
-                    marker.style.left = `${(timestamp / audio_element.duration) * 100}%`;
-                });
-            });
-            
-            play_pause_btn.addEventListener('click', () => {
-                if (audio_element.src) {
-                    if (audio_element.paused) {
-                        audio_element.play();
-                        play_pause_btn.textContent = '⏸️';
-                        play_pause_btn.setAttribute('aria-label', 'Pausar audio');
-                        announce("Audio reproducido.");
-                    } else {
-                        audio_element.pause();
-                        play_pause_btn.textContent = '▶️';
-                        play_pause_btn.setAttribute('aria-label', 'Reproducir audio');
-                        announce("Audio pausado.");
-                    }
-                } else {
-                    announce("No hay archivo de audio para reproducir.");
-                }
-            });
-
-            audio_element.addEventListener('timeupdate', () => {
-                updateProgress();
-                updateTranscriptionHighlight();
-            });
-
-            audio_element.addEventListener('ended', () => {
-                play_pause_btn.textContent = '▶️';
-                play_pause_btn.setAttribute('aria-label', 'Reproducir audio');
-                progress_bar.style.width = '0%';
-                currentWordIndex = 0;
-                words.forEach(word => word.classList.remove('highlight'));
-            });
-
-            progress_bar_container.addEventListener('click', (e) => {
-                if (audio_element.duration) {
-                    const rect = progress_bar_container.getBoundingClientRect();
-                    const percent = (e.clientX - rect.left) / rect.width;
-                    audio_element.currentTime = percent * audio_element.duration;
-                }
-            });
-
-            // ----- INICIO DE CAMBIOS -----
-            // Control de volumen
-            volume_slider.addEventListener('input', (e) => {
-                audio_element.volume = e.target.value;
-            });
-
-            // Botón de descarga
-            download_btn.addEventListener('click', () => {
-                if (audio.url) {
-                    const a = document.createElement('a');
-                    a.href = audio.url;
-                    // Usar el nombre del audio para la descarga
-                    a.download = audio.name || 'audio.mp3'; 
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    announce(`Descargando ${audio.name}`);
-                } else {
-                    announce("No se puede descargar este audio.");
-                }
-            });
-            // ----- FIN DE CAMBIOS -----
         }
+
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return '00:00';
+            const minutes = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function updatePlayerProgress() {
+            if (isNaN(global_audio_player.duration)) return;
+            player_current_time.textContent = formatTime(global_audio_player.currentTime);
+            player_total_time.textContent = formatTime(global_audio_player.duration);
+            player_progress_bar.value = (global_audio_player.currentTime / global_audio_player.duration) * 100;
+        }
+
+        // --- LÓGICA DE MODALES (REDISEÑADA) ---
         
-        // --- MODAL MANAGEMENT ---
+        // Abre el modal de "Detalles" (IA, Transcripción)
+        function openAudioDetailsModal(dateKey) {
+            const data = audio_data[dateKey];
+            if (!data) return;
+
+            const audio = data.audios[0]; // Asumimos un audio por simplicidad
+            const day_audio_list = document.getElementById('day-audio-list');
+            
+            // Ocultar el botón de "Añadir Audio"
+            open_add_audio_modal_btn.style.display = 'none';
+            day_audio_list.innerHTML = ''; // Limpiar
+
+            const date = new Date(dateKey + 'T00:00:00');
+            document.getElementById('day-view-title').textContent = `Detalles de ${audio.name}`;
+
+            // Renderizar solo los detalles, sin reproductor
+            const entry = document.createElement('div');
+            entry.classList.add('audio-entry');
+            entry.innerHTML = `
+                <h3>${audio.name}</h3>
+                <p><strong>Etiquetas:</strong> ${audio.tags.join(', ')}</p>
+                <div class="ai-tabs">
+                    <button class="ai-tab-btn active" data-target="summary">Resumen IA</button>
+                    <button class="ai-tab-btn" data-target="transcription">Transcripción</button>
+                </div>
+                <div class="ai-content-container">
+                    <div class="ai-content" id="summary-content">
+                        <h4>Resumen Ejecutivo</h4>
+                        <p>${audio.summary}</p>
+                        <h4>Puntos de Acción</h4>
+                        <ul>${audio.action_items.map(item => `<li>${item}</li>`).join('')}</ul>
+                        <h4>Decisiones Clave</h4>
+                        <ul>${audio.decisions.map(item => `<li>${item}</li>`).join('')}</ul>
+                    </div>
+                    <div class="ai-content" id="transcription-content" style="display:none;"></div>
+                </div>
+                <div id="feedback-section">
+                    <h4>Añadir Feedback</h4>
+                    <p class="text-secondary" style="font-size: 0.9rem;">(Actualmente en reproducción. Añade comentarios desde el reproductor principal.)</p>
+                    <!-- Funcionalidad de feedback simplificada, podría mejorarse -->
+                </div>
+            `;
+            
+            // Renderizar transcripción
+            const transcription_container = entry.querySelector('#transcription-content');
+            if (audio.transcription && Array.isArray(audio.transcription)) {
+                audio.transcription.forEach(word => {
+                    const span = document.createElement('span');
+                    span.className = 'transcription-word';
+                    span.textContent = word.word + ' ';
+                    span.dataset.start = word.startTime;
+                    span.addEventListener('click', () => {
+                        // Saltar a ese punto en el reproductor GLOBAL
+                        global_audio_player.currentTime = word.startTime;
+                    });
+                    transcription_container.appendChild(span);
+                });
+            } else {
+                transcription_container.textContent = "Transcripción no disponible.";
+            }
+            
+            day_audio_list.appendChild(entry);
+            openModal(day_view_modal);
+        }
+
+        // Abre el modal para días vacíos
+        function openAddAudioModal(dateKey) {
+            const date = new Date(dateKey + 'T00:00:00');
+            document.getElementById('day-view-title').textContent = date.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            
+            document.getElementById('day-audio-list').innerHTML = '<p>No hay audios asociados a este día.</p>';
+            open_add_audio_modal_btn.style.display = 'block'; // Mostrar botón
+            
+            openModal(day_view_modal);
+        }
+
         function openModal(modal) {
             last_focused_element = document.activeElement;
             modal.style.display = 'flex';
@@ -793,39 +926,9 @@
         
         function closeModal(modal) {
             modal.style.display = 'none';
-            // Detener todos los audios al cerrar el modal
+            // No pausar el audio global, solo el de los modales (si los hubiera)
             modal.querySelectorAll('audio').forEach(audio => audio.pause());
             last_focused_element?.focus();
-        }
-
-        function openDayView(dateKey) {
-            current_selected_date = dateKey;
-            const date = new Date(dateKey + 'T00:00:00'); // Asegurar zona horaria local
-            document.getElementById('day-view-title').textContent = date.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-            renderDayAudioList(dateKey);
-            openModal(day_view_modal);
-
-            // ----- INICIO DE CAMBIOS (AUTOPLAY) -----
-            const firstAudioEl = day_view_modal.querySelector('#day-audio-list audio');
-            if (firstAudioEl && firstAudioEl.src) {
-                // Intentar reproducir el audio
-                const playPromise = firstAudioEl.play();
-                
-                if (playPromise !== undefined) {
-                    playPromise.then(_ => {
-                        // Autoplay exitoso
-                        const playBtn = firstAudioEl.closest('.audio-player-container').querySelector('.play-pause-btn');
-                        playBtn.textContent = '⏸️';
-                        playBtn.setAttribute('aria-label', 'Pausar audio');
-                        announce("Reproduciendo audio automáticamente.");
-                    }).catch(error => {
-                        // Autoplay fue bloqueado por el navegador
-                        console.warn("Autoplay bloqueado:", error);
-                        announce("El audio está listo, presiona play para comenzar.");
-                    });
-                }
-            }
-            // ----- FIN DE CAMBIOS (AUTOPLAY) -----
         }
         
         document.addEventListener('keydown', (e) => {
@@ -865,7 +968,7 @@
             renderCalendar();
             updateTagFilters();
             
-            // FIX: Añadir event listeners para los botones de cerrar modal
+            // Listeners para botones de cerrar modal
             document.querySelectorAll('.modal-close').forEach(button => {
                 button.addEventListener('click', () => {
                     const modal = button.closest('.modal-overlay');
@@ -874,8 +977,6 @@
                     }
                 });
             });
-
-            // --- LÓGICA DE EVENTOS FALTANTE ---
 
             // Navegación del Calendario
             prev_month_btn.addEventListener('click', () => {
@@ -925,7 +1026,7 @@
                 }
             });
 
-            // Abrir modal de añadir audio
+            // Abrir modal de añadir audio (desde el modal de día vacío)
             open_add_audio_modal_btn.addEventListener('click', () => {
                 closeModal(day_view_modal);
                 openModal(add_audio_modal);
@@ -978,72 +1079,63 @@
 
                     processing_indicator.style.display = 'none';
                     closeModal(add_audio_modal);
-                    openDayView(current_selected_date);
                     renderCalendar();
                     updateTagFilters();
+                    // Reproducir el audio recién subido
+                    playAudio(newAudio, current_selected_date);
                     announce("Audio añadido y procesado.");
                 }, 2500);
             });
 
-            // Delegación de eventos para contenido dinámico en el modal de día
+            // Delegación de eventos para contenido dinámico en el modal de detalles
             document.getElementById('day-view-modal-content').addEventListener('click', (e) => {
-                // Pestañas IA (Resumen/Transcripción)
+                // Pestañas IA
                 if (e.target.classList.contains('ai-tab-btn')) {
                     const audioEntry = e.target.closest('.audio-entry');
                     if (!audioEntry) return;
-
                     const targetId = e.target.dataset.target;
-                    
                     audioEntry.querySelectorAll('.ai-tab-btn').forEach(btn => btn.classList.remove('active'));
                     e.target.classList.add('active');
-
                     audioEntry.querySelectorAll('.ai-content').forEach(content => {
                         content.style.display = content.id.startsWith(targetId) ? 'block' : 'none';
                     });
                 }
+            });
+            
+            // --- LISTENERS DEL REPRODUCTOR GLOBAL ---
+            player_play_pause_btn.addEventListener('click', togglePlayPause);
+            
+            // Sincronizar UI con el estado del audio
+            global_audio_player.addEventListener('timeupdate', updatePlayerProgress);
+            global_audio_player.addEventListener('loadedmetadata', updatePlayerProgress);
+            global_audio_player.addEventListener('ended', () => {
+                player_play_pause_btn.textContent = '▶️';
+                player_play_pause_btn.setAttribute('aria-label', 'Reproducir');
+                // Podríamos implementar "siguiente" automático aquí
+            });
 
-                // Botón de Añadir Feedback
-                if (e.target.classList.contains('add-feedback-btn')) {
-                    const audioEntry = e.target.closest('.audio-entry');
-                    if (!audioEntry) return;
-                    
-                    const audio_element = audioEntry.querySelector('audio');
-                    const input = audioEntry.querySelector('.feedback-input');
-                    const timestamp = audio_element.currentTime;
-                    const text = input.value;
+            // Sincronizar barra de progreso con clic
+            player_progress_bar.addEventListener('input', (e) => {
+                if (isNaN(global_audio_player.duration)) return;
+                const newTime = (e.target.value / 100) * global_audio_player.duration;
+                global_audio_player.currentTime = newTime;
+            });
 
-                    if (!text) {
-                        announce("Por favor, escribe un comentario.");
-                        return;
-                    }
-                    if (!timestamp && timestamp !== 0) { // timestamp puede ser 0
-                        announce("Reproduce el audio primero para seleccionar un punto.");
-                        return;
-                    }
+            // Volumen
+            player_volume_slider.addEventListener('input', (e) => {
+                global_audio_player.volume = e.target.value;
+            });
 
-                    // En una app real, guardarías esto en la base de datos
-                    const dateKey = current_selected_date;
-                    
-                    // Encontrar el audio correcto en la base de datos
-                    const h3 = audioEntry.querySelector('h3');
-                    if (!h3) return;
-                    const audioName = h3.textContent;
-                    const audioData = audio_data[dateKey]?.audios.find(a => a.name === audioName);
-
-                    if (audioData) {
-                        audioData.comments.push({ timestamp, text });
-                        audio_data[dateKey].status = 'feedback';
-                        input.value = '';
-                        // Re-renderizar la vista del día para mostrar el nuevo marcador
-                        openDayView(dateKey);
-                        renderCalendar(); // Actualizar el estado en el calendario
-                        announce(`Comentario añadido en ${formatTime(timestamp)}.`);
-                    } else {
-                        console.error("No se pudo encontrar el audio para añadir el comentario:", audioName);
-                    }
+            // Botón de Detalles
+            player_details_btn.addEventListener('click', () => {
+                if (current_date_key) {
+                    openAudioDetailsModal(current_date_key);
                 }
             });
 
+            // (Lógica para Prev/Next no implementada, requeriría una lista de reproducción)
+            player_prev_btn.style.opacity = '0.5';
+            player_next_btn.style.opacity = '0.5';
         }
         
         // --- FUNCIONES DE FILTRO ---
@@ -1102,12 +1194,11 @@
             Object.keys(audio_data).forEach(dateKey => {
                 audio_data[dateKey].audios.forEach(audio => {
                     if (audio.tags.includes(tag)) {
-                        allEntries.push({ date: new Date(dateKey + 'T00:00:00'), audio });
+                        allEntries.push({ date: new Date(dateKey + 'T00:00:00'), audio, dateKey });
                     }
                 });
             });
 
-            // Ordenar por fecha
             allEntries.sort((a, b) => a.date - b.date);
 
             if (allEntries.length === 0) {
@@ -1118,29 +1209,35 @@
             allEntries.forEach(entry => {
                 const item = document.createElement('div');
                 item.classList.add('timeline-item');
-                const dateKey = entry.date.toISOString().split('T')[0];
                 item.innerHTML = `
                     <h3>${entry.audio.name}</h3>
                     <p>${entry.date.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
-                    <button data-datekey="${dateKey}" class="btn-primary">Ver en Calendario</button>
+                    <button data-datekey="${entry.dateKey}" class="btn-primary btn-play-timeline">Reproducir</button>
+                    <button data-datekey="${entry.dateKey}" class="btn-secondary btn-details-timeline">Ver Detalles</button>
                 `;
                 timeline_content.appendChild(item);
             });
 
             timeline_content.addEventListener('click', (e) => {
-                if (e.target.classList.contains('btn-primary')) {
-                    const dateKey = e.target.dataset.datekey;
+                const dateKey = e.target.dataset.datekey;
+                if (!dateKey) return;
+                
+                const data = audio_data[dateKey];
+                if (!data) return;
+
+                if (e.target.classList.contains('btn-play-timeline')) {
                     switchView('calendar');
-                    // Navegar calendario a esa fecha
-                    current_date = new Date(dateKey + 'T12:00:00'); // Usar T12 para evitar problemas de zona horaria
+                    current_date = new Date(dateKey + 'T12:00:00');
                     renderCalendar();
-                    // Abrir el día
-                    openDayView(dateKey);
+                    playAudio(data.audios[0], dateKey);
+                }
+                if (e.target.classList.contains('btn-details-timeline')) {
+                    openAudioDetailsModal(dateKey);
                 }
             });
         }
 
-        // El resto del código JS se enlaza aquí
+        // Init
         init();
     });
     </script>
