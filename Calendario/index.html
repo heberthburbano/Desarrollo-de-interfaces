@@ -144,8 +144,53 @@
         .comment-marker { position: absolute; top: -5px; width: 10px; height: 30px; background-color: var(--status-feedback); border-radius: 2px; transform: translateX(-50%); cursor: pointer; z-index: 10; }
         .comment-marker-tooltip { visibility: hidden; width: 200px; background-color: var(--bg-primary); color: #fff; text-align: center; border-radius: 6px; padding: 0.25rem; position: absolute; z-index: 1; bottom: 150%; left: 50%; margin-left: -100px; opacity: 0; transition: opacity 0.3s; }
         .comment-marker:hover .comment-marker-tooltip { visibility: visible; opacity: 1; }
-        .audio-controls { display: flex; align-items: center; gap: 1rem; margin-top: 0.5rem; }
-        .audio-controls button { background-color: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.5rem 0.75rem; border-radius: 6px; cursor: pointer; }
+        
+        /* ----- INICIO DE CAMBIOS ----- */
+        .audio-controls { 
+            display: flex; 
+            align-items: center; 
+            gap: 0.75rem; 
+            margin-top: 0.5rem; 
+            flex-wrap: wrap; 
+        }
+        .audio-controls button { 
+            background-color: var(--bg-tertiary); 
+            border: 1px solid var(--border-color); 
+            color: var(--text-primary); 
+            padding: 0.5rem 0.75rem; 
+            border-radius: 6px; 
+            cursor: pointer; 
+        }
+        .volume-slider {
+            width: 80px;
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 5px;
+            background: var(--bg-primary);
+            border-radius: 5px;
+        }
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            background: var(--accent-secondary);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .volume-slider::-moz-range-thumb {
+            width: 15px;
+            height: 15px;
+            background: var(--accent-secondary);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .download-btn {
+            margin-left: auto; /* Empuja el botón de descarga a la derecha */
+        }
+        /* ----- FIN DE CAMBIOS ----- */
+
         .ai-tabs { display: flex; border-bottom: 1px solid var(--border-color); margin: 1.25rem 0 1rem 0; }
         .ai-tabs button { background: none; border: none; color: var(--text-secondary); padding: 0.5rem 1rem; cursor: pointer; font-size: 1rem; border-bottom: 2px solid transparent; }
         .ai-tabs button.active { color: var(--accent-primary); border-bottom-color: var(--accent-primary); }
@@ -546,6 +591,7 @@
             data.audios.forEach(audio => {
                 const entry = document.createElement('div');
                 entry.classList.add('audio-entry');
+                // ----- INICIO DE CAMBIOS -----
                 entry.innerHTML = `
                     <h3>${audio.name}</h3>
                     <p><strong>Etiquetas:</strong> ${audio.tags.join(', ')}</p>
@@ -562,9 +608,13 @@
                         <div class="audio-controls">
                             <button class="play-pause-btn" aria-label="Reproducir audio">▶️</button>
                             <span class="time-display">00:00 / --:--</span>
+                            <span class="volume-icon">🔊</span>
+                            <input type="range" class="volume-slider" min="0" max="1" step="0.05" value="1" aria-label="Control de volumen">
+                            <button class="download-btn" aria-label="Descargar audio">📥</button>
                         </div>
                     </div>
                     <div class="ai-tabs">
+                // ----- FIN DE CAMBIOS -----
                         <button class="ai-tab-btn active" data-target="summary">Resumen IA</button>
                         <button class="ai-tab-btn" data-target="transcription">Transcripción</button>
                     </div>
@@ -616,6 +666,10 @@
             const progress_bar = player_container.querySelector('.progress-bar');
             const time_display = player_container.querySelector('.time-display');
             const words = player_container.querySelectorAll('.transcription-word');
+            // ----- INICIO DE CAMBIOS -----
+            const volume_slider = player_container.querySelector('.volume-slider');
+            const download_btn = player_container.querySelector('.download-btn');
+            // ----- FIN DE CAMBIOS -----
             let currentWordIndex = 0;
 
             function formatTime(seconds) {
@@ -705,6 +759,29 @@
                     audio_element.currentTime = percent * audio_element.duration;
                 }
             });
+
+            // ----- INICIO DE CAMBIOS -----
+            // Control de volumen
+            volume_slider.addEventListener('input', (e) => {
+                audio_element.volume = e.target.value;
+            });
+
+            // Botón de descarga
+            download_btn.addEventListener('click', () => {
+                if (audio.url) {
+                    const a = document.createElement('a');
+                    a.href = audio.url;
+                    // Usar el nombre del audio para la descarga
+                    a.download = audio.name || 'audio.mp3'; 
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    announce(`Descargando ${audio.name}`);
+                } else {
+                    announce("No se puede descargar este audio.");
+                }
+            });
+            // ----- FIN DE CAMBIOS -----
         }
         
         // --- MODAL MANAGEMENT ---
