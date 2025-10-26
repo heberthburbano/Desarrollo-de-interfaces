@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kairós - Accessible App</title>
+    <!--
+        Kairós: Master Your Spoken Record.
+        
+        VERSIÓN CON ACCESIBILIDAD MEJORADA:
+        - Soporte para navegación por teclado (flechas en calendario, Tab, Esc).
+        - Atributos ARIA para compatibilidad con lectores de pantalla.
+        - Transcripción sincronizada palabra por palabra.
+        - Indicadores de foco visibles y claros.
+        - Selector de temas (Claro, Oscuro, Alto Contraste).
+    -->
+    <style>
+        :root {
+            --bg-primary: #121212;
+            --bg-secondary: #1e1e1e;
+            --bg-tertiary: #2a2a2a;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --accent-primary: #4a90e2;
+            --accent-secondary: #50e3c2;
+            --focus-outline: #50e3c2;
+            --status-uploaded: #4a90e2;
+            --status-feedback: #f5a623;
+            --status-approved: #7ed321;
+            --border-color: #383838;
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --header-height: 60px;
+        }
+
+        html.theme-light {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f0f2f5;
+            --bg-tertiary: #e4e6eb;
+            --text-primary: #050505;
+            --text-secondary: #65676b;
+            --border-color: #ced0d4;
+        }
+
+        html.theme-high-contrast {
+            --bg-primary: #000000;
+            --bg-secondary: #000000;
+            --bg-tertiary: #222222;
+            --text-primary: #ffffff;
+            --text-secondary: #eeeeee;
+            --accent-primary: #ffff00;
+            --accent-secondary: #00ffff;
+            --focus-outline: #ff00ff;
+            --border-color: #ffffff;
+            --status-feedback: #ff8c00;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; }
+        body { font-family: var(--font-family); background-color: var(--bg-primary); color: var(--text-primary); display: flex; flex-direction: column; font-size: 16px; }
+
+        /* --- ACCESSIBILITY STYLES --- */
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        *:focus-visible {
+            outline: 3px solid var(--focus-outline);
+            outline-offset: 2px;
+            border-radius: 4px;
+        }
+
+        /* --- Estructura Principal --- */
+        .top-bar { display: flex; align-items: center; padding: 0 1rem; height: var(--header-height); background-color: var(--bg-secondary); border-bottom: 1px solid var(--border-color); position: fixed; top: 0; left: 0; width: 100%; z-index: 1001; }
+        #menu-toggle-btn { background: none; border: none; color: var(--text-primary); font-size: 1.8rem; cursor: pointer; padding-right: 1rem; }
+        .top-bar h1 { font-size: 1.4rem; }
+        .main-container { display: flex; height: 100%; padding-top: var(--header-height); }
+        .sidebar { width: 280px; background-color: var(--bg-secondary); padding: 1.25rem; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 1.5rem; position: fixed; top: 0; left: 0; height: 100%; z-index: 2000; transform: translateX(-100%); transition: transform 0.3s ease-in-out; overflow-y: auto; }
+        .sidebar.is-open { transform: translateX(0); }
+        .sidebar h1.desktop-title { display: none; }
+        .sidebar h2 { font-size: 1.2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; }
+        .view-switcher, .tag-filters, .theme-switcher { display: flex; flex-direction: column; gap: 0.5rem; }
+        .view-switcher button, .theme-switcher button { background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-color); padding: 0.75rem; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; text-align: left; }
+        .view-switcher button.active, .view-switcher button:hover, .theme-switcher button:hover, .theme-switcher button.active { background-color: var(--accent-primary); color: var(--bg-primary); border-color: var(--accent-primary); font-weight: 600; }
+        .tag-list { list-style: none; max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; }
+        .tag-list button { width: 100%; text-align: left; padding: 0.5rem 0.75rem; background-color: var(--bg-tertiary); border-radius: 15px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s ease; border: 1px solid transparent; color: var(--text-primary); }
+        .tag-list button:hover { border-color: var(--accent-secondary); }
+        .tag-list button.active { background-color: var(--accent-secondary); color: var(--bg-primary); font-weight: 600; }
+        
+        /* Contenido Principal */
+        .content-area { flex-grow: 1; padding: 1rem; display: flex; flex-direction: column; width: 100%; overflow-y: auto; }
+        #calendar-view { display: flex; flex-direction: column; height: 100%; }
+        .calendar-header { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1rem; }
+        .calendar-header h1 { font-size: 1.5rem; text-align: center; }
+        .calendar-nav { display: flex; justify-content: space-between; width: 100%; }
+        .calendar-nav button { background: none; border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.5rem 0.75rem; border-radius: 6px; cursor: pointer; transition: background-color 0.2s; font-size: 0.9rem; }
+        .calendar-nav button:hover { background-color: var(--bg-tertiary); }
+        .calendar-grid-container { flex-grow: 1; display: flex; flex-direction: column; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+        .calendar-grid#calendar-grid { flex-grow: 1; }
+        .calendar-day-header { text-align: center; color: var(--text-secondary); font-weight: 600; padding-bottom: 0.5rem; font-size: 0.8rem; }
+        .calendar-day { background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; padding: 0.25rem; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; min-height: 90px; display: flex; flex-direction: column; }
+        .calendar-day:hover { transform: translateY(-2px); border-color: var(--accent-primary); }
+        .calendar-day.other-month { background-color: var(--bg-primary); color: #555; cursor: default; }
+        .calendar-day.other-month:hover { transform: none; border-color: var(--border-color); }
+        .day-number { font-weight: 600; font-size: 0.8rem; }
+        .day-events { display: none; }
+        .day-status-bar { position: absolute; bottom: 0; left: 0; width: 100%; height: 5px; }
+        .day-status-bar.uploaded { background-color: var(--status-uploaded); }
+        .day-status-bar.feedback { background-color: var(--status-feedback); }
+        .day-status-bar.approved { background-color: var(--status-approved); }
+        
+        /* Línea de Tiempo */
+        .timeline-view { display: none; height: 100%; }
+        .timeline-item { background: var(--bg-secondary); border-left: 3px solid var(--accent-primary); padding: 1rem; margin-bottom: 1rem; border-radius: 6px; }
+        .timeline-item h3 { margin-bottom: 0.25rem; }
+        .timeline-item p { font-size: 0.9rem; color: var(--text-secondary); }
+        .timeline-item button { margin-top: 0.5rem; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 0.5rem 0.75rem; border-radius: 6px; cursor: pointer; }
+        
+        /* Modales */
+        .backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1999; display: none; }
+        .backdrop.is-visible { display: block; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 3000; padding: 1rem; }
+        .modal-content { background-color: var(--bg-secondary); padding: 1.5rem; border-radius: 12px; width: 100%; max-width: 800px; max-height: 90vh; display: flex; flex-direction: column; border: 1px solid var(--border-color); position: relative; }
+        .modal-close { position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer; z-index: 10; padding: 0.25rem; }
+        
+        /* Contenido del Modal de Día */
+        #day-view-modal-content h2 { margin-bottom: 1.25rem; font-size: 1.3rem; }
+        #day-audio-list { overflow-y: auto; flex-grow: 1; }
+        .audio-entry { background-color: var(--bg-tertiary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
+        .audio-entry h3 { margin-bottom: 0.5rem; color: var(--accent-secondary); }
+        .audio-player-container { margin-top: 1rem; }
+        .progress-bar-container { width: 100%; height: 20px; background-color: var(--bg-primary); border-radius: 10px; cursor: pointer; position: relative; margin: 0.75rem 0; }
+        .progress-bar { width: 0%; height: 100%; background-color: var(--accent-primary); border-radius: 10px; }
+        .comment-marker { position: absolute; top: -5px; width: 10px; height: 30px; background-color: var(--status-feedback); border-radius: 2px; transform: translateX(-50%); cursor: pointer; z-index: 10; }
+        .comment-marker-tooltip { visibility: hidden; width: 200px; background-color: var(--bg-primary); color: #fff; text-align: center; border-radius: 6px; padding: 0.25rem; position: absolute; z-index: 1; bottom: 150%; left: 50%; margin-left: -100px; opacity: 0; transition: opacity 0.3s; }
+        .comment-marker:hover .comment-marker-tooltip { visibility: visible; opacity: 1; }
+        .audio-controls { display: flex; align-items: center; gap: 1rem; margin-top: 0.5rem; }
+        .audio-controls button { background-color: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.5rem 0.75rem; border-radius: 6px; cursor: pointer; }
+        .ai-tabs { display: flex; border-bottom: 1px solid var(--border-color); margin: 1.25rem 0 1rem 0; }
+        .ai-tabs button { background: none; border: none; color: var(--text-secondary); padding: 0.5rem 1rem; cursor: pointer; font-size: 1rem; border-bottom: 2px solid transparent; }
+        .ai-tabs button.active { color: var(--accent-primary); border-bottom-color: var(--accent-primary); }
+        .ai-content { background-color: var(--bg-primary); padding: 1rem; border-radius: 6px; min-height: 150px; max-height: 200px; overflow-y: auto; line-height: 1.6; color: var(--text-secondary); }
+        .ai-content p, .ai-content ul { margin-bottom: 0.5rem; }
+        .ai-content ul { padding-left: 1.25rem; }
+        .transcription-word { cursor: pointer; padding: 0 0.1em; border-radius: 3px; }
+        .transcription-word.highlight { background-color: var(--accent-primary); color: var(--bg-primary); }
+
+        #feedback-section { margin-top: 1.25rem; }
+        .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
+        #feedback-input { width: 100%; padding: 0.5rem; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); resize: vertical; }
+        .btn-primary, .add-feedback-btn { background-color: var(--accent-primary); border: 1px solid var(--accent-primary); color: var(--bg-primary) !important; padding: 0.75rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 500; }
+        .add-feedback-btn { margin-top: 0.5rem; }
+        
+        #add-audio-modal-content form { display: flex; flex-direction: column; gap: 1rem; }
+        #add-audio-modal-content input, #add-audio-modal-content button { padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border-color); background-color: var(--bg-tertiary); color: var(--text-primary); font-size: 1rem; }
+        #add-audio-modal-content input[type="file"] { background-color: var(--bg-primary); }
+        #add-audio-modal-content button[type="submit"] { background-color: var(--accent-primary); border-color: var(--accent-primary); cursor: pointer; font-weight: 600; color: var(--bg-primary); }
+        .processing-indicator { display: none; text-align: center; margin-top: 1rem; }
+        .processing-indicator .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--accent-primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 0.5rem auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .day-actions { margin-top: 1.25rem; display: flex; gap: 0.5rem; }
+        
+        /* Media Queries */
+        @media (min-width: 768px) {
+            .content-area { padding: 1.25rem; }
+            .calendar-header { flex-direction: row; justify-content: space-between; align-items: center; }
+            .calendar-header h1 { font-size: 1.8rem; text-align: left;}
+            .calendar-day { min-height: 120px; padding: 0.5rem; }
+            .day-number { font-size: 1rem; }
+            .day-events { display: block; margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-secondary); flex-grow: 1; }
+        }
+        @media (min-width: 1024px) {
+            .top-bar { display: none; }
+            .main-container { padding-top: 0; }
+            .sidebar { position: static; transform: translateX(0); z-index: 1; }
+            .sidebar h1.desktop-title { display: block; }
+            .backdrop { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <header class="top-bar">
+        <button id="menu-toggle-btn" aria-label="Abrir menú de navegación">☰</button>
+        <h1>Kairós</h1>
+    </header>
+
+    <div class="backdrop"></div>
+
+    <div class="main-container">
+        <aside class="sidebar" id="sidebar" role="navigation">
+            <h1 class="desktop-title">Kairós</h1>
+            <div class="view-switcher">
+                <h2>Vistas</h2>
+                <button id="view-calendar-btn" class="active">🗓️ Vista Calendario</button>
+                <button id="view-timeline-btn">⏳ Vista Línea de Tiempo</button>
+            </div>
+            <div class="tag-filters">
+                <h2 id="tag-filters-heading">Filtros por Etiqueta</h2>
+                <ul id="tag-list" class="tag-list" role="listbox" aria-labelledby="tag-filters-heading"></ul>
+            </div>
+            <div class="theme-switcher">
+                <h2>Tema Visual</h2>
+                <button data-theme="dark" class="active">🌙 Oscuro</button>
+                <button data-theme="light">☀️ Claro</button>
+                <button data-theme="high-contrast"> Contraste</button>
+            </div>
+        </aside>
+
+        <main class="content-area">
+            <div id="calendar-view">
+                <div class="calendar-header">
+                    <h1 id="month-year-header"></h1>
+                    <div class="calendar-nav">
+                        <button id="prev-month-btn" aria-label="Mes anterior">&lt; Anterior</button>
+                        <button id="next-month-btn" aria-label="Mes siguiente">Siguiente &gt;</button>
+                    </div>
+                </div>
+                <div class="calendar-grid-container">
+                    <div class="calendar-grid" id="calendar-days-header" role="row">
+                        <div class="calendar-day-header" role="columnheader"><abbr title="Domingo">Dom</abbr></div>
+                        <div class="calendar-day-header" role="columnheader"><abbr title="Lunes">Lun</abbr></div>
+                        <div class="calendar-day-header" role="columnheader"><abbr title="Martes">Mar</abbr></div>
+                        <div class="calendar-day-header" role="columnheader"><abbr title="Miércoles">Mié</abbr></div>
+                        <div class="calendar-day-header" role="columnheader"><abbr title="Jueves">Jue</abbr></div>
+                        <div class="calendar-day-header" role="columnheader"><abbr title="Viernes">Vie</abbr></div>
+                        <div class="calendar-day-header" role="columnheader"><abbr title="Sábado">Sáb</abbr></div>
+                    </div>
+                    <div class="calendar-grid" id="calendar-grid" role="grid"></div>
+                </div>
+            </div>
+            <div id="timeline-view" class="timeline-view">
+                <h1 id="timeline-header">Línea de Tiempo</h1>
+                <div id="timeline-content"></div>
+            </div>
+        </main>
+    </div>
+
+    <div id="day-view-modal" class="modal-overlay">
+        <div id="day-view-modal-content" class="modal-content" role="dialog" aria-modal="true" aria-labelledby="day-view-title">
+            <button class="modal-close" aria-label="Cerrar ventana">&times;</button>
+            <h2 id="day-view-title"></h2>
+            <div id="day-audio-list"></div>
+            <div class="day-actions">
+                <button id="open-add-audio-modal-btn" class="btn-primary">+ Añadir Audio</button>
+            </div>
+        </div>
+    </div>
+    <div id="add-audio-modal" class="modal-overlay">
+        <div id="add-audio-modal-content" class="modal-content" role="dialog" aria-modal="true" aria-labelledby="add-audio-heading">
+            <button class="modal-close" aria-label="Cerrar ventana">&times;</button>
+            <h2 id="add-audio-heading">Añadir Audio</h2>
+            <form id="add-audio-form">
+                <div class="form-group">
+                    <label for="audio-file">Selecciona un archivo de audio (MP3, WAV, M4A):</label>
+                    <input type="file" id="audio-file" accept=".mp3,.wav,.m4a" required>
+                </div>
+                <div class="form-group">
+                    <label for="audio-tags">Etiquetas (separadas por comas, ej: Proyecto: Alfa):</label>
+                    <input type="text" id="audio-tags" placeholder="Escribe tus etiquetas...">
+                </div>
+                <button type="submit">Subir y Procesar (Simulado)</button>
+            </form>
+            <div class="processing-indicator" id="processing-indicator">
+                <div class="spinner"></div>
+                <p>Simulando procesamiento IA... Transcribiendo y resumiendo...</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="visually-hidden" role="status" aria-live="polite" id="aria-live-region"></div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        let current_date = new Date();
+        let active_tag_filter = null;
+        let current_view = 'calendar';
+        let audio_data = {};
+        
+        // --- MOCK DATA CON TRANSCRIPCIÓN ESTRUCTURADA ---
+        function getMockEventsForDate(date) {
+            const day = date.getDate();
+            const month = date.getMonth();
+            const year = date.getFullYear();
+
+            // Solo para el mes y año actual de la demo
+            if (year === 2025 && month === 9) { // Octubre es mes 9
+                if (day === 3) return ["14:00 - Q3 Review"];
+                if (day === 15) return ["09:00 - Stand-up Diario", "15:00 - Demo Cliente TechCorp"];
+                if (day === 21) return ["10:00 - Reunión Kick-off"];
+            }
+            return [];
+        }
+
+        function loadInitialData() {
+            const todayKey = '2025-10-21';
+            audio_data[todayKey] = {
+                status: "feedback",
+                audios: [{
+                    id: Date.now().toString(),
+                    name: "Reunión Kick-off Proyecto Kairós.mp3",
+                    // FIX: Usar una URL de audio de demostración real y válida
+                    url: "https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3",
+                    tags: ["Proyecto: Kairós", "Cliente: Demo"],
+                    summary: "El objetivo principal fue alinear al equipo sobre las metas del proyecto Kairós.",
+                    action_items: ["Juan: Preparar borrador de arquitectura.", "Ana: Definir wireframes."],
+                    decisions: ["Se utilizará Tauri como framework."],
+                    // FIX: Transcripción ajustada al audio de demostración (aprox 2 seg)
+                    transcription: [
+                        { "word": "(Intenso", "startTime": 0.1, "endTime": 0.5 }, { "word": "rugido", "startTime": 0.6, "endTime": 1.0 },
+                        { "word": "de", "startTime": 1.0, "endTime": 1.2 }, { "word": "dinosaurio)", "startTime": 1.3, "endTime": 1.9 }
+                    ],
+                    comments: [{ timestamp: 1.1, text: "Revisar este punto con el equipo de diseño." }]
+                }],
+                mock_events: getMockEventsForDate(new Date(2025, 9, 21))
+            };
+            const anotherDayKey = '2025-10-15';
+             audio_data[anotherDayKey] = {
+                status: "approved",
+                audios: [{
+                    id: (Date.now() - 1000).toString(),
+                    name: "Podcast v1 - Feedback.mp3",
+                    // FIX: Usar una URL de audio de demostración real y válida
+                    url: "https://interactive-examples.mdn.mozilla.net/media/cc0-audio/radio-tuning.mp3",
+                    tags: ["Proyecto: Podcast", "Interno"],
+                    summary: "Versión inicial del episodio 3 del podcast interno.",
+                    action_items: [], decisions:[],
+                    // FIX: Transcripción ajustada al audio de demostración (aprox 3 seg)
+                    transcription: [
+                        { "word": "(Estática", "startTime": 0.2, "endTime": 0.8 }, { "word": "y", "startTime": 0.8, "endTime": 0.9 },
+                        { "word": "sonidos", "startTime": 0.9, "endTime": 1.3 }, { "word": "de", "startTime": 1.4, "endTime": 1.6 },
+                        { "word": "sintonía)", "startTime": 1.7, "endTime": 2.5 }
+                    ],
+                    comments: []
+                }],
+                mock_events: getMockEventsForDate(new Date(2025, 9, 15))
+            };
+        }
+
+        // --- DOM ELEMENTS ---
+        const calendar_grid = document.getElementById('calendar-grid');
+        const month_year_header = document.getElementById('month-year-header');
+        const day_view_modal = document.getElementById('day-view-modal');
+        const add_audio_modal = document.getElementById('add-audio-modal');
+        const aria_live_region = document.getElementById('aria-live-region');
+        
+        const sidebar = document.getElementById('sidebar');
+        const menu_toggle_btn = document.getElementById('menu-toggle-btn');
+        const backdrop = document.querySelector('.backdrop');
+
+        const prev_month_btn = document.getElementById('prev-month-btn');
+        const next_month_btn = document.getElementById('next-month-btn');
+
+        const view_calendar_btn = document.getElementById('view-calendar-btn');
+        const view_timeline_btn = document.getElementById('view-timeline-btn');
+        const calendar_view = document.getElementById('calendar-view');
+        const timeline_view = document.getElementById('timeline-view');
+        const timeline_header = document.getElementById('timeline-header');
+        const timeline_content = document.getElementById('timeline-content');
+
+        const tag_list = document.getElementById('tag-list');
+        const open_add_audio_modal_btn = document.getElementById('open-add-audio-modal-btn');
+        const add_audio_form = document.getElementById('add-audio-form');
+        const processing_indicator = document.getElementById('processing-indicator');
+
+        let current_selected_date = null;
+        let last_focused_element = null;
+
+        // --- ACCESSIBILITY HELPERS ---
+        function announce(message) {
+            aria_live_region.textContent = message;
+        }
+
+        function trapFocus(modal) {
+            const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+            if (focusableElements.length === 0) return;
+            const firstElement = focusableElements[0];
+            const lastElement = focusableElements[focusableElements.length - 1];
+
+            modal.addEventListener('keydown', (e) => {
+                if (e.key !== 'Tab') return;
+                if (e.shiftKey) {
+                    if (document.activeElement === firstElement) {
+                        lastElement.focus();
+                        e.preventDefault();
+                    }
+                } else {
+                    if (document.activeElement === lastElement) {
+                        firstElement.focus();
+                        e.preventDefault();
+                    }
+                }
+            });
+            firstElement?.focus();
+        }
+        
+        // --- CALENDAR LOGIC ---
+        function renderCalendar() {
+            calendar_grid.innerHTML = '';
+            const year = current_date.getFullYear();
+            const month = current_date.getMonth();
+            
+            month_year_header.textContent = `${current_date.toLocaleString('es-ES', { month: 'long' })} ${year}`;
+
+            const first_day = new Date(year, month, 1).getDay();
+            const days_in_month = new Date(year, month + 1, 0).getDate();
+
+            for (let i = 0; i < first_day; i++) {
+                const day_cell = document.createElement('div');
+                day_cell.classList.add('calendar-day', 'other-month');
+                calendar_grid.appendChild(day_cell);
+            }
+
+            for (let i = 1; i <= days_in_month; i++) {
+                const day_cell = document.createElement('div');
+                const date_key = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+                day_cell.classList.add('calendar-day');
+                day_cell.dataset.date = date_key;
+
+                const day_number = document.createElement('span');
+                day_number.classList.add('day-number');
+                day_number.textContent = i;
+                day_cell.appendChild(day_number);
+
+                const events_container = document.createElement('div');
+                events_container.classList.add('day-events');
+                const mockEvents = getMockEventsForDate(new Date(year, month, i));
+                mockEvents.forEach(eventText => {
+                    const event_p = document.createElement('p');
+                    event_p.textContent = `• ${eventText}`;
+                    events_container.appendChild(event_p);
+                });
+                day_cell.appendChild(events_container);
+
+                const data = audio_data[date_key];
+                if (data) {
+                    const is_filtered_out = active_tag_filter && !data.audios.some(a => a.tags.includes(active_tag_filter));
+                    if (is_filtered_out) {
+                        day_cell.style.opacity = '0.3';
+                    } else {
+                        const status_bar = document.createElement('div');
+                        status_bar.classList.add('day-status-bar', data.status);
+                        day_cell.appendChild(status_bar);
+                    }
+                }
+
+                day_cell.setAttribute('role', 'button');
+                day_cell.setAttribute('tabindex', '-1');
+                if (i === 1) {
+                    day_cell.setAttribute('tabindex', '0');
+                }
+                
+                const date_obj = new Date(year, month, i);
+                let ariaLabel = `${date_obj.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.`;
+                
+                if (data) {
+                    ariaLabel += ` Contiene ${data.audios.length} grabación(es) de audio y ${data.mock_events.length} evento(s).`;
+                    ariaLabel += ` Estado: ${data.status === 'feedback' ? 'Feedback pendiente' : data.status === 'approved' ? 'Aprobado' : 'Subido'}.`;
+                } else {
+                    ariaLabel += ` Sin eventos ni grabaciones.`;
+                }
+                day_cell.setAttribute('aria-label', ariaLabel);
+
+                day_cell.addEventListener('click', () => openDayView(date_key));
+                calendar_grid.appendChild(day_cell);
+            }
+        }
+
+
+        // --- KEYBOARD NAVIGATION (CALENDAR) ---
+        calendar_grid.addEventListener('keydown', (e) => {
+            const focusedDay = document.activeElement;
+            if (!focusedDay.classList.contains('calendar-day')) return;
+
+            const days = Array.from(calendar_grid.querySelectorAll('.calendar-day:not(.other-month)'));
+            const currentIndex = days.findIndex(day => day === focusedDay);
+            let nextIndex = -1;
+
+            switch (e.key) {
+                case 'ArrowRight': nextIndex = currentIndex + 1; break;
+                case 'ArrowLeft': nextIndex = currentIndex - 1; break;
+                case 'ArrowDown': nextIndex = currentIndex + 7; break;
+                case 'ArrowUp': nextIndex = currentIndex - 7; break;
+                case 'Enter':
+                case ' ':
+                    e.preventDefault();
+                    focusedDay.click();
+                    return;
+                default: return;
+            }
+            e.preventDefault();
+            
+            if (nextIndex >= 0 && nextIndex < days.length) {
+                focusedDay.setAttribute('tabindex', '-1');
+                days[nextIndex].setAttribute('tabindex', '0');
+                days[nextIndex].focus();
+            }
+        });
+
+        // --- PLAYER & TRANSCRIPTION LOGIC ---
+        function renderDayAudioList(dateKey) {
+            const day_audio_list = document.getElementById('day-audio-list');
+            day_audio_list.innerHTML = '';
+            const data = audio_data[dateKey];
+            if (!data || !data.audios || data.audios.length === 0) {
+                day_audio_list.innerHTML = '<p>No hay audios asociados a este día.</p>';
+                return;
+            }
+            
+            data.audios.forEach(audio => {
+                const entry = document.createElement('div');
+                entry.classList.add('audio-entry');
+                entry.innerHTML = `
+                    <h3>${audio.name}</h3>
+                    <p><strong>Etiquetas:</strong> ${audio.tags.join(', ')}</p>
+                    <div class="audio-player-container">
+                        <audio src="${audio.url || ''}"></audio>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar"></div>
+                            ${audio.comments.map(comment => `
+                                <div class="comment-marker" style="left: ${(comment.timestamp / (audio.duration || 5)) * 100}%" data-timestamp="${comment.timestamp}">
+                                    <div class="comment-marker-tooltip">${comment.text}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="audio-controls">
+                            <button class="play-pause-btn" aria-label="Reproducir audio">▶️</button>
+                            <span class="time-display">00:00 / --:--</span>
+                        </div>
+                    </div>
+                    <div class="ai-tabs">
+                        <button class="ai-tab-btn active" data-target="summary">Resumen IA</button>
+                        <button class="ai-tab-btn" data-target="transcription">Transcripción</button>
+                    </div>
+                    <div class="ai-content-container">
+                        <div class="ai-content" id="summary-content">
+                            <h4>Resumen Ejecutivo</h4>
+                            <p>${audio.summary}</p>
+                            <h4>Puntos de Acción</h4>
+                            <ul>${audio.action_items.map(item => `<li>${item}</li>`).join('')}</ul>
+                            <h4>Decisiones Clave</h4>
+                             <ul>${audio.decisions.map(item => `<li>${item}</li>`).join('')}</ul>
+                        </div>
+                        <div class="ai-content" id="transcription-content" style="display:none;"></div>
+                    </div>
+                    <div id="feedback-section">
+                        <h4>Añadir Feedback</h4>
+                        <div class="form-group">
+                           <label for="feedback-input-${audio.id}">Pausa el audio en el punto deseado y escribe tu comentario.</label>
+                           <textarea id="feedback-input-${audio.id}" class="feedback-input" rows="2" placeholder="Escribe un comentario..."></textarea>
+                           <button class="add-feedback-btn">Añadir Comentario</button>
+                        </div>
+                    </div>
+                `;
+                const transcription_container = entry.querySelector('#transcription-content');
+                if (audio.transcription && Array.isArray(audio.transcription)) {
+                    audio.transcription.forEach(word => {
+                        const span = document.createElement('span');
+                        span.className = 'transcription-word';
+                        span.textContent = word.word + ' ';
+                        span.dataset.start = word.startTime;
+                        span.addEventListener('click', () => {
+                            const audio_element = entry.querySelector('audio');
+                            audio_element.currentTime = word.startTime;
+                        });
+                        transcription_container.appendChild(span);
+                    });
+                } else {
+                    transcription_container.textContent = "Transcripción no disponible en el formato correcto.";
+                }
+                day_audio_list.appendChild(entry);
+                setupPlayer(entry, audio);
+            });
+        }
+
+        function setupPlayer(player_container, audio) {
+            const audio_element = player_container.querySelector('audio');
+            const play_pause_btn = player_container.querySelector('.play-pause-btn');
+            const progress_bar_container = player_container.querySelector('.progress-bar-container');
+            const progress_bar = player_container.querySelector('.progress-bar');
+            const time_display = player_container.querySelector('.time-display');
+            const words = player_container.querySelectorAll('.transcription-word');
+            let currentWordIndex = 0;
+
+            function formatTime(seconds) {
+                if (isNaN(seconds)) return '00:00';
+                const minutes = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            }
+
+            function updateTranscriptionHighlight() {
+                const currentTime = audio_element.currentTime;
+                // Encuentra la palabra actual
+                let foundWord = false;
+                for (let i = 0; i < audio.transcription.length; i++) {
+                    const word = audio.transcription[i];
+                    if (currentTime >= word.startTime && currentTime < word.endTime) {
+                        if (i !== currentWordIndex) {
+                            words[currentWordIndex]?.classList.remove('highlight');
+                            words[i]?.classList.add('highlight');
+                            currentWordIndex = i;
+                        }
+                        foundWord = true;
+                        break;
+                    }
+                }
+                // Si no se encuentra ninguna palabra (ej. silencio), des-resaltar
+                if (!foundWord && words[currentWordIndex]) {
+                     words[currentWordIndex].classList.remove('highlight');
+                     currentWordIndex = -1; // O un índice inválido
+                }
+            }
+
+            function updateProgress() {
+                if (!audio_element || isNaN(audio_element.duration)) return;
+                const percent = (audio_element.currentTime / audio_element.duration) * 100;
+                progress_bar.style.width = `${percent}%`;
+                time_display.textContent = `${formatTime(audio_element.currentTime)} / ${formatTime(audio_element.duration)}`;
+            }
+
+            // 'loadedmetadata' se dispara cuando la duración es conocida
+            audio_element.addEventListener('loadedmetadata', () => {
+                updateProgress();
+                // Actualizar la duración estimada para los marcadores
+                const markers = player_container.querySelectorAll('.comment-marker');
+                markers.forEach(marker => {
+                    const timestamp = parseFloat(marker.dataset.timestamp);
+                    marker.style.left = `${(timestamp / audio_element.duration) * 100}%`;
+                });
+            });
+            
+            play_pause_btn.addEventListener('click', () => {
+                if (audio_element.src) {
+                    if (audio_element.paused) {
+                        audio_element.play();
+                        play_pause_btn.textContent = '⏸️';
+                        play_pause_btn.setAttribute('aria-label', 'Pausar audio');
+                        announce("Audio reproducido.");
+                    } else {
+                        audio_element.pause();
+                        play_pause_btn.textContent = '▶️';
+                        play_pause_btn.setAttribute('aria-label', 'Reproducir audio');
+                        announce("Audio pausado.");
+                    }
+                } else {
+                    announce("No hay archivo de audio para reproducir.");
+                }
+            });
+
+            audio_element.addEventListener('timeupdate', () => {
+                updateProgress();
+                updateTranscriptionHighlight();
+            });
+
+            audio_element.addEventListener('ended', () => {
+                play_pause_btn.textContent = '▶️';
+                play_pause_btn.setAttribute('aria-label', 'Reproducir audio');
+                progress_bar.style.width = '0%';
+                currentWordIndex = 0;
+                words.forEach(word => word.classList.remove('highlight'));
+            });
+
+            progress_bar_container.addEventListener('click', (e) => {
+                if (audio_element.duration) {
+                    const rect = progress_bar_container.getBoundingClientRect();
+                    const percent = (e.clientX - rect.left) / rect.width;
+                    audio_element.currentTime = percent * audio_element.duration;
+                }
+            });
+        }
+        
+        // --- MODAL MANAGEMENT ---
+        function openModal(modal) {
+            last_focused_element = document.activeElement;
+            modal.style.display = 'flex';
+            trapFocus(modal);
+        }
+        
+        function closeModal(modal) {
+            modal.style.display = 'none';
+            // Detener todos los audios al cerrar el modal
+            modal.querySelectorAll('audio').forEach(audio => audio.pause());
+            last_focused_element?.focus();
+        }
+
+        function openDayView(dateKey) {
+            current_selected_date = dateKey;
+            const date = new Date(dateKey + 'T00:00:00'); // Asegurar zona horaria local
+            document.getElementById('day-view-title').textContent = date.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            renderDayAudioList(dateKey);
+            openModal(day_view_modal);
+        }
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const openModal = document.querySelector('.modal-overlay[style*="display: flex"]');
+                if (openModal) closeModal(openModal);
+            }
+        });
+        
+        // --- THEME SWITCHER ---
+        document.querySelector('.theme-switcher').addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                const theme = e.target.dataset.theme;
+                document.documentElement.className = `theme-${theme}`;
+                document.querySelectorAll('.theme-switcher button').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                announce(`Tema cambiado a ${theme}`);
+            }
+        });
+
+        // --- INIT & EVENT LISTENERS ---
+        function init() {
+            // Preferencia de tema del sistema
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const themeButtons = document.querySelectorAll('.theme-switcher button');
+            themeButtons.forEach(b => b.classList.remove('active'));
+            if (prefersDark) {
+                document.documentElement.className = 'theme-dark';
+                document.querySelector('.theme-switcher button[data-theme="dark"]').classList.add('active');
+            } else {
+                document.documentElement.className = 'theme-light';
+                document.querySelector('.theme-switcher button[data-theme="light"]').classList.add('active');
+            }
+
+            loadInitialData();
+            current_date = new Date(2025, 9, 1); // Octubre 2025
+            renderCalendar();
+            updateTagFilters();
+            
+            // FIX: Añadir event listeners para los botones de cerrar modal
+            document.querySelectorAll('.modal-close').forEach(button => {
+                button.addEventListener('click', () => {
+                    const modal = button.closest('.modal-overlay');
+                    if (modal) {
+                        closeModal(modal);
+                    }
+                });
+            });
+
+            // --- LÓGICA DE EVENTOS FALTANTE ---
+
+            // Navegación del Calendario
+            prev_month_btn.addEventListener('click', () => {
+                current_date.setMonth(current_date.getMonth() - 1);
+                renderCalendar();
+                announce(`Mostrando ${current_date.toLocaleString('es-ES', { month: 'long', year: 'numeric' })}`);
+            });
+
+            next_month_btn.addEventListener('click', () => {
+                current_date.setMonth(current_date.getMonth() + 1);
+                renderCalendar();
+                announce(`Mostrando ${current_date.toLocaleString('es-ES', { month: 'long', year: 'numeric' })}`);
+            });
+
+            // Toggle de la barra lateral
+            menu_toggle_btn.addEventListener('click', () => {
+                sidebar.classList.toggle('is-open');
+                backdrop.classList.toggle('is-visible');
+                announce(sidebar.classList.contains('is-open') ? "Menú abierto" : "Menú cerrado");
+            });
+
+            backdrop.addEventListener('click', () => {
+                sidebar.classList.remove('is-open');
+                backdrop.classList.remove('is-visible');
+                announce("Menú cerrado");
+            });
+
+            // Cambio de Vista
+            view_calendar_btn.addEventListener('click', () => switchView('calendar'));
+            view_timeline_btn.addEventListener('click', () => switchView('timeline'));
+
+            // Filtros de Etiquetas
+            tag_list.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON') {
+                    const tag = e.target.dataset.tag;
+                    if (active_tag_filter === tag) {
+                        active_tag_filter = null;
+                        e.target.classList.remove('active');
+                        announce("Filtro de etiquetas eliminado.");
+                    } else {
+                        active_tag_filter = tag;
+                        document.querySelectorAll('#tag-list button').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        announce(`Filtrando por etiqueta: ${tag}.`);
+                    }
+                    renderCalendar();
+                }
+            });
+
+            // Abrir modal de añadir audio
+            open_add_audio_modal_btn.addEventListener('click', () => {
+                closeModal(day_view_modal);
+                openModal(add_audio_modal);
+                document.getElementById('add-audio-form').reset();
+                processing_indicator.style.display = 'none';
+                announce('Ventana para añadir audio abierta.');
+            });
+
+            // Enviar formulario de añadir audio
+            add_audio_form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                processing_indicator.style.display = 'block';
+
+                const file = document.getElementById('audio-file').files[0];
+                const tags = document.getElementById('audio-tags').value.split(',').map(t => t.trim()).filter(Boolean);
+                
+                if (!file) {
+                    processing_indicator.style.display = 'none';
+                    announce("No se seleccionó ningún archivo.");
+                    return;
+                }
+                
+                const fileURL = URL.createObjectURL(file);
+
+                const newAudio = {
+                    id: Date.now().toString(),
+                    name: file.name,
+                    tags: tags,
+                    url: fileURL,
+                    summary: "Resumen de IA simulado para tu audio.",
+                    action_items: ["Punto de acción simulado 1.", "Punto de acción simulado 2."],
+                    decisions: ["Decisión simulada tomada."],
+                    transcription: [
+                        { "word": "Esta", "startTime": 0.1, "endTime": 0.5 },
+                        { "word": "es", "startTime": 0.5, "endTime": 0.7 },
+                        { "word": "una", "startTime": 0.8, "endTime": 1.0 },
+                        { "word": "transcripción", "startTime": 1.1, "endTime": 2.0 },
+                        { "word": "simulada.", "startTime": 2.1, "endTime": 2.8 }
+                    ],
+                    comments: []
+                };
+
+                // Simular el procesamiento de IA
+                setTimeout(() => {
+                    if (!audio_data[current_selected_date]) {
+                        audio_data[current_selected_date] = { status: 'uploaded', audios: [], mock_events: [] };
+                    }
+                    audio_data[current_selected_date].audios.push(newAudio);
+                    audio_data[current_selected_date].status = 'uploaded';
+
+                    processing_indicator.style.display = 'none';
+                    closeModal(add_audio_modal);
+                    openDayView(current_selected_date);
+                    renderCalendar();
+                    updateTagFilters();
+                    announce("Audio añadido y procesado.");
+                }, 2500);
+            });
+
+            // Delegación de eventos para contenido dinámico en el modal de día
+            document.getElementById('day-view-modal-content').addEventListener('click', (e) => {
+                // Pestañas IA (Resumen/Transcripción)
+                if (e.target.classList.contains('ai-tab-btn')) {
+                    const audioEntry = e.target.closest('.audio-entry');
+                    if (!audioEntry) return;
+
+                    const targetId = e.target.dataset.target;
+                    
+                    audioEntry.querySelectorAll('.ai-tab-btn').forEach(btn => btn.classList.remove('active'));
+                    e.target.classList.add('active');
+
+                    audioEntry.querySelectorAll('.ai-content').forEach(content => {
+                        content.style.display = content.id.startsWith(targetId) ? 'block' : 'none';
+                    });
+                }
+
+                // Botón de Añadir Feedback
+                if (e.target.classList.contains('add-feedback-btn')) {
+                    const audioEntry = e.target.closest('.audio-entry');
+                    if (!audioEntry) return;
+                    
+                    const audio_element = audioEntry.querySelector('audio');
+                    const input = audioEntry.querySelector('.feedback-input');
+                    const timestamp = audio_element.currentTime;
+                    const text = input.value;
+
+                    if (!text) {
+                        announce("Por favor, escribe un comentario.");
+                        return;
+                    }
+                    if (!timestamp && timestamp !== 0) { // timestamp puede ser 0
+                        announce("Reproduce el audio primero para seleccionar un punto.");
+                        return;
+                    }
+
+                    // En una app real, guardarías esto en la base de datos
+                    const dateKey = current_selected_date;
+                    
+                    // Encontrar el audio correcto en la base de datos
+                    const h3 = audioEntry.querySelector('h3');
+                    if (!h3) return;
+                    const audioName = h3.textContent;
+                    const audioData = audio_data[dateKey]?.audios.find(a => a.name === audioName);
+
+                    if (audioData) {
+                        audioData.comments.push({ timestamp, text });
+                        audio_data[dateKey].status = 'feedback';
+                        input.value = '';
+                        // Re-renderizar la vista del día para mostrar el nuevo marcador
+                        openDayView(dateKey);
+                        renderCalendar(); // Actualizar el estado en el calendario
+                        announce(`Comentario añadido en ${formatTime(timestamp)}.`);
+                    } else {
+                        console.error("No se pudo encontrar el audio para añadir el comentario:", audioName);
+                    }
+                }
+            });
+
+        }
+        
+        // --- FUNCIONES DE FILTRO ---
+        function updateTagFilters() {
+            const allTags = new Set();
+            Object.values(audio_data).forEach(day => {
+                day.audios.forEach(audio => {
+                    audio.tags.forEach(tag => allTags.add(tag));
+                });
+            });
+
+            tag_list.innerHTML = '';
+            allTags.forEach(tag => {
+                const li = document.createElement('li');
+                const button = document.createElement('button');
+                button.dataset.tag = tag;
+                button.textContent = tag;
+                button.setAttribute('role', 'option');
+                if (tag === active_tag_filter) {
+                    button.classList.add('active');
+                    button.setAttribute('aria-selected', 'true');
+                }
+                li.appendChild(button);
+                tag_list.appendChild(li);
+            });
+        }
+        
+        // --- CAMBIO DE VISTA ---
+        function switchView(view) {
+            if (view === 'timeline') {
+                if (!active_tag_filter) {
+                    announce("Por favor, selecciona una etiqueta para ver la línea de tiempo.");
+                    return;
+                }
+                calendar_view.style.display = 'none';
+                timeline_view.style.display = 'block';
+                view_calendar_btn.classList.remove('active');
+                view_timeline_btn.classList.add('active');
+                renderTimeline(active_tag_filter);
+                current_view = 'timeline';
+            } else {
+                calendar_view.style.display = 'flex';
+                timeline_view.style.display = 'none';
+                view_calendar_btn.classList.add('active');
+                view_timeline_btn.classList.remove('active');
+                current_view = 'calendar';
+                announce("Mostrando vista de calendario.");
+            }
+        }
+
+        function renderTimeline(tag) {
+            timeline_header.textContent = `Línea de Tiempo: ${tag}`;
+            timeline_content.innerHTML = '';
+            const allEntries = [];
+
+            Object.keys(audio_data).forEach(dateKey => {
+                audio_data[dateKey].audios.forEach(audio => {
+                    if (audio.tags.includes(tag)) {
+                        allEntries.push({ date: new Date(dateKey + 'T00:00:00'), audio });
+                    }
+                });
+            });
+
+            // Ordenar por fecha
+            allEntries.sort((a, b) => a.date - b.date);
+
+            if (allEntries.length === 0) {
+                timeline_content.innerHTML = '<p>No hay entradas para esta etiqueta.</p>';
+                return;
+            }
+
+            allEntries.forEach(entry => {
+                const item = document.createElement('div');
+                item.classList.add('timeline-item');
+                const dateKey = entry.date.toISOString().split('T')[0];
+                item.innerHTML = `
+                    <h3>${entry.audio.name}</h3>
+                    <p>${entry.date.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                    <button data-datekey="${dateKey}" class="btn-primary">Ver en Calendario</button>
+                `;
+                timeline_content.appendChild(item);
+            });
+
+            timeline_content.addEventListener('click', (e) => {
+                if (e.target.classList.contains('btn-primary')) {
+                    const dateKey = e.target.dataset.datekey;
+                    switchView('calendar');
+                    // Navegar calendario a esa fecha
+                    current_date = new Date(dateKey + 'T12:00:00'); // Usar T12 para evitar problemas de zona horaria
+                    renderCalendar();
+                    // Abrir el día
+                    openDayView(dateKey);
+                }
+            });
+        }
+
+        // El resto del código JS se enlaza aquí
+        init();
+    });
+    </script>
+</body>
+</html>
+
