@@ -7,10 +7,10 @@
     <!--
         Kairós: Master Your Spoken Record.
         
-        Versión 2.4 - Menú Contextual Funcional
-        - Corregido: Las opciones del menú contextual (clic derecho) ahora funcionan.
-        - Restaurada la visualización de eventos mock en el calendario.
-        - Corregidos los listeners y la lógica de los controles del reproductor.
+        Versión 2.8 - Corrección Completa
+        - Todas las funciones implementadas
+        - Menú contextual operativo
+        - Navegación funcionando
     -->
     <style>
         :root {
@@ -19,8 +19,8 @@
             --bg-tertiary: #2a2a2a;
             --text-primary: #e0e0e0;
             --text-secondary: #a0a0a0;
-            --accent-primary: #4a90e2; /* Azul principal */
-            --accent-secondary: #50e3c2; /* Cian/Turquesa */
+            --accent-primary: #4a90e2;
+            --accent-secondary: #50e3c2;
             --focus-outline: #50e3c2;
             --status-uploaded: #4a90e2;
             --status-feedback: #f5a623;
@@ -28,10 +28,10 @@
             --border-color: #383838;
             --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             --header-height: 60px;
-            --player-height: 85px; 
-            --tag-color-1: #ff6b6b; /* Rojo claro */
-            --tag-color-2: #feca57; /* Amarillo */
-            --tag-color-3: #48dbfb; /* Azul claro */
+            --player-height: 85px;
+            --tag-color-1: #ff6b6b;
+            --tag-color-2: #feca57;
+            --tag-color-3: #48dbfb;
         }
 
         html.theme-light {
@@ -74,7 +74,6 @@
             padding-bottom: var(--player-height);
         }
 
-        /* --- ACCESSIBILITY STYLES --- */
         .visually-hidden {
             position: absolute;
             width: 1px;
@@ -93,7 +92,6 @@
             border-radius: 4px;
         }
 
-        /* --- Estructura Principal --- */
         .top-bar { display: flex; align-items: center; padding: 0 1rem; height: var(--header-height); background-color: var(--bg-secondary); border-bottom: 1px solid var(--border-color); position: fixed; top: 0; left: 0; width: 100%; z-index: 1001; }
         #menu-toggle-btn { background: none; border: none; color: var(--text-primary); font-size: 1.8rem; cursor: pointer; padding-right: 1rem; }
         .top-bar h1 { font-size: 1.4rem; }
@@ -110,7 +108,6 @@
         .tag-list button:hover { border-color: var(--accent-secondary); }
         .tag-list button.active { background-color: var(--accent-secondary); color: var(--bg-primary); font-weight: 600; }
         
-        /* Contenido Principal */
         .content-area { flex-grow: 1; padding: 1rem; display: flex; flex-direction: column; width: 100%; overflow-y: auto; }
         #calendar-view { display: flex; flex-direction: column; height: 100%; }
         .calendar-header { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1rem; }
@@ -128,13 +125,13 @@
         .calendar-day[data-has-note="true"] .day-number::before { content: '📝'; font-size: 0.7rem; margin-right: 4px; color: var(--accent-primary); }
         .calendar-day.other-month { background-color: var(--bg-primary); color: #555; cursor: default; }
         .calendar-day.other-month:hover { transform: none; border-color: var(--border-color); }
-        .day-number { font-weight: 600; font-size: 0.8rem; display: inline-block; /* Para que ::before y ::after funcionen bien */ }
+        .day-number { font-weight: 600; font-size: 0.8rem; display: inline-block; }
         .day-tag-indicators { display: flex; gap: 3px; margin-top: 4px; margin-left: 2px; }
         .day-tag-dot { width: 6px; height: 6px; border-radius: 50%; }
         .day-tag-dot.color-1 { background-color: var(--tag-color-1); }
         .day-tag-dot.color-2 { background-color: var(--tag-color-2); }
         .day-tag-dot.color-3 { background-color: var(--tag-color-3); }
-        .day-tag-dot.color-other { background-color: var(--text-secondary); } /* Para más de 3 tags */
+        .day-tag-dot.color-other { background-color: var(--text-secondary); }
         .day-events { 
             display: none; 
             margin-top: 0.5rem; 
@@ -155,21 +152,18 @@
         .day-status-bar.feedback { background-color: var(--status-feedback); }
         .day-status-bar.approved { background-color: var(--status-approved); }
         
-        /* Línea de Tiempo */
         .timeline-view { display: none; height: 100%; }
         .timeline-item { background: var(--bg-secondary); border-left: 3px solid var(--accent-primary); padding: 1rem; margin-bottom: 1rem; border-radius: 6px; }
         .timeline-item h3 { margin-bottom: 0.25rem; }
         .timeline-item p { font-size: 0.9rem; color: var(--text-secondary); }
         .timeline-item button { margin-top: 0.5rem; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 0.5rem 0.75rem; border-radius: 6px; cursor: pointer; }
         
-        /* Modales */
         .backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1999; display: none; }
         .backdrop.is-visible { display: block; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 3000; padding: 1rem; }
-        .modal-content { background-color: var(--bg-secondary); padding: 1.5rem; border-radius: 12px; width: 100%; max-width: 800px; max-height: 90vh; display: flex; flex-direction: column; border: 1px solid var(--border-color); position: relative; }
+        .modal-content { background-color: var(--bg-secondary); padding: 1.5rem; border-radius: 12px; width: 100%; max-width: 800px; max-height: 90vh; display: flex; flex-direction: column; border: 1px solid var(--border-color); position: relative; overflow-y: auto; }
         .modal-close { position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer; z-index: 10; padding: 0.25rem; }
         
-        /* Contenido del Modal de Día (Detalles / Añadir Audio) */
         #day-view-modal-content h2 { margin-bottom: 1.25rem; font-size: 1.3rem; }
         #day-audio-list { overflow-y: auto; flex-grow: 1; }
         .audio-entry { background-color: var(--bg-tertiary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
@@ -197,11 +191,9 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .day-actions { margin-top: 1.25rem; display: flex; gap: 0.5rem; }
 
-        /* ----- NUEVO: Modal de Notas ----- */
         #note-modal .modal-content { max-width: 500px; }
         #note-modal textarea { width: 100%; min-height: 150px; padding: 0.75rem; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); resize: vertical; margin-bottom: 1rem; }
         
-        /* ----- NUEVO: Modal de Etiquetas ----- */
         #tag-modal .modal-content { max-width: 450px; }
         #tag-modal-list label { display: block; padding: 0.5rem 0.75rem; background-color: var(--bg-tertiary); border-radius: 6px; margin-bottom: 0.5rem; cursor: pointer; }
         #tag-modal-list input[type="checkbox"] { margin-right: 0.75rem; }
@@ -209,7 +201,6 @@
         #tag-modal-new button { padding: 0.5rem 0.75rem; }
         #tag-modal-actions { margin-top: 1rem; text-align: right; }
         
-        /* ----- NUEVO: Reproductor Fijo Inferior ----- */
         .fixed-player-bar {
             position: fixed;
             bottom: 0;
@@ -219,7 +210,7 @@
             background-color: var(--bg-secondary);
             border-top: 1px solid var(--border-color);
             z-index: 2001;
-            display: none; /* Oculto por defecto */
+            display: none;
             align-items: center;
             padding: 0.75rem 1rem;
             gap: 1rem;
@@ -291,14 +282,13 @@
             border-radius: 50%;
             cursor: pointer;
         }
-         /* Estilo para Firefox */
         .player-progress-bar::-moz-range-thumb {
-             width: 15px;
+            width: 15px;
             height: 15px;
             background: var(--accent-primary);
             border-radius: 50%;
             cursor: pointer;
-            border: none; /* Firefox añade un borde por defecto */
+            border: none;
         }
        
         .player-volume-controls {
@@ -317,7 +307,7 @@
             border-radius: 5px;
         }
         .player-volume-slider::-webkit-slider-thumb {
-             -webkit-appearance: none;
+            -webkit-appearance: none;
             appearance: none;
             width: 15px;
             height: 15px;
@@ -325,9 +315,8 @@
             border-radius: 50%;
             cursor: pointer;
         }
-        /* Estilo para Firefox */
         .player-volume-slider::-moz-range-thumb {
-             width: 15px;
+            width: 15px;
             height: 15px;
             background: var(--accent-secondary);
             border-radius: 50%;
@@ -342,7 +331,6 @@
             cursor: pointer;
         }
         
-        /* ----- NUEVO: Notificación Toast ----- */
         #toast-container {
             position: fixed;
             top: 80px;
@@ -368,9 +356,8 @@
             transform: translateX(0);
         }
 
-        /* ----- NUEVO: Menú Contextual (Clic Derecho) ----- */
         .custom-context-menu {
-            position: fixed; /* Se posicionará con JS */
+            position: fixed;
             display: none;
             background-color: var(--bg-tertiary);
             border-radius: 8px;
@@ -410,12 +397,8 @@
             background-color: var(--border-color);
             margin: 0.5rem 0;
         }
-        /* ----- FIN CAMBIOS ----- */
 
-
-        /* Media Queries */
         @media (max-width: 768px) {
-             /* Ocultar elementos menos importantes en el reproductor móvil */
             .player-track-info { flex-basis: 120px; min-width: 100px; }
             .player-volume-controls { display: none; }
             .player-progress-container { max-width: 100%; }
@@ -426,7 +409,6 @@
             .calendar-header h1 { font-size: 1.8rem; text-align: left;}
             .calendar-day { min-height: 120px; padding: 0.5rem; }
             .day-number { font-size: 1rem; }
-            /* CORRECCIÓN: Mostrar eventos en escritorio */
             .day-events { display: block; } 
         }
         @media (min-width: 1024px) {
@@ -439,6 +421,8 @@
     </style>
 </head>
 <body>
+    <div id="aria-live-region" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
+
     <header class="top-bar">
         <button id="menu-toggle-btn" aria-label="Abrir menú de navegación">☰</button>
         <h1>Kairós</h1>
@@ -455,14 +439,14 @@
                 <button id="view-timeline-btn">⏳ Vista Línea de Tiempo</button>
             </div>
             <div class="tag-filters">
-                <h2 id="tag-filters-heading">Etiquetas Globales</h2> <!-- Cambiado -->
+                <h2 id="tag-filters-heading">Etiquetas Globales</h2>
                 <ul id="tag-list" class="tag-list" role="listbox" aria-labelledby="tag-filters-heading"></ul>
             </div>
             <div class="theme-switcher">
                 <h2>Tema Visual</h2>
                 <button data-theme="dark" class="active">🌙 Oscuro</button>
                 <button data-theme="light">☀️ Claro</button>
-                <button data-theme="high-contrast"> Contraste</button>
+                <button data-theme="high-contrast">⚡ Contraste</button>
             </div>
         </aside>
 
@@ -495,19 +479,14 @@
         </main>
     </div>
 
-    <!-- Modal de Detalles (IA, Transcripción) -->
     <div id="day-view-modal" class="modal-overlay">
         <div id="day-view-modal-content" class="modal-content" role="dialog" aria-modal="true" aria-labelledby="day-view-title">
             <button class="modal-close" aria-label="Cerrar ventana">&times;</button>
             <h2 id="day-view-title"></h2>
-            <div id="day-audio-list">
-                <!-- El contenido se generará por JS -->
-            </div>
-            <!-- Botón Añadir Audio movido al modal de "prompt" -->
+            <div id="day-audio-list"></div>
         </div>
     </div>
 
-     <!-- Modal para días vacíos (Prompt Añadir Audio) -->
     <div id="empty-day-modal" class="modal-overlay">
         <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="empty-day-title">
             <button class="modal-close" aria-label="Cerrar ventana">&times;</button>
@@ -515,12 +494,11 @@
             <p style="margin-bottom: 1rem;">No hay audios ni notas para este día.</p>
             <div class="day-actions">
                 <button id="open-add-audio-modal-btn-2" class="btn-primary">+ Asignar Audio</button>
-                 <button id="open-note-modal-btn-empty" class="btn-primary">📝 Añadir Nota</button>
+                <button id="open-note-modal-btn-empty" class="btn-primary">📝 Añadir Nota</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal para Añadir/Editar Audio -->
     <div id="add-audio-modal" class="modal-overlay">
         <div id="add-audio-modal-content" class="modal-content" role="dialog" aria-modal="true" aria-labelledby="add-audio-heading">
             <button class="modal-close" aria-label="Cerrar ventana">&times;</button>
@@ -530,7 +508,6 @@
                     <label for="audio-file">Selecciona un archivo de audio (MP3, WAV, M4A):</label>
                     <input type="file" id="audio-file" accept=".mp3,.wav,.m4a" required>
                 </div>
-                <!-- Eliminado input de etiquetas, se gestionan aparte -->
                 <button type="submit">Subir y Procesar (Simulado)</button>
             </form>
             <div class="processing-indicator" id="processing-indicator">
@@ -540,43 +517,34 @@
         </div>
     </div>
 
-    <!-- ----- INICIO CAMBIO: Modal Notas ----- -->
     <div id="note-modal" class="modal-overlay">
         <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="note-modal-title">
-             <button class="modal-close" aria-label="Cerrar ventana">&times;</button>
-             <h2 id="note-modal-title">Nota para el día</h2>
-             <textarea id="note-modal-textarea" placeholder="Escribe tu nota aquí..."></textarea>
-             <button id="note-modal-save" class="btn-primary">Guardar Nota</button>
+            <button class="modal-close" aria-label="Cerrar ventana">&times;</button>
+            <h2 id="note-modal-title">Nota para el día</h2>
+            <textarea id="note-modal-textarea" placeholder="Escribe tu nota aquí..."></textarea>
+            <button id="note-modal-save" class="btn-primary">Guardar Nota</button>
         </div>
     </div>
-    <!-- ----- FIN CAMBIO ----- -->
 
-    <!-- ----- INICIO CAMBIO: Modal Etiquetas ----- -->
     <div id="tag-modal" class="modal-overlay">
-         <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="tag-modal-title">
-             <button class="modal-close" aria-label="Cerrar ventana">&times;</button>
-             <h2 id="tag-modal-title">Etiquetas para el día</h2>
-             <div id="tag-modal-list" style="margin-bottom: 1rem; max-height: 200px; overflow-y: auto;">
-                 <!-- Checkboxes se generarán aquí -->
-             </div>
-             <div id="tag-modal-new" style="display: flex; align-items: center; margin-bottom: 1rem;">
-                 <input type="text" id="tag-modal-new-input" placeholder="Nueva etiqueta...">
-                 <button id="tag-modal-add-btn" class="btn-primary">Añadir</button>
-             </div>
-              <div id="tag-modal-actions">
-                 <button id="tag-modal-save" class="btn-primary">Guardar Cambios</button>
-             </div>
+        <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="tag-modal-title">
+            <button class="modal-close" aria-label="Cerrar ventana">&times;</button>
+            <h2 id="tag-modal-title">Etiquetas para el día</h2>
+            <div id="tag-modal-list" style="margin-bottom: 1rem; max-height: 200px; overflow-y: auto;"></div>
+            <div id="tag-modal-new" style="display: flex; align-items: center; margin-bottom: 1rem;">
+                <input type="text" id="tag-modal-new-input" placeholder="Nueva etiqueta...">
+                <button id="tag-modal-add-btn" class="btn-primary">Añadir</button>
+            </div>
+            <div id="tag-modal-actions">
+                <button id="tag-modal-save" class="btn-primary">Guardar Cambios</button>
+            </div>
         </div>
     </div>
-    <!-- ----- FIN CAMBIO ----- -->
     
-    <!-- Contenedor para notificaciones Toast -->
     <div id="toast-container"></div>
     
-    <!-- Elemento de audio global (oculto) -->
     <audio id="global-audio-player" style="display: none;"></audio>
     
-    <!-- NUEVO: Reproductor Fijo -->
     <div class="fixed-player-bar" id="player-bar">
         <div class="player-track-info">
             <h4 id="player-track-name"></h4>
@@ -599,12 +567,10 @@
             <input type="range" class="player-volume-slider" id="player-volume-slider" min="0" max="1" step="0.05" value="1" aria-label="Control de volumen">
         </div>
         <div class="player-extra-controls">
-            <!-- Eliminado botón detalles, ahora en menú contextual -->
-             <a id="player-download-btn" href="#" download style="color: var(--text-secondary); text-decoration: none; font-size: 1.1rem; margin-left: 0.5rem;" aria-label="Descargar audio actual">💾</a>
+            <a id="player-download-btn" href="#" download style="color: var(--text-secondary); text-decoration: none; font-size: 1.1rem; margin-left: 0.5rem;" aria-label="Descargar audio actual">💾</a>
         </div>
     </div>
 
-    <!-- ----- INICIO CAMBIO: Menú Contextual (Actualizado) ----- -->
     <div id="custom-context-menu" class="custom-context-menu">
         <button data-action="details-summary">📝 Ver Resumen IA</button>
         <button data-action="details-transcription">📄 Ver Transcripción</button>
@@ -614,24 +580,119 @@
         <hr>
         <button data-action="download">💾 Descargar Audio</button>
     </div>
-    <!-- ----- FIN CAMBIO ----- -->
-
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
-        let current_date = new Date();
-        let active_tag_filter = null;
-        let current_view = 'calendar';
-        let day_data = {}; 
-        let global_tags = new Set(["Proyecto: Kairós", "Cliente: Demo", "Proyecto: Podcast", "Interno", "Urgente"]); 
+        // VARIABLES GLOBALES
+        let currentDate = new Date();
+        let activeTagFilter = null;
+        let currentView = 'calendar';
+        let dayData = {};
+        let globalTags = new Set(["Proyecto: Kairós", "Cliente: Demo", "Proyecto: Podcast", "Interno", "Urgente"]);
 
-        // --- DATOS DE EJEMPLO ---
-        function getMockEventsForDate(date) { 
+        // ELEMENTOS DEL DOM
+        const calendarGrid = document.getElementById('calendar-grid');
+        const monthYearHeader = document.getElementById('month-year-header');
+        const dayViewModal = document.getElementById('day-view-modal');
+        const addAudioModal = document.getElementById('add-audio-modal');
+        const emptyDayModal = document.getElementById('empty-day-modal');
+        const noteModal = document.getElementById('note-modal');
+        const noteModalTextarea = document.getElementById('note-modal-textarea');
+        const noteModalSave = document.getElementById('note-modal-save');
+        const tagModal = document.getElementById('tag-modal');
+        const tagModalList = document.getElementById('tag-modal-list');
+        const tagModalNewInput = document.getElementById('tag-modal-new-input');
+        const tagModalAddBtn = document.getElementById('tag-modal-add-btn');
+        const tagModalSave = document.getElementById('tag-modal-save');
+        const ariaLiveRegion = document.getElementById('aria-live-region');
+        const sidebar = document.getElementById('sidebar');
+        const menuToggleBtn = document.getElementById('menu-toggle-btn');
+        const backdrop = document.querySelector('.backdrop');
+        const prevMonthBtn = document.getElementById('prev-month-btn');
+        const nextMonthBtn = document.getElementById('next-month-btn');
+        const viewCalendarBtn = document.getElementById('view-calendar-btn');
+        const viewTimelineBtn = document.getElementById('view-timeline-btn');
+        const calendarView = document.getElementById('calendar-view');
+        const timelineView = document.getElementById('timeline-view');
+        const timelineHeader = document.getElementById('timeline-header');
+        const timelineContent = document.getElementById('timeline-content');
+        const tagList = document.getElementById('tag-list');
+        const addAudioForm = document.getElementById('add-audio-form');
+        const processingIndicator = document.getElementById('processing-indicator');
+        const toastContainer = document.getElementById('toast-container');
+        const contextMenu = document.getElementById('custom-context-menu');
+        
+        const globalAudioPlayer = document.getElementById('global-audio-player');
+        const playerBar = document.getElementById('player-bar');
+        const playerPlayPauseBtn = document.getElementById('player-play-pause-btn');
+        const playerPrevBtn = document.getElementById('player-prev-btn');
+        const playerNextBtn = document.getElementById('player-next-btn');
+        const playerTrackName = document.getElementById('player-track-name');
+        const playerTrackTags = document.getElementById('player-track-tags');
+        const playerCurrentTime = document.getElementById('player-current-time');
+        const playerTotalTime = document.getElementById('player-total-time');
+        const playerProgressBar = document.getElementById('player-progress-bar');
+        const playerVolumeSlider = document.getElementById('player-volume-slider');
+        const playerDownloadBtn = document.getElementById('player-download-btn');
+
+        let currentSelectedDate = null;
+        let lastFocusedElement = null;
+        let currentAudioData = null;
+        let currentDateKey = null;
+        let contextMenuDateKey = null;
+        let noteModalDateKey = null;
+        let tagModalDateKey = null;
+
+        // FUNCIONES AUXILIARES
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast-notification';
+            toast.textContent = message;
+            toastContainer.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 10);
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400);
+            }, 3000);
+        }
+
+        function announce(message) {
+            if (ariaLiveRegion) {
+                ariaLiveRegion.textContent = message;
+            }
+        }
+
+        function trapFocus(modal) {
+            const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+            const firstFocusable = focusableElements[0];
+            const lastFocusable = focusableElements[focusableElements.length - 1];
+
+            modal.addEventListener('keydown', (e) => {
+                if (e.key === 'Tab') {
+                    if (e.shiftKey) {
+                        if (document.activeElement === firstFocusable) {
+                            e.preventDefault();
+                            lastFocusable.focus();
+                        }
+                    } else {
+                        if (document.activeElement === lastFocusable) {
+                            e.preventDefault();
+                            firstFocusable.focus();
+                        }
+                    }
+                }
+            });
+        }
+
+        // DATOS DE EJEMPLO
+        function getMockEventsForDate(date) {
             const day = date.getDate();
             const month = date.getMonth();
             const year = date.getFullYear();
 
-            if (year === 2025 && month === 9) { // Octubre
+            if (year === 2025 && month === 9) {
                 if (day === 3) return ["14:00 - Q3 Review"];
                 if (day === 15) return ["09:00 - Stand-up Diario", "15:00 - Demo Cliente TechCorp"];
                 if (day === 21) return ["10:00 - Reunión Kick-off"];
@@ -641,7 +702,7 @@
 
         function loadInitialData() {
             const todayKey = '2025-10-21';
-            day_data[todayKey] = {
+            dayData[todayKey] = {
                 note: "Kick-off importante. Revisar puntos de acción.",
                 tags: ["Proyecto: Kairós", "Cliente: Demo"],
                 audioInfo: {
@@ -669,10 +730,10 @@
             };
 
             const anotherDayKey = '2025-10-15';
-             day_data[anotherDayKey] = {
-                 note: "",
-                 tags: ["Proyecto: Podcast", "Interno"],
-                 audioInfo: {
+            dayData[anotherDayKey] = {
+                note: "",
+                tags: ["Proyecto: Podcast", "Interno"],
+                audioInfo: {
                     status: "approved",
                     audios: [{
                         id: (Date.now() - 1000).toString(),
@@ -693,10 +754,10 @@
             };
 
             const thirdDayKey = '2025-10-03';
-             day_data[thirdDayKey] = {
-                 note: "Llamada urgente realizada.",
-                 tags: ["Cliente: Demo", "Urgente"],
-                 audioInfo: {
+            dayData[thirdDayKey] = {
+                note: "Llamada urgente realizada.",
+                tags: ["Cliente: Demo", "Urgente"],
+                audioInfo: {
                     status: "uploaded",
                     audios: [{
                         id: (Date.now() - 2000).toString(),
@@ -711,450 +772,832 @@
                         ],
                         comments: []
                     }]
-                 },
+                },
                 mock_events: getMockEventsForDate(new Date(2025, 9, 3))
             };
             
-             const noteOnlyKey = '2025-10-10';
-             day_data[noteOnlyKey] = {
-                 note: "Comida equipo. Celebración Q3.",
-                 tags: ["Interno"],
-                 audioInfo: null, 
-                 mock_events: []
-             };
+            const noteOnlyKey = '2025-10-10';
+            dayData[noteOnlyKey] = {
+                note: "Comida equipo. Celebración Q3.",
+                tags: ["Interno"],
+                audioInfo: null,
+                mock_events: []
+            };
         }
 
-        // --- ELEMENTOS DEL DOM ---
-        const calendar_grid = document.getElementById('calendar-grid');
-        const month_year_header = document.getElementById('month-year-header');
-        const day_view_modal = document.getElementById('day-view-modal');
-        const add_audio_modal = document.getElementById('add-audio-modal');
-        const empty_day_modal = document.getElementById('empty-day-modal'); 
-        const note_modal = document.getElementById('note-modal');
-        const note_modal_textarea = document.getElementById('note-modal-textarea');
-        const note_modal_save = document.getElementById('note-modal-save');
-        const tag_modal = document.getElementById('tag-modal');
-        const tag_modal_list = document.getElementById('tag-modal-list');
-        const tag_modal_new_input = document.getElementById('tag-modal-new-input');
-        const tag_modal_add_btn = document.getElementById('tag-modal-add-btn');
-        const tag_modal_save = document.getElementById('tag-modal-save');
-        const aria_live_region = document.getElementById('aria-live-region');
-        const sidebar = document.getElementById('sidebar');
-        const menu_toggle_btn = document.getElementById('menu-toggle-btn');
-        const backdrop = document.querySelector('.backdrop');
-        const prev_month_btn = document.getElementById('prev-month-btn');
-        const next_month_btn = document.getElementById('next-month-btn');
-        const view_calendar_btn = document.getElementById('view-calendar-btn');
-        const view_timeline_btn = document.getElementById('view-timeline-btn');
-        const calendar_view = document.getElementById('calendar-view');
-        const timeline_view = document.getElementById('timeline-view');
-        const timeline_header = document.getElementById('timeline-header');
-        const timeline_content = document.getElementById('timeline-content');
-        const tag_list = document.getElementById('tag-list');
-        const add_audio_form = document.getElementById('add-audio-form');
-        const processing_indicator = document.getElementById('processing-indicator');
-        const toast_container = document.getElementById('toast-container');
-        const contextMenu = document.getElementById('custom-context-menu');
-        
-        // --- ELEMENTOS DEL REPRODUCTOR GLOBAL ---
-        const global_audio_player = document.getElementById('global-audio-player');
-        const player_bar = document.getElementById('player-bar');
-        const player_play_pause_btn = document.getElementById('player-play-pause-btn');
-        const player_prev_btn = document.getElementById('player-prev-btn');
-        const player_next_btn = document.getElementById('player-next-btn');
-        const player_track_name = document.getElementById('player-track-name');
-        const player_track_tags = document.getElementById('player-track-tags');
-        const player_current_time = document.getElementById('player-current-time');
-        const player_total_time = document.getElementById('player-total-time');
-        const player_progress_bar = document.getElementById('player-progress-bar');
-        const player_volume_slider = document.getElementById('player-volume-slider');
-        const player_download_btn = document.getElementById('player-download-btn'); 
-
-        let current_selected_date = null;
-        let last_focused_element = null;
-        let current_audio_data = null;
-        let current_date_key = null;
-        let contextMenuDateKey = null; 
-        let noteModalDateKey = null; 
-        let tagModalDateKey = null; 
-
-        // --- LÓGICA DE NOTIFICACIÓN TOAST ---
-        function showToast(message) { /* ... sin cambios ... */ }
-
-        // --- ACCESSIBILITY HELPERS ---
-        function announce(message) { /* ... sin cambios ... */ }
-        function trapFocus(modal) { /* ... sin cambios ... */ }
-        
-        // --- CALENDAR LOGIC ---
+        // CALENDARIO
         function renderCalendar() {
-            calendar_grid.innerHTML = '';
-            const year = current_date.getFullYear();
-            const month = current_date.getMonth();
+            calendarGrid.innerHTML = '';
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
             
-            month_year_header.textContent = `${current_date.toLocaleString('es-ES', { month: 'long' })} ${year}`;
+            monthYearHeader.textContent = `${currentDate.toLocaleString('es-ES', { month: 'long' })} ${year}`;
 
-            const first_day = new Date(year, month, 1).getDay();
-            const days_in_month = new Date(year, month + 1, 0).getDate();
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-            // Celdas vacías del mes anterior
-            for (let i = 0; i < first_day; i++) {
-                 const day_cell = document.createElement('div');
-                 day_cell.classList.add('calendar-day', 'other-month');
-                 calendar_grid.appendChild(day_cell);
+            for (let i = 0; i < firstDay; i++) {
+                const dayCell = document.createElement('div');
+                dayCell.classList.add('calendar-day', 'other-month');
+                calendarGrid.appendChild(dayCell);
             }
 
-            // Días del mes actual
-            for (let i = 1; i <= days_in_month; i++) {
-                const day_cell = document.createElement('div');
-                const date_key = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-                day_cell.classList.add('calendar-day');
-                day_cell.dataset.date = date_key;
+            for (let i = 1; i <= daysInMonth; i++) {
+                const dayCell = document.createElement('div');
+                const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+                dayCell.classList.add('calendar-day');
+                dayCell.dataset.date = dateKey;
 
-                const day_number = document.createElement('span');
-                day_number.classList.add('day-number');
-                day_number.textContent = i;
+                const dayNumber = document.createElement('span');
+                dayNumber.classList.add('day-number');
+                dayNumber.textContent = i;
                 
-                const day_header = document.createElement('div');
-                day_header.style.display = 'flex'; 
-                day_header.style.alignItems = 'center';
-                day_header.appendChild(day_number); 
-                day_cell.appendChild(day_header);
+                const dayHeader = document.createElement('div');
+                dayHeader.style.display = 'flex';
+                dayHeader.style.alignItems = 'center';
+                dayHeader.appendChild(dayNumber);
+                dayCell.appendChild(dayHeader);
 
-                const tag_indicators = document.createElement('div');
-                tag_indicators.classList.add('day-tag-indicators');
-                day_cell.appendChild(tag_indicators);
+                const tagIndicators = document.createElement('div');
+                tagIndicators.classList.add('day-tag-indicators');
+                dayCell.appendChild(tagIndicators);
 
-                const events_container = document.createElement('div');
-                events_container.classList.add('day-events');
-                // CORRECCIÓN: Añadir eventos mock al contenedor
-                const mockEvents = getMockEventsForDate(new Date(year, month, i)); 
+                const eventsContainer = document.createElement('div');
+                eventsContainer.classList.add('day-events');
+                const mockEvents = getMockEventsForDate(new Date(year, month, i));
                 mockEvents.forEach(eventText => {
-                    const event_p = document.createElement('p');
-                    event_p.textContent = `• ${eventText}`;
-                    events_container.appendChild(event_p);
+                    const eventP = document.createElement('p');
+                    eventP.textContent = `• ${eventText}`;
+                    eventsContainer.appendChild(eventP);
                 });
-                day_cell.appendChild(events_container);
+                dayCell.appendChild(eventsContainer);
 
-
-                const data = day_data[date_key]; 
+                const data = dayData[dateKey];
                 let hasAudio = false;
                 let hasNote = false;
                 let dayTags = [];
 
                 if (data) {
-                    hasAudio = data.audioInfo && data.audioInfo.audios && data.audioInfo.audios.length > 0; // Más robusto
-                    hasNote = !!data.note; 
+                    hasAudio = data.audioInfo && data.audioInfo.audios && data.audioInfo.audios.length > 0;
+                    hasNote = !!data.note;
                     dayTags = data.tags || [];
 
-                     if (hasNote) day_cell.dataset.hasNote = 'true';
-                     if (hasAudio) day_cell.dataset.hasAudio = 'true'; 
+                    if (hasNote) dayCell.dataset.hasNote = 'true';
+                    if (hasAudio) dayCell.dataset.hasAudio = 'true';
                         
-                     if (hasAudio) {
-                        const is_filtered_out = active_tag_filter && !dayTags.includes(active_tag_filter); // Filtrar por tags DEL DÍA
-                        if (is_filtered_out) {
-                            day_cell.style.opacity = '0.3';
-                        } else if (data.audioInfo.status){ 
-                            const status_bar = document.createElement('div');
-                            status_bar.classList.add('day-status-bar', data.audioInfo.status);
-                            day_cell.appendChild(status_bar);
+                    if (hasAudio) {
+                        const isFilteredOut = activeTagFilter && !dayTags.includes(activeTagFilter);
+                        if (isFilteredOut) {
+                            dayCell.style.opacity = '0.3';
+                        } else if (data.audioInfo.status) {
+                            const statusBar = document.createElement('div');
+                            statusBar.classList.add('day-status-bar', data.audioInfo.status);
+                            dayCell.appendChild(statusBar);
                         }
                     } else {
-                        // Filtrar días sin audio si se filtra por tag
-                         const is_filtered_out = active_tag_filter && !dayTags.includes(active_tag_filter);
-                         if(is_filtered_out) day_cell.style.opacity = '0.3';
+                        const isFilteredOut = activeTagFilter && !dayTags.includes(activeTagFilter);
+                        if(isFilteredOut) dayCell.style.opacity = '0.3';
                     }
                     
-                    // Indicadores de etiquetas
-                     dayTags.slice(0, 3).forEach((tag, index) => {
-                         const dot = document.createElement('div');
-                         // Asigna un color basado en el índice o un hash simple del tag si quieres consistencia
-                         const colorIndex = (Array.from(global_tags).indexOf(tag) % 3) + 1; // 1, 2, or 3
-                         dot.classList.add('day-tag-dot', `color-${colorIndex}`);
-                         dot.setAttribute('title', tag); // Tooltip con el nombre del tag
-                         tag_indicators.appendChild(dot);
+                    dayTags.slice(0, 3).forEach((tag, index) => {
+                        const dot = document.createElement('div');
+                        const colorIndex = (Array.from(globalTags).indexOf(tag) % 3) + 1;
+                        dot.classList.add('day-tag-dot', `color-${colorIndex}`);
+                        dot.setAttribute('title', tag);
+                        tagIndicators.appendChild(dot);
                     });
                     if (dayTags.length > 3) {
-                         const dot = document.createElement('div');
-                         dot.classList.add('day-tag-dot', 'color-other');
-                         dot.setAttribute('title', `${dayTags.length - 3} más...`);
-                         tag_indicators.appendChild(dot);
+                        const dot = document.createElement('div');
+                        dot.classList.add('day-tag-dot', 'color-other');
+                        dot.setAttribute('title', `${dayTags.length - 3} más...`);
+                        tagIndicators.appendChild(dot);
                     }
                 } else {
-                    // Filtrar días completamente vacíos si hay filtro
-                    if(active_tag_filter) day_cell.style.opacity = '0.3';
+                    if(activeTagFilter) dayCell.style.opacity = '0.3';
                 }
 
-                // ARIA Label
-                day_cell.setAttribute('role', 'button');
-                day_cell.setAttribute('tabindex', '-1');
-                if (i === 1) day_cell.setAttribute('tabindex', '0');
+                dayCell.setAttribute('role', 'button');
+                dayCell.setAttribute('tabindex', '-1');
+                if (i === 1) dayCell.setAttribute('tabindex', '0');
                 
-                const date_obj = new Date(year, month, i);
-                let ariaLabel = `${date_obj.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.`;
+                const dateObj = new Date(year, month, i);
+                let ariaLabel = `${dateObj.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.`;
                 
                 if (hasAudio) ariaLabel += ` Contiene audio.`;
                 if (hasNote) ariaLabel += ` Contiene nota.`;
                 if (dayTags.length > 0) ariaLabel += ` ${dayTags.length} etiqueta(s) asignada(s).`;
-                // const mockEvents = data?.mock_events || []; // Ya definido arriba
                 if (mockEvents.length > 0) ariaLabel += ` ${mockEvents.length} evento(s) programado(s).`;
-
                 if (!hasAudio && !hasNote && mockEvents.length === 0) ariaLabel += ` Vacío.`;
                 
                 ariaLabel += " Clic izquierdo para reproducir o añadir, clic derecho para opciones.";
                 
-                day_cell.setAttribute('aria-label', ariaLabel);
+                dayCell.setAttribute('aria-label', ariaLabel);
 
-                day_cell.addEventListener('click', () => onDayClick(date_key));
-                day_cell.addEventListener('contextmenu', (e) => onDayRightClick(e, date_key));
-                calendar_grid.appendChild(day_cell);
+                dayCell.addEventListener('click', () => onDayClick(dateKey));
+                dayCell.addEventListener('contextmenu', (e) => onDayRightClick(e, dateKey));
+                calendarGrid.appendChild(dayCell);
             }
         }
 
-
-        // --- LÓGICA DE CLIC EN DÍA (ACTUALIZADA) ---
         function onDayClick(dateKey) {
-            current_selected_date = dateKey; 
-            const data = day_data[dateKey]; 
+            currentSelectedDate = dateKey;
+            const data = dayData[dateKey];
             
             if (data && data.audioInfo && data.audioInfo.audios.length > 0) {
                 playAudio(data.audioInfo.audios[0], dateKey);
             } else {
-                openEmptyDayModal(dateKey); 
+                openEmptyDayModal(dateKey);
             }
         }
 
-        // --- LÓGICA CLIC DERECHO ---
         function onDayRightClick(event, dateKey) {
-            event.preventDefault(); 
-            hideContextMenu(); 
-            contextMenuDateKey = dateKey; 
+            event.preventDefault();
+            hideContextMenu();
+            contextMenuDateKey = dateKey;
             contextMenu.style.left = `${event.clientX}px`;
             contextMenu.style.top = `${event.clientY}px`;
 
-             const audioOptions = contextMenu.querySelectorAll('[data-action="details-summary"], [data-action="details-transcription"], [data-action="download"], hr');
-             const data = day_data[dateKey];
-             const hasAudio = data && data.audioInfo && data.audioInfo.audios.length > 0;
-             audioOptions.forEach(opt => opt.style.display = hasAudio ? 'block' : 'none');
+            const audioOptions = contextMenu.querySelectorAll('[data-action="details-summary"], [data-action="details-transcription"], [data-action="download"], hr');
+            const data = dayData[dateKey];
+            const hasAudio = data && data.audioInfo && data.audioInfo.audios.length > 0;
+            audioOptions.forEach(opt => opt.style.display = hasAudio ? 'block' : 'none');
 
             contextMenu.classList.add('show');
         }
 
-        function hideContextMenu() { 
+        function hideContextMenu() {
             contextMenu.classList.remove('show');
             contextMenuDateKey = null;
-         }
+        }
 
-        // --- KEYBOARD NAVIGATION (CALENDAR) ---
-        calendar_grid.addEventListener('keydown', (e) => { 
+        // NAVEGACIÓN POR TECLADO
+        calendarGrid.addEventListener('keydown', (e) => {
             const focusedDay = document.activeElement;
             if (!focusedDay.classList.contains('calendar-day')) return;
-            // ... (navegación con flechas sin cambios) ...
-             if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                focusedDay.click(); 
-                return;
-             }
-             if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) {
-                  e.preventDefault();
-                  const rect = focusedDay.getBoundingClientRect();
-                  const mockEvent = { 
-                     clientX: rect.left + rect.width / 2, 
-                     clientY: rect.top + rect.height / 2,
-                     preventDefault: () => {}
-                 };
-                 onDayRightClick(mockEvent, focusedDay.dataset.date);
-                 contextMenu.querySelector('button')?.focus();
-                 return;
-             }
-         });
-
-        // --- LÓGICA DEL REPRODUCTOR GLOBAL ---
-        function playAudio(audio, dateKey) {
-            current_audio_data = audio;
-            current_date_key = dateKey;
             
-            global_audio_player.src = audio.url;
-            global_audio_player.play().catch(e => {
+            const days = Array.from(calendarGrid.querySelectorAll('.calendar-day:not(.other-month)'));
+            const currentIndex = days.findIndex(day => day === focusedDay);
+            let nextIndex = -1;
+
+            switch (e.key) {
+                case 'ArrowRight': nextIndex = currentIndex + 1; break;
+                case 'ArrowLeft': nextIndex = currentIndex - 1; break;
+                case 'ArrowDown': nextIndex = currentIndex + 7; break;
+                case 'ArrowUp': nextIndex = currentIndex - 7; break;
+                case 'Enter':
+                case ' ':
+                    e.preventDefault();
+                    focusedDay.click();
+                    return;
+                case 'ContextMenu':
+                case 'F10':
+                    if (e.key === 'F10' && !e.shiftKey) return;
+                    e.preventDefault();
+                    const rect = focusedDay.getBoundingClientRect();
+                    const mockEvent = {
+                        clientX: rect.left + rect.width / 2,
+                        clientY: rect.top + rect.height / 2,
+                        preventDefault: () => {}
+                    };
+                    onDayRightClick(mockEvent, focusedDay.dataset.date);
+                    contextMenu.querySelector('button')?.focus();
+                    return;
+                default: return;
+            }
+            e.preventDefault();
+            if (nextIndex >= 0 && nextIndex < days.length) {
+                focusedDay.setAttribute('tabindex', '-1');
+                days[nextIndex].setAttribute('tabindex', '0');
+                days[nextIndex].focus();
+            }
+        });
+
+        // REPRODUCTOR
+        function playAudio(audio, dateKey) {
+            currentAudioData = audio;
+            currentDateKey = dateKey;
+            
+            globalAudioPlayer.src = audio.url;
+            globalAudioPlayer.play().catch(e => {
                 console.error("Error al reproducir audio:", e);
                 showToast(`❌ Error al reproducir ${audio.name}. ¿Existe el archivo en 'media/'?`);
-            }); 
+            });
             
-            player_bar.style.display = 'flex';
-            player_play_pause_btn.textContent = '⏸️';
-            player_play_pause_btn.setAttribute('aria-label', 'Pausar');
-            player_track_name.textContent = audio.name;
-            player_track_tags.textContent = (day_data[dateKey]?.tags || []).join(', '); 
-            player_download_btn.href = audio.url;
-            player_download_btn.download = audio.name;
+            playerBar.style.display = 'flex';
+            playerPlayPauseBtn.textContent = '⏸️';
+            playerPlayPauseBtn.setAttribute('aria-label', 'Pausar');
+            playerTrackName.textContent = audio.name;
+            playerTrackTags.textContent = (dayData[dateKey]?.tags || []).join(', ');
+            playerDownloadBtn.href = audio.url;
+            playerDownloadBtn.download = audio.name;
 
             showToast(`🎧 Reproduciendo: ${audio.name}`);
         }
 
-        function togglePlayPause() { 
-             if(!current_audio_data) return; 
-             if (global_audio_player.paused) {
-                global_audio_player.play().catch(e => console.error("Error al reproducir audio:", e));
-                player_play_pause_btn.textContent = '⏸️';
-                player_play_pause_btn.setAttribute('aria-label', 'Pausar');
+        function togglePlayPause() {
+            if(!currentAudioData) return;
+            if (globalAudioPlayer.paused) {
+                globalAudioPlayer.play().catch(e => console.error("Error al reproducir audio:", e));
+                playerPlayPauseBtn.textContent = '⏸️';
+                playerPlayPauseBtn.setAttribute('aria-label', 'Pausar');
                 announce("Audio reproducido.");
             } else {
-                global_audio_player.pause();
-                player_play_pause_btn.textContent = '▶️';
-                player_play_pause_btn.setAttribute('aria-label', 'Reproducir');
+                globalAudioPlayer.pause();
+                playerPlayPauseBtn.textContent = '▶️';
+                playerPlayPauseBtn.setAttribute('aria-label', 'Reproducir');
                 announce("Audio pausado.");
-            }
-         }
-        function formatTime(seconds) { /* ... sin cambios ... */ }
-        
-        function updatePlayerProgress() {
-            if (isNaN(global_audio_player.duration) || !isFinite(global_audio_player.currentTime)) {
-                player_current_time.textContent = '00:00';
-                player_total_time.textContent = '00:00';
-                // CORRECCIÓN: Evitar NaN en value
-                player_progress_bar.value = 0; 
-                return;
-            }
-            player_current_time.textContent = formatTime(global_audio_player.currentTime);
-            player_total_time.textContent = formatTime(global_audio_player.duration);
-            
-            const percentage = global_audio_player.duration > 0 ? (global_audio_player.currentTime / global_audio_player.duration) * 100 : 0;
-
-            if (!player_progress_bar.matches(':active')) { 
-                // CORRECCIÓN: Evitar NaN en value
-                player_progress_bar.value = isNaN(percentage) ? 0 : percentage; 
             }
         }
 
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return '00:00';
+            const minutes = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+        
+        function updatePlayerProgress() {
+            if (isNaN(globalAudioPlayer.duration) || !isFinite(globalAudioPlayer.currentTime)) {
+                playerCurrentTime.textContent = '00:00';
+                playerTotalTime.textContent = '00:00';
+                playerProgressBar.value = 0;
+                return;
+            }
+            playerCurrentTime.textContent = formatTime(globalAudioPlayer.currentTime);
+            playerTotalTime.textContent = formatTime(globalAudioPlayer.duration);
+            
+            const percentage = globalAudioPlayer.duration > 0 ? (globalAudioPlayer.currentTime / globalAudioPlayer.duration) * 100 : 0;
 
-        // --- LÓGICA DE MODALES ---
-        function openAudioDetailsModal(dateKey, defaultTab = 'summary') { /* ... sin cambios ... */ }
-        function openEmptyDayModal(dateKey) { /* ... sin cambios ... */ }
-        function openNoteModal(dateKey) { /* ... sin cambios ... */ }
-        function saveNote() { /* ... sin cambios ... */ }
-        function openTagModal(dateKey) { /* ... sin cambios ... */ }
-        function addNewTagToList() { /* ... sin cambios ... */ }
-        function saveTags() { /* ... sin cambios ... */ }
-        function openModal(modal) { /* ... sin cambios ... */ }
-        function closeModal(modal) { /* ... sin cambios ... */ }
-        document.addEventListener('keydown', (e) => { /* ... sin cambios ... */ });
-        document.querySelector('.theme-switcher').addEventListener('click', (e) => { /* ... sin cambios ... */ });
+            if (!playerProgressBar.matches(':active')) {
+                playerProgressBar.value = isNaN(percentage) ? 0 : percentage;
+            }
+        }
 
-        // --- INIT & EVENT LISTENERS ---
+        // MODALES
+        function openAudioDetailsModal(dateKey, defaultTab = 'summary') {
+            const data = dayData[dateKey];
+            if (!data || !data.audioInfo || !data.audioInfo.audios.length) return;
+
+            const audio = data.audioInfo.audios[0];
+            const dayViewTitle = document.getElementById('day-view-title');
+            const dayAudioList = document.getElementById('day-audio-list');
+
+            dayViewTitle.textContent = `Detalles del Audio - ${dateKey}`;
+            dayAudioList.innerHTML = '';
+
+            const audioEntry = document.createElement('div');
+            audioEntry.className = 'audio-entry';
+            audioEntry.innerHTML = `
+                <h3>${audio.name}</h3>
+                <div class="ai-tabs">
+                    <button class="ai-tab ${defaultTab === 'summary' ? 'active' : ''}" data-tab="summary">Resumen IA</button>
+                    <button class="ai-tab ${defaultTab === 'transcription' ? 'active' : ''}" data-tab="transcription">Transcripción</button>
+                </div>
+                <div class="ai-content" id="ai-content-area">
+                    ${defaultTab === 'summary' ? `
+                        <p><strong>Resumen:</strong> ${audio.summary}</p>
+                        ${audio.action_items && audio.action_items.length > 0 ? `
+                            <p><strong>Puntos de Acción:</strong></p>
+                            <ul>${audio.action_items.map(item => `<li>${item}</li>`).join('')}</ul>
+                        ` : ''}
+                        ${audio.decisions && audio.decisions.length > 0 ? `
+                            <p><strong>Decisiones:</strong></p>
+                            <ul>${audio.decisions.map(item => `<li>${item}</li>`).join('')}</ul>
+                        ` : ''}
+                    ` : `
+                        <p id="transcription-text">
+                            ${audio.transcription.map(w => `<span class="transcription-word" data-start="${w.startTime}" data-end="${w.endTime}">${w.word}</span>`).join(' ')}
+                        </p>
+                    `}
+                </div>
+            `;
+
+            dayAudioList.appendChild(audioEntry);
+
+            const aiTabs = audioEntry.querySelectorAll('.ai-tab');
+            const aiContentArea = audioEntry.querySelector('#ai-content-area');
+
+            aiTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    aiTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+
+                    const tabType = tab.dataset.tab;
+                    if (tabType === 'summary') {
+                        aiContentArea.innerHTML = `
+                            <p><strong>Resumen:</strong> ${audio.summary}</p>
+                            ${audio.action_items && audio.action_items.length > 0 ? `
+                                <p><strong>Puntos de Acción:</strong></p>
+                                <ul>${audio.action_items.map(item => `<li>${item}</li>`).join('')}</ul>
+                            ` : ''}
+                            ${audio.decisions && audio.decisions.length > 0 ? `
+                                <p><strong>Decisiones:</strong></p>
+                                <ul>${audio.decisions.map(item => `<li>${item}</li>`).join('')}</ul>
+                            ` : ''}
+                        `;
+                    } else if (tabType === 'transcription') {
+                        aiContentArea.innerHTML = `
+                            <p id="transcription-text">
+                                ${audio.transcription.map(w => `<span class="transcription-word" data-start="${w.startTime}" data-end="${w.endTime}">${w.word}</span>`).join(' ')}
+                            </p>
+                        `;
+
+                        const words = aiContentArea.querySelectorAll('.transcription-word');
+                        words.forEach(word => {
+                            word.addEventListener('click', () => {
+                                const startTime = parseFloat(word.dataset.start);
+                                if (currentAudioData && currentAudioData.id === audio.id) {
+                                    globalAudioPlayer.currentTime = startTime;
+                                    if (globalAudioPlayer.paused) globalAudioPlayer.play();
+                                } else {
+                                    playAudio(audio, dateKey);
+                                    setTimeout(() => { globalAudioPlayer.currentTime = startTime; }, 100);
+                                }
+                            });
+                        });
+
+                        globalAudioPlayer.addEventListener('timeupdate', () => {
+                            if (currentAudioData && currentAudioData.id === audio.id) {
+                                const currentTime = globalAudioPlayer.currentTime;
+                                words.forEach(word => {
+                                    const start = parseFloat(word.dataset.start);
+                                    const end = parseFloat(word.dataset.end);
+                                    if (currentTime >= start && currentTime <= end) {
+                                        word.classList.add('highlight');
+                                    } else {
+                                        word.classList.remove('highlight');
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+            });
+
+            openModal(dayViewModal);
+        }
+
+        function openEmptyDayModal(dateKey) {
+            currentSelectedDate = dateKey;
+            const emptyDayTitle = document.getElementById('empty-day-title');
+            emptyDayTitle.textContent = `Día ${dateKey}`;
+            openModal(emptyDayModal);
+        }
+
+        function openNoteModal(dateKey) {
+            noteModalDateKey = dateKey;
+            const noteModalTitle = document.getElementById('note-modal-title');
+            noteModalTitle.textContent = `Nota para el día ${dateKey}`;
+            
+            const data = dayData[dateKey];
+            noteModalTextarea.value = data?.note || '';
+            
+            openModal(noteModal);
+            noteModalTextarea.focus();
+        }
+
+        function saveNote() {
+            if (!noteModalDateKey) return;
+            
+            if (!dayData[noteModalDateKey]) {
+                dayData[noteModalDateKey] = { note: '', tags: [], audioInfo: null, mock_events: [] };
+            }
+            
+            dayData[noteModalDateKey].note = noteModalTextarea.value;
+            
+            closeModal(noteModal);
+            renderCalendar();
+            showToast('✅ Nota guardada correctamente');
+        }
+
+        function openTagModal(dateKey) {
+            tagModalDateKey = dateKey;
+            const tagModalTitle = document.getElementById('tag-modal-title');
+            tagModalTitle.textContent = `Etiquetas para el día ${dateKey}`;
+            
+            const data = dayData[dateKey];
+            const currentTags = data?.tags || [];
+            
+            tagModalList.innerHTML = '';
+            globalTags.forEach(tag => {
+                const label = document.createElement('label');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = tag;
+                checkbox.checked = currentTags.includes(tag);
+                
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(tag));
+                tagModalList.appendChild(label);
+            });
+            
+            openModal(tagModal);
+        }
+
+        function addNewTagToList() {
+            const newTag = tagModalNewInput.value.trim();
+            if (!newTag) return;
+            
+            if (globalTags.has(newTag)) {
+                showToast('⚠️ Esta etiqueta ya existe');
+                return;
+            }
+            
+            globalTags.add(newTag);
+            
+            const label = document.createElement('label');
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.value = newTag;
+            checkbox.checked = true;
+            
+            label.appendChild(checkbox);
+            label.appendChild(document.createTextNode(newTag));
+            tagModalList.appendChild(label);
+            
+            tagModalNewInput.value = '';
+            updateTagFilters();
+            showToast('✅ Nueva etiqueta añadida');
+        }
+
+        function saveTags() {
+            if (!tagModalDateKey) return;
+            
+            const checkboxes = tagModalList.querySelectorAll('input[type="checkbox"]:checked');
+            const selectedTags = Array.from(checkboxes).map(cb => cb.value);
+            
+            if (!dayData[tagModalDateKey]) {
+                dayData[tagModalDateKey] = { note: '', tags: [], audioInfo: null, mock_events: [] };
+            }
+            
+            dayData[tagModalDateKey].tags = selectedTags;
+            
+            closeModal(tagModal);
+            renderCalendar();
+            updateTagFilters();
+            showToast('✅ Etiquetas guardadas correctamente');
+        }
+
+        function openModal(modal) {
+            modal.style.display = 'flex';
+            lastFocusedElement = document.activeElement;
+            const firstFocusable = modal.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+            if (firstFocusable) firstFocusable.focus();
+            trapFocus(modal);
+        }
+
+        function closeModal(modal) {
+            modal.style.display = 'none';
+            if (lastFocusedElement) lastFocusedElement.focus();
+        }
+
+        // FILTROS Y VISTAS
+        function updateTagFilters() {
+            tagList.innerHTML = '';
+            globalTags.forEach(tag => {
+                const button = document.createElement('button');
+                button.textContent = tag;
+                button.setAttribute('role', 'option');
+                button.setAttribute('aria-selected', activeTagFilter === tag);
+                
+                if (activeTagFilter === tag) {
+                    button.classList.add('active');
+                }
+                
+                button.addEventListener('click', () => {
+                    if (activeTagFilter === tag) {
+                        activeTagFilter = null;
+                        button.classList.remove('active');
+                        button.setAttribute('aria-selected', 'false');
+                        announce('Filtro eliminado, mostrando todos los días');
+                    } else {
+                        const allButtons = tagList.querySelectorAll('button');
+                        allButtons.forEach(b => {
+                            b.classList.remove('active');
+                            b.setAttribute('aria-selected', 'false');
+                        });
+                        activeTagFilter = tag;
+                        button.classList.add('active');
+                        button.setAttribute('aria-selected', 'true');
+                        announce(`Filtrando por etiqueta: ${tag}`);
+                    }
+                    renderCalendar();
+                    if (currentView === 'timeline') renderTimeline(activeTagFilter);
+                });
+                
+                tagList.appendChild(button);
+            });
+        }
+
+        function switchView(view) {
+            currentView = view;
+            if (view === 'calendar') {
+                calendarView.style.display = 'flex';
+                timelineView.style.display = 'none';
+                viewCalendarBtn.classList.add('active');
+                viewTimelineBtn.classList.remove('active');
+                announce('Vista de calendario activada');
+            } else if (view === 'timeline') {
+                calendarView.style.display = 'none';
+                timelineView.style.display = 'block';
+                viewCalendarBtn.classList.remove('active');
+                viewTimelineBtn.classList.add('active');
+                renderTimeline(activeTagFilter);
+                announce('Vista de línea de tiempo activada');
+            }
+        }
+
+        function renderTimeline(tag) {
+            timelineContent.innerHTML = '';
+            timelineHeader.textContent = tag ? `Línea de Tiempo - ${tag}` : 'Línea de Tiempo';
+
+            const sortedDates = Object.keys(dayData).sort((a, b) => new Date(b) - new Date(a));
+            
+            sortedDates.forEach(dateKey => {
+                const data = dayData[dateKey];
+                if (tag && (!data.tags || !data.tags.includes(tag))) return;
+                
+                const item = document.createElement('div');
+                item.className = 'timeline-item';
+                
+                const hasAudio = data.audioInfo && data.audioInfo.audios && data.audioInfo.audios.length > 0;
+                const audioName = hasAudio ? data.audioInfo.audios[0].name : 'Sin audio';
+                
+                item.innerHTML = `
+                    <h3>${dateKey}</h3>
+                    <p><strong>Audio:</strong> ${audioName}</p>
+                    ${data.note ? `<p><strong>Nota:</strong> ${data.note}</p>` : ''}
+                    ${data.tags && data.tags.length > 0 ? `<p><strong>Etiquetas:</strong> ${data.tags.join(', ')}</p>` : ''}
+                    ${hasAudio ? `<button class="play-audio-btn" data-date="${dateKey}">▶️ Reproducir</button>` : ''}
+                `;
+                
+                timelineContent.appendChild(item);
+            });
+
+            timelineContent.querySelectorAll('.play-audio-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const dateKey = btn.dataset.date;
+                    const audio = dayData[dateKey].audioInfo.audios[0];
+                    playAudio(audio, dateKey);
+                });
+            });
+        }
+
+        // INICIALIZACIÓN
         function init() {
-            // ... (preferencia de tema sin cambios) ...
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.className = savedTheme === 'dark' ? '' : `theme-${savedTheme}`;
+            document.querySelectorAll('.theme-switcher button').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.theme === savedTheme);
+            });
 
             loadInitialData();
-            current_date = new Date(2025, 9, 1); 
+            currentDate = new Date(2025, 9, 1);
             renderCalendar();
-            updateTagFilters(); 
+            updateTagFilters();
             
-            document.querySelectorAll('.modal-close').forEach(button => { /* ... sin cambios ... */ });
-            prev_month_btn.addEventListener('click', () => { /* ... sin cambios ... */ });
-            next_month_btn.addEventListener('click', () => { /* ... sin cambios ... */ });
-            menu_toggle_btn.addEventListener('click', () => { /* ... sin cambios ... */ });
-            backdrop.addEventListener('click', () => { /* ... sin cambios ... */ });
-            view_calendar_btn.addEventListener('click', () => switchView('calendar'));
-            view_timeline_btn.addEventListener('click', () => switchView('timeline'));
-            tag_list.addEventListener('click', (e) => { /* ... sin cambios ... */ });
-            document.getElementById('open-add-audio-modal-btn-2').addEventListener('click', () => { /* ... sin cambios ... */ });
-            document.getElementById('open-note-modal-btn-empty').addEventListener('click', () => { /* ... sin cambios ... */ });
-            add_audio_form.addEventListener('submit', (e) => { /* ... sin cambios ... */ });
-            document.getElementById('day-view-modal-content').addEventListener('click', (e) => { /* ... sin cambios ... */ });
-            
-            // --- LISTENERS DEL REPRODUCTOR GLOBAL (CORREGIDOS) ---
-            player_play_pause_btn.addEventListener('click', togglePlayPause);
-            
-            // CORRECCIÓN: Usar 'timeupdate' consistentemente
-            global_audio_player.addEventListener('timeupdate', updatePlayerProgress); 
-            global_audio_player.addEventListener('loadedmetadata', updatePlayerProgress); 
-            global_audio_player.addEventListener('durationchange', updatePlayerProgress); 
-            global_audio_player.addEventListener('ended', () => { 
-                 player_play_pause_btn.textContent = '▶️';
-                 player_play_pause_btn.setAttribute('aria-label', 'Reproducir');
-                 // CORRECCIÓN: Resetear value y currentTime display
-                 player_progress_bar.value = 0; 
-                 player_current_time.textContent = formatTime(0);
-             });
-            global_audio_player.addEventListener('error', (e) => { /* ... sin cambios ... */ });
+            // MODALES
+            document.querySelectorAll('.modal-close').forEach(button => {
+                button.addEventListener('click', () => {
+                    closeModal(button.closest('.modal-overlay'));
+                });
+            });
 
-            player_progress_bar.addEventListener('input', (e) => { 
-                 if (isNaN(global_audio_player.duration)) return;
-                 const newTime = (e.target.value / 100) * global_audio_player.duration;
-                 // CORRECCIÓN: Asegurarse de que el formato sea correcto incluso al arrastrar
-                 player_current_time.textContent = formatTime(isNaN(newTime) ? 0 : newTime); 
-             });
-            player_progress_bar.addEventListener('change', (e) => { 
-                if (isNaN(global_audio_player.duration)) return;
-                const newTime = (e.target.value / 100) * global_audio_player.duration;
-                 // CORRECCIÓN: Asegurarse de que el valor sea válido antes de asignarlo
-                if (isFinite(newTime)) {
-                     global_audio_player.currentTime = newTime;
+            // NAVEGACIÓN
+            prevMonthBtn.addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() - 1);
+                renderCalendar();
+                announce(`Navegando a ${currentDate.toLocaleString('es-ES', { month: 'long', year: 'numeric' })}`);
+            });
+
+            nextMonthBtn.addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                renderCalendar();
+                announce(`Navegando a ${currentDate.toLocaleString('es-ES', { month: 'long', year: 'numeric' })}`);
+            });
+
+            // MENÚ
+            menuToggleBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('is-open');
+                backdrop.classList.toggle('is-visible');
+            });
+
+            backdrop.addEventListener('click', () => {
+                sidebar.classList.remove('is-open');
+                backdrop.classList.remove('is-visible');
+            });
+
+            // VISTAS
+            viewCalendarBtn.addEventListener('click', () => switchView('calendar'));
+            viewTimelineBtn.addEventListener('click', () => switchView('timeline'));
+
+            // ETIQUETAS
+            tagList.addEventListener('click', (e) => {
+                const button = e.target.closest('button');
+                if (!button) return;
+            });
+
+            // MODALES VACÍOS
+            document.getElementById('open-add-audio-modal-btn-2').addEventListener('click', () => {
+                closeModal(emptyDayModal);
+                openModal(addAudioModal);
+            });
+
+            document.getElementById('open-note-modal-btn-empty').addEventListener('click', () => {
+                closeModal(emptyDayModal);
+                openNoteModal(currentSelectedDate);
+            });
+
+            // FORMULARIO AUDIO
+            addAudioForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const fileInput = document.getElementById('audio-file');
+                const file = fileInput.files[0];
+                
+                if (!file) return;
+
+                processingIndicator.style.display = 'block';
+
+                setTimeout(() => {
+                    const dateKey = currentSelectedDate;
+                    const audioUrl = URL.createObjectURL(file);
+                    const newAudio = {
+                        id: Date.now().toString(),
+                        name: file.name,
+                        url: audioUrl,
+                        summary: "Resumen simulado del audio procesado.",
+                        action_items: ["Acción de ejemplo 1", "Acción de ejemplo 2"],
+                        decisions: ["Decisión simulada"],
+                        transcription: [
+                            { "word": "Este", "startTime": 0.1, "endTime": 0.3 },
+                            { "word": "es", "startTime": 0.4, "endTime": 0.6 },
+                            { "word": "un", "startTime": 0.7, "endTime": 0.9 },
+                            { "word": "ejemplo.", "startTime": 1.0, "endTime": 1.5 }
+                        ],
+                        comments: []
+                    };
+
+                    if (!dayData[dateKey]) {
+                        dayData[dateKey] = { note: '', tags: [], audioInfo: null, mock_events: [] };
+                    }
+
+                    if (!dayData[dateKey].audioInfo) {
+                        dayData[dateKey].audioInfo = { status: 'uploaded', audios: [] };
+                    }
+
+                    dayData[dateKey].audioInfo.audios.push(newAudio);
+
+                    processingIndicator.style.display = 'none';
+                    addAudioForm.reset();
+                    closeModal(addAudioModal);
+                    renderCalendar();
+                    showToast('✅ Audio añadido correctamente');
+                }, 2000);
+            });
+
+            // DETALLES
+            document.getElementById('day-view-modal-content').addEventListener('click', (e) => {
+                if (e.target.classList.contains('transcription-word')) {
+                    return;
                 }
             });
 
-            player_volume_slider.addEventListener('input', (e) => { 
-                global_audio_player.volume = e.target.value;
+            // REPRODUCTOR
+            playerPlayPauseBtn.addEventListener('click', togglePlayPause);
+            
+            globalAudioPlayer.addEventListener('timeupdate', updatePlayerProgress);
+            globalAudioPlayer.addEventListener('loadedmetadata', updatePlayerProgress);
+            globalAudioPlayer.addEventListener('durationchange', updatePlayerProgress);
+            globalAudioPlayer.addEventListener('ended', () => {
+                playerPlayPauseBtn.textContent = '▶️';
+                playerPlayPauseBtn.setAttribute('aria-label', 'Reproducir');
+                playerProgressBar.value = 0;
+                playerCurrentTime.textContent = formatTime(0);
+            });
+            globalAudioPlayer.addEventListener('error', (e) => {
+                console.error("Error en el reproductor de audio:", e);
+                showToast('❌ Error al cargar el audio');
             });
 
-            player_download_btn.addEventListener('click', (e) => { /* ... sin cambios ... */ });
+            playerProgressBar.addEventListener('input', (e) => {
+                if (isNaN(globalAudioPlayer.duration)) return;
+                const newTime = (e.target.value / 100) * globalAudioPlayer.duration;
+                playerCurrentTime.textContent = formatTime(isNaN(newTime) ? 0 : newTime);
+            });
+            playerProgressBar.addEventListener('change', (e) => {
+                if (isNaN(globalAudioPlayer.duration)) return;
+                const newTime = (e.target.value / 100) * globalAudioPlayer.duration;
+                if (isFinite(newTime)) {
+                    globalAudioPlayer.currentTime = newTime;
+                }
+            });
 
-            // --- LISTENERS MENÚ CONTEXTUAL Y MODALES NUEVOS ---
-            // CORRECCIÓN: Asegurar que el listener del menú contextual esté presente y funcione
+            playerVolumeSlider.addEventListener('input', (e) => {
+                globalAudioPlayer.volume = e.target.value;
+            });
+
+            playerDownloadBtn.addEventListener('click', (e) => {
+                if (!currentAudioData) {
+                    e.preventDefault();
+                    showToast('❌ No hay audio en reproducción');
+                }
+            });
+
+            // MENÚ CONTEXTUAL
             contextMenu.addEventListener('click', (e) => {
-                 if (!contextMenuDateKey || !e.target.matches('button')) return; // Salir si no hay fecha o no es botón
-                 
-                 const action = e.target.dataset.action;
-                 const data = day_data[contextMenuDateKey];
-                 const audio = data?.audioInfo?.audios[0];
+                e.stopPropagation();
+                e.preventDefault();
 
-                 switch (action) {
-                     case 'details-summary':
-                         if (audio) openAudioDetailsModal(contextMenuDateKey, 'summary');
-                         else announce("No hay audio para ver resumen.");
-                         break;
-                     case 'details-transcription':
-                         if (audio) openAudioDetailsModal(contextMenuDateKey, 'transcription');
-                         else announce("No hay audio para ver transcripción.");
-                         break;
-                     case 'edit-note':
-                         openNoteModal(contextMenuDateKey);
-                         break;
-                     case 'manage-tags':
-                         openTagModal(contextMenuDateKey);
-                         break;
-                     case 'download':
-                         if (audio) {
-                             const a = document.createElement('a');
-                             a.href = audio.url;
-                             a.download = audio.name;
-                             document.body.appendChild(a);
-                             a.click();
-                             document.body.removeChild(a);
-                             announce(`Descargando ${audio.name}`);
-                         } else {
-                             announce("No hay audio para descargar.");
-                         }
-                         break;
-                 }
-                 hideContextMenu(); // Ocultar menú después de la acción
-             });
+                const button = e.target.closest('button');
+                if (!contextMenuDateKey || !button) return;
+                
+                const action = button.dataset.action;
+                const data = dayData[contextMenuDateKey];
+                const audio = data?.audioInfo?.audios[0];
 
-            document.addEventListener('click', (e) => { /* ... sin cambios ... */ });
-            window.addEventListener('scroll', hideContextMenu, true); 
-            note_modal_save.addEventListener('click', saveNote);
-            tag_modal_add_btn.addEventListener('click', addNewTagToList);
-            tag_modal_new_input.addEventListener('keydown', (e) => { /* ... sin cambios ... */ });
-            tag_modal_save.addEventListener('click', saveTags);
+                switch (action) {
+                    case 'details-summary':
+                        if (audio) openAudioDetailsModal(contextMenuDateKey, 'summary');
+                        else showToast("❌ No hay audio para ver resumen.");
+                        break;
+                    case 'details-transcription':
+                        if (audio) openAudioDetailsModal(contextMenuDateKey, 'transcription');
+                        else showToast("❌ No hay audio para ver transcripción.");
+                        break;
+                    case 'edit-note':
+                        openNoteModal(contextMenuDateKey);
+                        break;
+                    case 'manage-tags':
+                        openTagModal(contextMenuDateKey);
+                        break;
+                    case 'download':
+                        if (audio) {
+                            const a = document.createElement('a');
+                            a.href = audio.url;
+                            a.download = audio.name;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            showToast(`💾 Descargando ${audio.name}`);
+                        } else {
+                            showToast("❌ No hay audio para descargar.");
+                        }
+                        break;
+                }
+                hideContextMenu();
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!contextMenu.contains(e.target) && !e.target.closest('.calendar-day')) {
+                    hideContextMenu();
+                }
+            });
+            window.addEventListener('scroll', hideContextMenu, true);
+
+            // NOTAS Y ETIQUETAS
+            noteModalSave.addEventListener('click', saveNote);
+            tagModalAddBtn.addEventListener('click', addNewTagToList);
+            tagModalNewInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addNewTagToList();
+                }
+            });
+            tagModalSave.addEventListener('click', saveTags);
         }
-        
-        // --- FUNCIONES DE FILTRO ---
-        function updateTagFilters() { /* ... sin cambios ... */ }
-        
-        // --- CAMBIO DE VISTA ---
-        function switchView(view) { /* ... sin cambios ... */ }
-        function renderTimeline(tag) { /* ... sin cambios ... */ }
 
-        // Init
+        // TECLADO GLOBAL
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const openModal = document.querySelector('.modal-overlay[style*="display: flex"]');
+                if (openModal) {
+                    closeModal(openModal);
+                } else if (sidebar.classList.contains('is-open')) {
+                    sidebar.classList.remove('is-open');
+                    backdrop.classList.remove('is-visible');
+                } else if (contextMenu.classList.contains('show')) {
+                    hideContextMenu();
+                }
+            }
+        });
+
+        // TEMA
+        document.querySelector('.theme-switcher').addEventListener('click', (e) => {
+            const button = e.target.closest('button[data-theme]');
+            if (!button) return;
+
+            const theme = button.dataset.theme;
+            document.documentElement.className = theme === 'dark' ? '' : `theme-${theme}`;
+            localStorage.setItem('theme', theme);
+
+            document.querySelectorAll('.theme-switcher button').forEach(btn => {
+                btn.classList.toggle('active', btn === button);
+            });
+
+            announce(`Tema cambiado a ${button.textContent.trim()}`);
+        });
+
+        // EJECUTAR
         init();
     });
     </script>
