@@ -1,0 +1,2962 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guía San Martín de la Vega - Tu Portal Turístico</title>
+    <meta name="description" content="Descubre San Martín de la Vega: lugares turísticos, restaurantes, eventos y más">
+    
+    <style>
+        :root {
+            --primary-color: #8B7355;
+            --secondary-color: #6B9AC4;
+            --accent-color: #E8B86D;
+            --bg-color: #FAFAFA;
+            --surface-color: #FFFFFF;
+            --text-primary: #2C2C2C;
+            --text-secondary: #5A5A5A;
+            --border-color: #E0E0E0;
+            --shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            --shadow-hover: 0 4px 20px rgba(0, 0, 0, 0.12);
+            --favorite-color: #FF6B6B;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --spacing-xs: 0.5rem;
+            --spacing-sm: 1rem;
+            --spacing-md: 1.5rem;
+            --spacing-lg: 2rem;
+            --spacing-xl: 3rem;
+            --font-primary: 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+            --font-size-sm: 0.875rem;
+            --font-size-base: 1rem;
+            --font-size-lg: 1.125rem;
+            --font-size-xl: 1.5rem;
+            --font-size-2xl: 2rem;
+            --font-size-3xl: 2.5rem;
+        }
+
+        body.dark-mode {
+            --primary-color: #A88B6F;
+            --secondary-color: #7BA5C9;
+            --accent-color: #D4A859;
+            --bg-color: #1A1A1A;
+            --surface-color: #252525;
+            --text-primary: #E8E8E8;
+            --text-secondary: #B0B0B0;
+            --border-color: #3A3A3A;
+            --shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+            --shadow-hover: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        body.accessibility-mode {
+            --text-primary: #000000;
+            --text-secondary: #333333;
+            font-size: 18px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-primary);
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background-color: var(--surface-color);
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            transition: var(--transition);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--spacing-sm) var(--spacing-md);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: var(--spacing-sm);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+        }
+
+        .brand-icon {
+            font-size: 1.3rem;
+        }
+
+        .brand-title {
+            font-size: var(--font-size-xl);
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .search-container {
+            position: relative;
+            flex: 1;
+            max-width: 400px;
+            display: none;
+        }
+
+        .search-container.active {
+            display: block;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: var(--spacing-xs) var(--spacing-sm);
+            padding-left: 2.5rem;
+            border: 2px solid var(--border-color);
+            border-radius: 50px;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-size: var(--font-size-base);
+            transition: var(--transition);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: var(--spacing-sm);
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            margin-top: var(--spacing-xs);
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            box-shadow: var(--shadow-hover);
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+            z-index: 2000;
+        }
+
+        .search-results.active {
+            display: block;
+        }
+
+        .search-category {
+            padding: var(--spacing-sm);
+        }
+
+        .search-category-title {
+            font-size: var(--font-size-sm);
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: var(--spacing-xs);
+            text-transform: uppercase;
+        }
+
+        .search-item {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            cursor: pointer;
+            border-radius: 8px;
+            transition: var(--transition);
+        }
+
+        .search-item:hover {
+            background-color: var(--bg-color);
+        }
+
+        .search-item-title {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .search-item-description {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: var(--spacing-xs);
+            gap: 4px;
+        }
+
+        .hamburger span {
+            width: 25px;
+            height: 3px;
+            background-color: var(--text-primary);
+            border-radius: 3px;
+            transition: var(--transition);
+        }
+
+        .hamburger.active span:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px);
+        }
+
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .hamburger.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(7px, -6px);
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: var(--spacing-md);
+            align-items: center;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-weight: 500;
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: 8px;
+            transition: var(--transition);
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: var(--primary-color);
+            background-color: rgba(139, 115, 85, 0.1);
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: var(--spacing-xs);
+            align-items: center;
+        }
+
+        .icon-button {
+            background: none;
+            border: 2px solid var(--border-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 1.1rem;
+        }
+
+        .icon-button:hover {
+            transform: scale(1.1);
+            border-color: var(--primary-color);
+        }
+
+        .icon-button.active {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+
+        .breadcrumbs {
+            max-width: 1200px;
+            margin: 90px auto 0;
+            padding: var(--spacing-sm) var(--spacing-md);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+
+        .breadcrumb-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+        }
+
+        .breadcrumb-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .breadcrumb-link:hover {
+            color: var(--primary-color);
+        }
+
+        .breadcrumb-separator {
+            color: var(--border-color);
+        }
+
+        .main-content {
+            margin-top: 80px;
+            min-height: calc(100vh - 80px);
+            padding: var(--spacing-lg) var(--spacing-md);
+        }
+
+        .section {
+            max-width: 1200px;
+            margin: 0 auto;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .skeleton {
+            background: linear-gradient(90deg, var(--border-color) 25%, var(--bg-color) 50%, var(--border-color) 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 8px;
+        }
+
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .skeleton-card {
+            background-color: var(--surface-color);
+            padding: var(--spacing-md);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+
+        .skeleton-title {
+            height: 20px;
+            width: 70%;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .skeleton-text {
+            height: 14px;
+            width: 100%;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .skeleton-image {
+            height: 200px;
+            width: 100%;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .hero-banner {
+            position: relative;
+            height: 500px;
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: var(--spacing-xl);
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+        }
+
+        .hero-content {
+            z-index: 2;
+            padding: var(--spacing-lg);
+        }
+
+        .hero-title {
+            font-size: var(--font-size-3xl);
+            margin-bottom: var(--spacing-md);
+            animation: slideDown 0.8s ease-out;
+        }
+
+        .hero-description {
+            font-size: var(--font-size-lg);
+            margin-bottom: var(--spacing-lg);
+            max-width: 600px;
+            animation: slideUp 0.8s ease-out 0.2s backwards;
+        }
+
+        .hero-button {
+            background-color: white;
+            color: var(--primary-color);
+            padding: var(--spacing-sm) var(--spacing-xl);
+            border: none;
+            border-radius: 50px;
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            animation: fadeIn 0.8s ease-out 0.4s backwards;
+        }
+
+        .hero-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .welcome-section {
+            background-color: var(--surface-color);
+            padding: var(--spacing-xl);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .section-title {
+            font-size: var(--font-size-2xl);
+            color: var(--primary-color);
+            margin-bottom: var(--spacing-md);
+            text-align: center;
+        }
+
+        .welcome-text {
+            font-size: var(--font-size-lg);
+            color: var(--text-secondary);
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.8;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--spacing-lg);
+            margin-top: var(--spacing-xl);
+        }
+
+        .feature-card {
+            background-color: var(--surface-color);
+            padding: var(--spacing-lg);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            text-align: center;
+            transition: var(--transition);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .feature-icon {
+            font-size: 2.2rem;
+        }
+
+        .feature-title {
+            font-size: var(--font-size-xl);
+            color: var(--primary-color);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .feature-description {
+            color: var(--text-secondary);
+            font-size: var(--font-size-base);
+        }
+
+        .places-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: var(--spacing-lg);
+            margin-top: var(--spacing-lg);
+        }
+
+        .place-card {
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .place-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .place-image {
+            width: 100%;
+            height: 200px;
+            flex-shrink: 0;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.8rem;
+            overflow: hidden;
+        }
+
+        .place-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .favorite-button {
+            position: absolute;
+            top: var(--spacing-sm);
+            right: var(--spacing-sm);
+            background-color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.3rem;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            z-index: 10;
+        }
+
+        .favorite-button:hover {
+            transform: scale(1.1);
+        }
+
+        .favorite-button.active {
+            color: var(--favorite-color);
+        }
+
+        @keyframes heartBeat {
+            0% { transform: scale(1); }
+            25% { transform: scale(1.3); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .favorite-button.animate {
+            animation: heartBeat 0.3s ease;
+        }
+
+        .share-button {
+            position: absolute;
+            top: var(--spacing-sm);
+            right: 60px;
+            background-color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.1rem;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            z-index: 10;
+        }
+
+        .share-button:hover {
+            transform: scale(1.1);
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .place-content {
+            padding: var(--spacing-md);
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .place-title {
+            font-size: var(--font-size-xl);
+            color: var(--primary-color);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .place-description {
+            color: var(--text-secondary);
+            margin-bottom: var(--spacing-md);
+            line-height: 1.6;
+            flex: 1;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 3;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .place-button {
+            background-color: var(--primary-color);
+            color: white;
+            padding: var(--spacing-xs) var(--spacing-md);
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            width: 100%;
+            margin-top: auto;
+        }
+
+        .place-button:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .gallery-slider {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            overflow: hidden;
+            border-radius: 16px;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .gallery-track {
+            display: flex;
+            transition: transform 0.5s ease;
+            height: 100%;
+        }
+
+        .gallery-slide {
+            min-width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .gallery-slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .gallery-caption {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            color: white;
+            padding: var(--spacing-lg) var(--spacing-md) var(--spacing-md);
+            font-size: var(--font-size-lg);
+        }
+
+        .gallery-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.5rem;
+            transition: var(--transition);
+            z-index: 10;
+        }
+
+        .gallery-nav:hover {
+            background-color: white;
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .gallery-nav.prev {
+            left: var(--spacing-md);
+        }
+
+        .gallery-nav.next {
+            right: var(--spacing-md);
+        }
+
+        .gallery-dots {
+            position: absolute;
+            bottom: var(--spacing-md);
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: var(--spacing-xs);
+            z-index: 10;
+        }
+
+        .gallery-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .gallery-dot.active {
+            background-color: white;
+            width: 30px;
+            border-radius: 5px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: var(--surface-color);
+            padding: var(--spacing-xl);
+            border-radius: 16px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            animation: slideUp 0.3s ease;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: var(--spacing-md);
+            right: var(--spacing-md);
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: var(--transition);
+            z-index: 10;
+        }
+
+        .modal-close:hover {
+            color: var(--primary-color);
+            transform: scale(1.2);
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-lg);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .filter-btn {
+            padding: var(--spacing-xs) var(--spacing-md);
+            border: 2px solid var(--border-color);
+            background-color: var(--surface-color);
+            color: var(--text-primary);
+            border-radius: 50px;
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 500;
+        }
+
+        .filter-btn:hover,
+        .filter-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .restaurants-list,
+        .accommodations-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: var(--spacing-md);
+        }
+
+        .restaurant-card,
+        .accommodation-card {
+            background-color: var(--surface-color);
+            padding: var(--spacing-md);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            border-left: 4px solid var(--primary-color);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            min-height: 280px;
+        }
+
+        .restaurant-card:hover,
+        .accommodation-card:hover {
+            transform: translateX(5px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .restaurant-name,
+        .accommodation-name {
+            font-size: var(--font-size-xl);
+            color: var(--primary-color);
+            margin-bottom: var(--spacing-xs);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+        }
+
+        .restaurant-icon,
+        .accommodation-icon {
+            font-size: 1.2rem;
+        }
+
+        .restaurant-type,
+        .accommodation-type {
+            display: inline-block;
+            padding: 4px var(--spacing-sm);
+            background-color: var(--accent-color);
+            color: white;
+            border-radius: 20px;
+            font-size: var(--font-size-sm);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .restaurant-address,
+        .accommodation-address {
+            color: var(--text-secondary);
+            font-size: var(--font-size-sm);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .restaurant-description,
+        .accommodation-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: var(--spacing-md);
+            flex: 1;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 4;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .events-container {
+            display: grid;
+            gap: var(--spacing-lg);
+        }
+
+        .event-card {
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            padding: var(--spacing-lg);
+            box-shadow: var(--shadow);
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: var(--spacing-md);
+            transition: var(--transition);
+        }
+
+        .event-card:hover {
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-3px);
+        }
+
+        .event-date {
+            background-color: var(--primary-color);
+            color: white;
+            padding: var(--spacing-md);
+            border-radius: 12px;
+            text-align: center;
+            min-width: 100px;
+        }
+
+        .event-day {
+            font-size: var(--font-size-3xl);
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .event-month {
+            font-size: var(--font-size-base);
+            text-transform: uppercase;
+            margin-top: var(--spacing-xs);
+        }
+
+        .event-details {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .event-title {
+            font-size: var(--font-size-xl);
+            color: var(--primary-color);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .event-location {
+            color: var(--text-secondary);
+            font-size: var(--font-size-sm);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .event-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .timeline {
+            position: relative;
+            padding: var(--spacing-lg) 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 100%;
+            background-color: var(--primary-color);
+        }
+
+        .timeline-item {
+            margin-bottom: var(--spacing-xl);
+            position: relative;
+        }
+
+        .timeline-item:nth-child(odd) .timeline-content {
+            margin-right: 50%;
+            padding-right: var(--spacing-xl);
+            text-align: right;
+        }
+
+        .timeline-item:nth-child(even) .timeline-content {
+            margin-left: 50%;
+            padding-left: var(--spacing-xl);
+        }
+
+        .timeline-marker {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 24px;
+            height: 24px;
+            background-color: var(--accent-color);
+            border: 4px solid var(--surface-color);
+            border-radius: 50%;
+            box-shadow: var(--shadow);
+        }
+
+        .timeline-content {
+            background-color: var(--surface-color);
+            padding: var(--spacing-md);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+
+        .timeline-content:hover {
+            box-shadow: var(--shadow-hover);
+            transform: scale(1.02);
+        }
+
+        .timeline-year {
+            font-size: var(--font-size-xl);
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .timeline-text {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .transport-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--spacing-lg);
+            margin-top: var(--spacing-lg);
+        }
+
+        .transport-card {
+            background-color: var(--surface-color);
+            padding: var(--spacing-lg);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+
+        .transport-card:hover {
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-3px);
+        }
+
+        .transport-icon {
+            font-size: 2.5rem;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .transport-title {
+            font-size: var(--font-size-xl);
+            color: var(--primary-color);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .transport-info {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .transport-info li {
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .useful-data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .useful-data-card {
+            background-color: var(--surface-color);
+            padding: var(--spacing-md);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .useful-data-title {
+            font-size: var(--font-size-lg);
+            color: var(--primary-color);
+            margin-bottom: var(--spacing-sm);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+        }
+
+        .useful-data-info {
+            color: var(--text-secondary);
+            font-size: var(--font-size-sm);
+        }
+
+        .useful-data-info strong {
+            color: var(--text-primary);
+        }
+
+        .contact-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .contact-intro {
+            text-align: center;
+            margin-bottom: var(--spacing-xl);
+            color: var(--text-secondary);
+        }
+
+        .contact-form {
+            background-color: var(--surface-color);
+            padding: var(--spacing-xl);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            position: relative;
+        }
+
+        .form-group {
+            margin-bottom: var(--spacing-md);
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: var(--spacing-xs);
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .form-input,
+        .form-textarea {
+            width: 100%;
+            padding: var(--spacing-sm);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-family: var(--font-primary);
+            font-size: var(--font-size-base);
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            transition: var(--transition);
+        }
+
+        .form-input:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(139, 115, 85, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 150px;
+        }
+
+        .form-button {
+            width: 100%;
+            padding: var(--spacing-md);
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .form-button:hover:not(:disabled) {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .form-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .form-spinner {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .form-button.loading .form-spinner {
+            display: block;
+        }
+
+        .form-button.loading span {
+            opacity: 0;
+        }
+
+        .form-message {
+            margin-top: var(--spacing-md);
+            padding: var(--spacing-md);
+            border-radius: 8px;
+            text-align: center;
+            animation: slideUp 0.3s ease;
+        }
+
+        .form-message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .form-message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .map-container {
+            margin-top: var(--spacing-xl);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .map-container iframe {
+            width: 100%;
+            height: 450px;
+            border: none;
+        }
+
+        .footer {
+            background-color: var(--surface-color);
+            padding: var(--spacing-xl) var(--spacing-md);
+            margin-top: var(--spacing-xl);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-lg);
+        }
+
+        .footer-section h3 {
+            color: var(--primary-color);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .footer-section p {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .footer-links a:hover {
+            color: var(--primary-color);
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: var(--spacing-lg);
+            margin-top: var(--spacing-lg);
+            border-top: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .scroll-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+            z-index: 999;
+        }
+
+        .scroll-top.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .scroll-top:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-5px);
+        }
+
+        @media (max-width: 968px) {
+            :root {
+                --font-size-3xl: 2rem;
+                --font-size-2xl: 1.75rem;
+                --font-size-xl: 1.25rem;
+            }
+            
+            .timeline::before {
+                left: 30px;
+            }
+            
+            .timeline-item:nth-child(odd) .timeline-content,
+            .timeline-item:nth-child(even) .timeline-content {
+                margin-left: 60px;
+                margin-right: 0;
+                padding-left: var(--spacing-md);
+                padding-right: 0;
+                text-align: left;
+            }
+            
+            .timeline-marker {
+                left: 30px;
+            }
+            
+            .event-card {
+                grid-template-columns: 1fr;
+            }
+            
+            .event-date {
+                display: inline-block;
+                width: fit-content;
+            }
+            
+            .places-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .search-container {
+                order: 4;
+                flex-basis: 100%;
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hamburger {
+                display: flex;
+            }
+            
+            .nav-menu {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background-color: var(--surface-color);
+                flex-direction: column;
+                padding: var(--spacing-md);
+                box-shadow: var(--shadow);
+                max-height: 0;
+                overflow: hidden;
+                transition: max-height 0.3s ease;
+            }
+            
+            .nav-menu.active {
+                max-height: 600px;
+            }
+            
+            .nav-link {
+                width: 100%;
+                text-align: center;
+                padding: var(--spacing-sm);
+                font-size: 1.1rem;
+            }
+            
+            .brand-title {
+                font-size: 1.2rem;
+            }
+            
+            .hero-banner {
+                height: 350px;
+            }
+            
+            .hero-title {
+                font-size: 1.8rem;
+            }
+            
+            .hero-description {
+                font-size: 1rem;
+            }
+            
+            .hero-button {
+                padding: 0.75rem 2rem;
+                font-size: 1rem;
+            }
+            
+            .places-grid {
+                grid-template-columns: 1fr;
+                gap: var(--spacing-md);
+            }
+            
+            .restaurants-list,
+            .accommodations-list {
+                grid-template-columns: 1fr;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .footer-content {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+            
+            .modal-content {
+                width: 95%;
+                padding: var(--spacing-md);
+            }
+            
+            .filter-buttons {
+                justify-content: flex-start;
+            }
+
+            .breadcrumbs {
+                font-size: 0.75rem;
+                padding: 0.5rem 1rem;
+                margin-top: 70px;
+            }
+
+            .share-button {
+                top: 0.5rem;
+                right: 0.5rem;
+                width: 36px;
+                height: 36px;
+                font-size: 1rem;
+            }
+
+            .favorite-button {
+                top: 0.5rem;
+                right: 50px;
+                width: 36px;
+                height: 36px;
+                font-size: 1.2rem;
+            }
+
+            .gallery-slider {
+                height: 300px;
+            }
+
+            .gallery-nav {
+                width: 40px;
+                height: 40px;
+                font-size: 1.3rem;
+            }
+
+            .useful-data-grid {
+                grid-template-columns: 1fr;
+                gap: var(--spacing-sm);
+            }
+
+            .transport-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .section-title {
+                font-size: 1.6rem;
+            }
+
+            .welcome-text {
+                font-size: 1rem;
+            }
+
+            .event-card {
+                padding: var(--spacing-md);
+            }
+
+            .event-day {
+                font-size: 2rem;
+            }
+
+            .main-content {
+                padding: 1rem 0.75rem;
+            }
+
+            .welcome-section {
+                padding: var(--spacing-md);
+            }
+        }
+
+        @media (max-width: 480px) {
+            :root {
+                --spacing-xl: 1.5rem;
+                --spacing-lg: 1rem;
+            }
+            
+            .nav-container {
+                padding: 0.5rem 0.75rem;
+            }
+            
+            .hero-banner {
+                height: 300px;
+            }
+            
+            .contact-form {
+                padding: var(--spacing-md);
+            }
+            
+            .scroll-top {
+                width: 45px;
+                height: 45px;
+                bottom: 20px;
+                right: 20px;
+            }
+
+            .place-card,
+            .restaurant-card,
+            .accommodation-card {
+                margin-bottom: var(--spacing-sm);
+            }
+
+            .place-content {
+                padding: var(--spacing-sm);
+            }
+
+            .place-button {
+                padding: 0.5rem;
+                font-size: 0.9rem;
+            }
+
+            .filter-btn {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.85rem;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mb-lg {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .mt-lg {
+            margin-top: var(--spacing-lg);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <span class="brand-icon">🏰</span>
+                <h1 class="brand-title">Guía San Martín</h1>
+            </div>
+            
+            <div class="search-container" id="searchContainer">
+                <span class="search-icon">🔍</span>
+                <input 
+                    type="text" 
+                    class="search-input" 
+                    id="searchInput" 
+                    placeholder="Buscar lugares, restaurantes, eventos..."
+                >
+                <div class="search-results" id="searchResults"></div>
+            </div>
+            
+            <button class="hamburger" id="hamburger" aria-label="Menú">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="#inicio" class="nav-link active">Inicio</a></li>
+                <li><a href="#que-ver" class="nav-link">Qué Ver</a></li>
+                <li><a href="#donde-comer" class="nav-link">Dónde Comer</a></li>
+                <li><a href="#donde-dormir" class="nav-link">Dónde Dormir</a></li>
+                <li><a href="#como-llegar" class="nav-link">Cómo Llegar</a></li>
+                <li><a href="#eventos" class="nav-link">Eventos</a></li>
+                <li><a href="#historia" class="nav-link">Historia</a></li>
+                <li><a href="#datos-utiles" class="nav-link">Datos Útiles</a></li>
+                <li><a href="#favoritos" class="nav-link">Favoritos</a></li>
+                <li><a href="#contacto" class="nav-link">Contacto</a></li>
+            </ul>
+            
+            <div class="nav-actions">
+                <button class="icon-button" id="searchToggle" aria-label="Buscar" title="Buscar">
+                    🔍
+                </button>
+                <button class="icon-button" id="accessibilityToggle" aria-label="Modo Accesibilidad" title="Accesibilidad">
+                    ♿
+                </button>
+                <button class="icon-button" id="themeToggle" aria-label="Cambiar tema" title="Modo oscuro">
+                    <span class="theme-icon">🌙</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="breadcrumbs" id="breadcrumbs"></div>
+
+    <main class="main-content" id="mainContent"></main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>San Martín de la Vega</h3>
+                <p>Tu guía digital para descubrir todo el encanto de nuestro municipio</p>
+            </div>
+            <div class="footer-section">
+                <h3>Enlaces Útiles</h3>
+                <ul class="footer-links">
+                    <li><a href="https://www.ayto-smv.es/" target="_blank" rel="noopener">Ayuntamiento</a></li>
+                    <li><a href="#que-ver">Lugares Turísticos</a></li>
+                    <li><a href="#eventos">Eventos</a></li>
+                    <li><a href="#donde-dormir">Alojamiento</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Contacto</h3>
+                <p>Plaza de la Constitución, 1</p>
+                <p>28330 San Martín de la Vega, Madrid</p>
+                <p>📧 info@sanmartindelavega.es</p>
+                <p>📞 918 94 51 00</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 Guía San Martín de la Vega. Desarrollado con 💚 para nuestra comunidad</p>
+        </div>
+    </footer>
+
+    <button class="scroll-top" id="scrollTop" aria-label="Volver arriba">
+        <span>↑</span>
+    </button>
+
+    <script>
+        const appData = {
+            lugares: [
+                {
+                    id: 1,
+                    nombre: "Parque Warner Madrid",
+                    descripcion: "Uno de los parques temáticos más completos de Europa con 35 atracciones.",
+                    detalles: "Inaugurado el 6 de abril de 2002, Parque Warner Madrid es un parque temático ubicado a 2,4 km de San Martín de la Vega. Con más de 700.000 hectáreas divididas en cinco grandes áreas temáticas: Hollywood Boulevard, Warner Bros. Studios, DC SuperHeroes World, Old West Territory y Cartoon Village. Incluye 41 atracciones únicas, 58 representaciones diarias de 18 espectáculos diferentes, y Parque Warner Beach.",
+                    icono: "🎢",
+                    imagenes: [
+                        { url: "https://visitmadrid-files.s3.eu-west-1.amazonaws.com/files/2024-01/WarnerBros-Madrid.jpg", caption: "Parque Warner Madrid" }
+                    ]
+                },
+                {
+                    id: 2,
+                    nombre: "Iglesia de la Natividad de Nuestra Señora",
+                    descripcion: "Iglesia del siglo XVI declarada Bien de Interés Cultural.",
+                    detalles: "La Iglesia Parroquial de la Natividad de Nuestra Señora es un edificio del siglo XVI de planta rectangular y una sola nave con cabecera plana. Destaca la Capilla de la Virgen del Rosario en su interior.",
+                    icono: "⛪",
+                    imagenes: [
+                        { url: "https://todosobremadrid.com/wp-content/uploads/2016/05/imagen_0003002557_00011.jpg", caption: "Iglesia de la Natividad" }
+                    ]
+                },
+                {
+                    id: 3,
+                    nombre: "Plaza de la Constitución",
+                    descripcion: "Centro neurálgico del municipio con encanto tradicional.",
+                    detalles: "La Plaza de la Constitución es el corazón de San Martín de la Vega, donde se ubica el Ayuntamiento y se celebran los principales eventos del municipio.",
+                    icono: "🏛️",
+                    imagenes: [
+                        { url: "https://todosobremadrid.com/wp-content/uploads/2016/05/imagen_0003002554_00009.jpg", caption: "Plaza de la Constitución" }
+                    ]
+                },
+                {
+                    id: 4,
+                    nombre: "Río Jarama",
+                    descripcion: "Ribera natural perfecta para paseos y observación de la naturaleza.",
+                    detalles: "El río Jarama marca el límite natural de San Martín de la Vega y forma parte del Parque Regional del Sureste. Es ideal para paseos y senderismo.",
+                    icono: "🌊",
+                    imagenes: [
+                        { url: "https://www.telemadrid.es/2018/10/30/programas/km-de-bicicleta/_2062903714_6568160_720x405.jpg", caption: "Río Jarama" }
+                    ]
+                },
+                {
+                    id: 5,
+                    nombre: "Parque Regional del Sureste",
+                    descripcion: "Espacio natural protegido con encinares, pinares y cantiles yesíferos.",
+                    detalles: "Gran parte del término municipal está incluido en el Parque Regional del Sureste, un espacio natural protegido de gran valor ecológico.",
+                    icono: "🌳",
+                    imagenes: [
+                        { url: "https://www.rivasciudad.es/wp-content/uploads/2019/04/Laguna-parque-regional-Sureste.jpg", caption: "Parque Regional del Sureste" }
+                    ]
+                },
+                {
+                    id: 6,
+                    nombre: "Parque Enrique Tierno Galván",
+                    descripcion: "Bonito parque urbano con un gran lago rodeado de árboles.",
+                    detalles: "El Parque Tierno Galván es uno de los espacios verdes más queridos por los vecinos con lago central y amplias zonas arboladas.",
+                    icono: "🏞️",
+                    imagenes: [
+                        { url: "https://ayto-smv.es/wp-content/uploads/2017/03/IMG-20170314-WA0015.jpg", caption: "Parque Tierno Galván" }
+                    ]
+                }
+            ],
+            
+            restaurantes: [
+                {
+                    id: 1,
+                    nombre: "Restaurante Cervecería Zatara",
+                    tipo: "Mediterránea",
+                    categoria: "mediterranea",
+                    direccion: "Calle Principal",
+                    descripcion: "Especializado en marisco y cocina mediterránea. Menú del día muy acertado.",
+                    icono: "🍤",
+                    enlace: "https://www.facebook.com/restauranteZatara/?_rdr"
+                },
+                {
+                    id: 2,
+                    nombre: "Bar Restaurante El Lindero",
+                    tipo: "Española",
+                    categoria: "tradicional",
+                    direccion: "Consultar ubicación",
+                    descripcion: "Cocina mediterránea y española tradicional. Buen sitio para menú.",
+                    icono: "🍽️",
+                    enlace: "https://www.tripadvisor.es"
+                },
+                {
+                    id: 3,
+                    nombre: "Pizzeria El Colisseo",
+                    tipo: "Italiana",
+                    categoria: "italiana",
+                    direccion: "Cerca del Parque Warner",
+                    descripcion: "Pizzas riquísimas ideal después de un día en la Warner.",
+                    icono: "🍕",
+                    enlace: "https://elcolisseo.es/"
+                },
+                {
+                    id: 4,
+                    nombre: "Hamburguesería Kilómetro Cero",
+                    tipo: "Americana",
+                    categoria: "rapida",
+                    direccion: "Centro de San Martín",
+                    descripcion: "Hamburguesas gourmet super deliciosas. Carne de calidad.",
+                    icono: "🍔",
+                    enlace: "https://www.tripadvisor.es"
+                },
+                {
+                    id: 5,
+                    nombre: "Restaurante Willy",
+                    tipo: "Tradicional",
+                    categoria: "tradicional",
+                    direccion: "Zona centro",
+                    descripcion: "Restaurante tradicional con los mejores servicios y carta variada de comida española.",
+                    icono: "🥘",
+                    enlace: "https://www.minube.com/rincon/restaurante-willy-a97006"
+                },
+                {
+                    id: 6,
+                    nombre: "Restaurante Aymair",
+                    tipo: "Moderna",
+                    categoria: "mediterranea",
+                    direccion: "Abierto tras inauguración del Parque Warner",
+                    descripcion: "Restaurante moderno con propuestas culinarias actuales. Cocina de mercado.",
+                    icono: "🍷",
+                    enlace: "https://www.minube.com/rincon/restaurante-aymair-a97497"
+                },
+                {
+                    id: 7,
+                    nombre: "El Tratado",
+                    tipo: "Mediterránea",
+                    categoria: "mediterranea",
+                    direccion: "Consultar ubicación",
+                    descripcion: "Menú especial los viernes variado de muy buena calidad por 20€.",
+                    icono: "🥗",
+                    enlace: "https://www.tripadvisor.es"
+                },
+                {
+                    id: 8,
+                    nombre: "Parrilla Kalikate",
+                    tipo: "Carnes",
+                    categoria: "tradicional",
+                    direccion: "Centro de San Martín",
+                    descripcion: "Especialidad en carnes a la parrilla. Producto de calidad y ambiente familiar.",
+                    icono: "🥩",
+                    enlace: "https://www.google.com/search?q=Parrilla+Kalikate"
+                }
+            ],
+
+            alojamientos: [
+                {
+                    id: 1,
+                    nombre: "Hotel Parque Warner",
+                    tipo: "Hotel 4*",
+                    categoria: "hotel",
+                    direccion: "Junto al Parque Warner",
+                    descripcion: "Hotel temático oficial del Parque Warner con habitaciones tematizadas. Perfecto para familias que visitan el parque.",
+                    icono: "🏨",
+                    enlace: "https://www.booking.com",
+                    precio: "€€€"
+                },
+                {
+                    id: 2,
+                    nombre: "Casa Rural La Vega",
+                    tipo: "Casa Rural",
+                    categoria: "rural",
+                    direccion: "Centro histórico",
+                    descripcion: "Encantadora casa rural en pleno centro histórico. Ambiente tranquilo y familiar con todas las comodidades.",
+                    icono: "🏡",
+                    enlace: "https://www.booking.com",
+                    precio: "€€"
+                },
+                {
+                    id: 3,
+                    nombre: "Apartamentos Jarama",
+                    tipo: "Apartamentos",
+                    categoria: "apartamento",
+                    direccion: "Zona residencial",
+                    descripcion: "Apartamentos totalmente equipados ideales para estancias largas. Cocina completa y parking incluido.",
+                    icono: "🏘️",
+                    enlace: "https://www.airbnb.es",
+                    precio: "€€"
+                },
+                {
+                    id: 4,
+                    nombre: "Hostal San Martín",
+                    tipo: "Hostal",
+                    categoria: "hostal",
+                    direccion: "Plaza Mayor",
+                    descripcion: "Hostal económico en el centro del pueblo. Habitaciones limpias y cómodas, desayuno incluido.",
+                    icono: "🛏️",
+                    enlace: "https://www.booking.com",
+                    precio: "€"
+                },
+                {
+                    id: 5,
+                    nombre: "Camping Las Vegas",
+                    tipo: "Camping",
+                    categoria: "camping",
+                    direccion: "Ribera del Jarama",
+                    descripcion: "Camping junto al río con parcelas amplias, bungalows y zona de piscina. Perfecto para amantes de la naturaleza.",
+                    icono: "⛺",
+                    enlace: "https://www.booking.com",
+                    precio: "€"
+                }
+            ],
+            
+            eventos: [
+                {
+                    id: 1,
+                    nombre: "Fiestas de San Marcos",
+                    fecha: { dia: "18-29", mes: "Abril", year: "2025" },
+                    ubicacion: "Todo el municipio",
+                    descripcion: "Las fiestas patronales más importantes del año. Del 18 al 29 de abril con más de 50 actividades: conciertos de Efecto Pasillo, Funambulista, Los Inhumanos y Orquesta Panorama, guisos populares, encierros, desfile de carrozas, verbenas, Fiesta Holi, macrodiscoteca y celebraciones religiosas. Tradición que se remonta al año 1483.",
+                    icono: "🎊"
+                },
+                {
+                    id: 2,
+                    nombre: "Guisos Populares de San Marcos",
+                    fecha: { dia: "20", mes: "Abril", year: "2025" },
+                    ubicacion: "Avenida Abogados de Atocha",
+                    descripcion: "Evento gastronómico tradicional donde los vecinos dan a conocer su guiso típico de 'conejo con patatas'. Más de 6.500 participantes en 242 peñas sanmartineras.",
+                    icono: "🍲"
+                },
+                {
+                    id: 3,
+                    nombre: "Natividad de Nuestra Señora",
+                    fecha: { dia: "8", mes: "Septiembre", year: "2025" },
+                    ubicacion: "Ermita de San Marcos e Iglesia",
+                    descripcion: "Fiesta de la Virgen de Septiembre, también conocida como la fiesta de las 'Vírgenes encontradas'. Se celebra con misa solemne y procesión desde la Ermita de San Marcos hasta la Iglesia.",
+                    icono: "🙏"
+                },
+                {
+                    id: 4,
+                    nombre: "Encierros y Espectáculos Taurinos",
+                    fecha: { dia: "25-27", mes: "Abril", year: "2025" },
+                    ubicacion: "Calles del municipio y Plaza de Toros",
+                    descripcion: "Durante las fiestas de San Marcos se celebran tradicionales encierros matutinos y vespertinos, capeas y concursos de recortes. Tradición muy arraigada en el municipio.",
+                    icono: "🐂"
+                },
+                {
+                    id: 5,
+                    nombre: "Desfile de Carrozas",
+                    fecha: { dia: "26", mes: "Abril", year: "2025" },
+                    ubicacion: "Avenida Doctor Manuel Jarabo",
+                    descripcion: "Gran desfile de carrozas con salida desde la Avenida Doctor Manuel Jarabo. Se lanzan caramelos sin gluten y se entregan dulces libres de alérgenos. Uno de los momentos más esperados de las fiestas.",
+                    icono: "🎭"
+                },
+                {
+                    id: 6,
+                    nombre: "Fiesta Holi",
+                    fecha: { dia: "19", mes: "Abril", year: "2025" },
+                    ubicacion: "Plaza del Ayuntamiento",
+                    descripcion: "La Plaza del Ayuntamiento se tiñe de varios colores en esta divertida celebración que sirve como pistoletazo de salida de las fiestas patronales. Actividad para todas las edades.",
+                    icono: "🎨"
+                }
+            ],
+            
+            historia: [
+                {
+                    year: "Siglo XV",
+                    titulo: "Primeras Ordenanzas",
+                    texto: "En 1443, como resultado de la venta de los quiñones, San Martín de la Vega tuvo sus primeras 'Ordenanzas de Población', otorgadas por la Ciudad y Tierra de Madrid."
+                },
+                {
+                    year: "1483",
+                    titulo: "Voto a San Marcos",
+                    texto: "A causa de la plaga de langosta que asoló la villa, el concejo hizo voto al glorioso San Marcos Evangelista de celebrarle fiesta cada año el 25 de abril."
+                },
+                {
+                    year: "Siglo XVI",
+                    titulo: "Construcción de la Iglesia",
+                    texto: "Se construyó la Iglesia Parroquial de la Natividad de Nuestra Señora, edificio de planta rectangular con una sola nave y cabecera plana."
+                },
+                {
+                    year: "Siglo XVIII",
+                    titulo: "Devoción Popular",
+                    texto: "Las Descripciones de Lorenzana del siglo XVIII recogían ya la tradición de visitar la ermita de San Marcos 'de mucha devoción entre estos naturales'."
+                },
+                {
+                    year: "1936-1939",
+                    titulo: "Guerra Civil Española",
+                    texto: "San Martín de la Vega fue escenario de la Batalla del Jarama, uno de los enfrentamientos más cruentos de la Guerra Civil. Todavía hoy se conservan vestigios y trincheras."
+                },
+                {
+                    year: "1999",
+                    titulo: "Proyecto Parque Warner",
+                    texto: "La Comunidad de Madrid y Time Warner firman el acuerdo para la construcción del Parque Warner Madrid en San Martín de la Vega."
+                },
+                {
+                    year: "2002",
+                    titulo: "Inauguración Parque Warner",
+                    texto: "El 6 de abril de 2002 abrió oficialmente sus puertas el Parque Warner Madrid, marcando un antes y un después en la historia del municipio."
+                },
+                {
+                    year: "Actualidad",
+                    titulo: "San Martín Hoy",
+                    texto: "San Martín de la Vega es un municipio moderno que ha sabido combinar tradición y progreso. Con más de 20.000 habitantes, mantiene vivas sus fiestas centenarias."
+                }
+            ],
+
+            transporte: {
+                autobus: {
+                    lineas: ["423 (Madrid-San Martín de la Vega)", "Línea especial Parque Warner"],
+                    duracion: "45 minutos desde Madrid centro",
+                    info: "Salida desde Conde de Casal y Méndez Álvaro"
+                },
+                coche: {
+                    ruta: "A-4 (Autovía del Sur), salida 22",
+                    duracion: "30 minutos desde Madrid centro",
+                    parking: "Parking gratuito en el municipio, parking de pago en Parque Warner"
+                },
+                tren: {
+                    lineas: ["Cercanías C-3"],
+                    duracion: "40 minutos desde Atocha",
+                    info: "Parada en San Martín de la Vega + bus lanzadera al Parque Warner"
+                }
+            },
+
+            datosUtiles: [
+                {
+                    categoria: "Emergencias",
+                    items: [
+                        { nombre: "Emergencias", valor: "112", icono: "🚨" },
+                        { nombre: "Policía Local", valor: "092", icono: "👮" },
+                        { nombre: "Guardia Civil", valor: "062", icono: "🚔" }
+                    ]
+                },
+                {
+                    categoria: "Salud",
+                    items: [
+                        { nombre: "Centro de Salud", valor: "918 94 52 00", icono: "🏥" },
+                        { nombre: "Farmacia de Guardia", valor: "Consultar horarios", icono: "💊" }
+                    ]
+                },
+                {
+                    categoria: "Servicios Municipales",
+                    items: [
+                        { nombre: "Ayuntamiento", valor: "918 94 51 00", icono: "🏛️" },
+                        { nombre: "Oficina de Turismo", valor: "Consultar horarios", icono: "ℹ️" },
+                        { nombre: "Policía Municipal", valor: "918 94 51 42", icono: "👮" }
+                    ]
+                },
+                {
+                    categoria: "Horarios",
+                    items: [
+                        { nombre: "Ayuntamiento", valor: "Lun-Vie: 9:00-14:00", icono: "🕒" },
+                        { nombre: "Biblioteca Municipal", valor: "Lun-Vie: 9:00-21:00", icono: "📚" },
+                        { nombre: "Piscina Municipal", valor: "Verano: 11:00-20:00", icono: "🏊" }
+                    ]
+                }
+            ]
+        };
+
+        let currentSection = 'inicio';
+        let favorites = JSON.parse(localStorage.getItem('sanmartin-favorites')) || { lugares: [], restaurantes: [] };
+        let currentGalleryIndex = 0;
+
+        function toggleFavorite(type, id) {
+            const index = favorites[type].indexOf(id);
+            if (index > -1) {
+                favorites[type].splice(index, 1);
+            } else {
+                favorites[type].push(id);
+            }
+            localStorage.setItem('sanmartin-favorites', JSON.stringify(favorites));
+            updateSingleFavoriteButton(type, id);
+            
+            if (currentSection === 'favoritos') {
+                setTimeout(() => loadSection('favoritos'), 300);
+            }
+        }
+
+        function updateSingleFavoriteButton(type, id) {
+            const buttons = document.querySelectorAll(`.favorite-button[data-type="${type}"][data-id="${id}"]`);
+            buttons.forEach(button => {
+                const isNowFavorite = favorites[type].includes(id);
+                button.classList.toggle('active', isNowFavorite);
+                button.textContent = isNowFavorite ? '❤️' : '🤍';
+                button.classList.add('animate');
+                setTimeout(() => button.classList.remove('animate'), 300);
+            });
+        }
+
+        function isFavorite(type, id) {
+            return favorites[type].includes(id);
+        }
+
+        function exportFavorites() {
+            const favLugares = appData.lugares.filter(l => favorites.lugares.includes(l.id));
+            const favRestaurantes = appData.restaurantes.filter(r => favorites.restaurantes.includes(r.id));
+            
+            let text = "🏰 MIS FAVORITOS - GUÍA SAN MARTÍN\n\n";
+            
+            if (favLugares.length > 0) {
+                text += "📍 LUGARES:\n";
+                favLugares.forEach(l => text += `• ${l.nombre}\n`);
+                text += "\n";
+            }
+            
+            if (favRestaurantes.length > 0) {
+                text += "🍽️ RESTAURANTES:\n";
+                favRestaurantes.forEach(r => text += `• ${r.nombre}\n`);
+            }
+            
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'mis-favoritos-san-martin.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function shareContent(type, item) {
+            const url = window.location.origin + window.location.pathname;
+            const text = `¡Descubre ${item.nombre} en San Martín de la Vega!`;
+            
+            if (navigator.share) {
+                navigator.share({ title: item.nombre, text: text, url: url }).catch(() => {});
+            } else {
+                navigator.clipboard.writeText(`${text}\n${url}`).then(() => {
+                    alert('¡Enlace copiado!');
+                });
+            }
+        }
+
+        function initSearch() {
+            const searchInput = document.getElementById('searchInput');
+            const searchResults = document.getElementById('searchResults');
+            const searchToggle = document.getElementById('searchToggle');
+            const searchContainer = document.getElementById('searchContainer');
+            
+            searchToggle.addEventListener('click', () => {
+                searchContainer.classList.toggle('active');
+                if (searchContainer.classList.contains('active')) {
+                    searchInput.focus();
+                }
+            });
+            
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase().trim();
+                
+                if (query.length < 2) {
+                    searchResults.classList.remove('active');
+                    return;
+                }
+                
+                const results = {
+                    lugares: appData.lugares.filter(l => 
+                        l.nombre.toLowerCase().includes(query) || 
+                        l.descripcion.toLowerCase().includes(query)
+                    ),
+                    restaurantes: appData.restaurantes.filter(r => 
+                        r.nombre.toLowerCase().includes(query) || 
+                        r.descripcion.toLowerCase().includes(query)
+                    )
+                };
+                
+                displaySearchResults(results);
+            });
+            
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.search-container')) {
+                    searchResults.classList.remove('active');
+                }
+            });
+        }
+
+        function displaySearchResults(results) {
+            const searchResults = document.getElementById('searchResults');
+            let html = '';
+            
+            if (results.lugares.length === 0 && results.restaurantes.length === 0) {
+                html = '<div class="search-category"><p style="text-align: center; color: var(--text-secondary);">No hay resultados</p></div>';
+            } else {
+                if (results.lugares.length > 0) {
+                    html += '<div class="search-category"><div class="search-category-title">📍 Lugares</div>';
+                    results.lugares.forEach(item => {
+                        html += `
+                            <div class="search-item" onclick="navigateToItem('que-ver', ${item.id})">
+                                <div class="search-item-title">${item.icono} ${item.nombre}</div>
+                                <div class="search-item-description">${item.descripcion.substring(0, 60)}...</div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                }
+                
+                if (results.restaurantes.length > 0) {
+                    html += '<div class="search-category"><div class="search-category-title">🍽️ Restaurantes</div>';
+                    results.restaurantes.forEach(item => {
+                        html += `
+                            <div class="search-item" onclick="navigateToItem('donde-comer', ${item.id})">
+                                <div class="search-item-title">${item.icono} ${item.nombre}</div>
+                                <div class="search-item-description">${item.descripcion.substring(0, 60)}...</div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                }
+            }
+            
+            searchResults.innerHTML = html;
+            searchResults.classList.add('active');
+        }
+
+        function navigateToItem(section, itemId) {
+            document.getElementById('searchResults').classList.remove('active');
+            document.getElementById('searchInput').value = '';
+            window.location.hash = section;
+            
+            setTimeout(() => {
+                const element = document.querySelector(`[data-id="${itemId}"]`);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 500);
+        }
+
+        function updateBreadcrumbs(section) {
+            const breadcrumbs = document.getElementById('breadcrumbs');
+            const sections = {
+                'inicio': 'Inicio', 'que-ver': 'Qué Ver', 'donde-comer': 'Dónde Comer',
+                'donde-dormir': 'Dónde Dormir', 'como-llegar': 'Cómo Llegar',
+                'eventos': 'Eventos', 'historia': 'Historia', 'datos-utiles': 'Datos Útiles',
+                'favoritos': 'Favoritos', 'contacto': 'Contacto'
+            };
+            
+            let html = '<div class="breadcrumb-item"><a href="#inicio" class="breadcrumb-link">🏠 Inicio</a></div>';
+            
+            if (section !== 'inicio') {
+                html += `<span class="breadcrumb-separator">›</span><div class="breadcrumb-item"><span>${sections[section]}</span></div>`;
+            }
+            
+            breadcrumbs.innerHTML = html;
+        }
+
+        function initGallery(images, startIndex = 0) {
+            currentGalleryIndex = startIndex;
+            const modal = document.getElementById('placeModal');
+            const modalBody = document.getElementById('modalBody');
+            
+            let html = `
+                <div class="gallery-slider">
+                    <div class="gallery-track" id="galleryTrack">
+                        ${images.map(img => `
+                            <div class="gallery-slide">
+                                <img src="${img.url}" alt="${img.caption}" loading="lazy">
+                                <div class="gallery-caption">${img.caption}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <button class="gallery-nav prev" onclick="moveGallery(-1)">‹</button>
+                    <button class="gallery-nav next" onclick="moveGallery(1)">›</button>
+                    <div class="gallery-dots">
+                        ${images.map((_, index) => `
+                            <div class="gallery-dot ${index === startIndex ? 'active' : ''}" onclick="goToSlide(${index})"></div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            
+            modalBody.innerHTML = html;
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            updateGalleryPosition();
+        }
+
+        function moveGallery(direction) {
+            const track = document.getElementById('galleryTrack');
+            const slides = track.children.length;
+            currentGalleryIndex = (currentGalleryIndex + direction + slides) % slides;
+            updateGalleryPosition();
+        }
+
+        function goToSlide(index) {
+            currentGalleryIndex = index;
+            updateGalleryPosition();
+        }
+
+        function updateGalleryPosition() {
+            const track = document.getElementById('galleryTrack');
+            if (track) {
+                track.style.transform = `translateX(-${currentGalleryIndex * 100}%)`;
+                document.querySelectorAll('.gallery-dot').forEach((dot, index) => {
+                    dot.classList.toggle('active', index === currentGalleryIndex);
+                });
+            }
+        }
+
+        function initRouter() {
+            const hash = window.location.hash.slice(1) || 'inicio';
+            loadSection(hash);
+            
+            window.addEventListener('hashchange', () => {
+                const section = window.location.hash.slice(1) || 'inicio';
+                loadSection(section);
+            });
+            
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const href = link.getAttribute('href');
+                    window.location.hash = href;
+                    
+                    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                    link.classList.add('active');
+                    
+                    document.getElementById('navMenu').classList.remove('active');
+                    document.getElementById('hamburger').classList.remove('active');
+                });
+            });
+        }
+
+        function loadSection(section) {
+            currentSection = section;
+            const mainContent = document.getElementById('mainContent');
+            
+            mainContent.innerHTML = renderSkeleton();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            updateBreadcrumbs(section);
+            
+            setTimeout(() => {
+                switch(section) {
+                    case 'inicio': mainContent.innerHTML = renderInicio(); break;
+                    case 'que-ver': mainContent.innerHTML = renderQueVer(); break;
+                    case 'donde-comer': mainContent.innerHTML = renderDondeComer(); initDondeComerEvents(); break;
+                    case 'donde-dormir': mainContent.innerHTML = renderDondeDormir(); initDondeDormirEvents(); break;
+                    case 'como-llegar': mainContent.innerHTML = renderComoLlegar(); break;
+                    case 'eventos': mainContent.innerHTML = renderEventos(); break;
+                    case 'historia': mainContent.innerHTML = renderHistoria(); break;
+                    case 'datos-utiles': mainContent.innerHTML = renderDatosUtiles(); break;
+                    case 'favoritos': mainContent.innerHTML = renderFavoritos(); break;
+                    case 'contacto': mainContent.innerHTML = renderContacto(); initContactoEvents(); break;
+                    default: mainContent.innerHTML = renderInicio();
+                }
+            }, 300);
+        }
+
+        function renderSkeleton() {
+            return `
+                <section class="section">
+                    <div class="places-grid">
+                        ${Array(6).fill().map(() => `
+                            <div class="skeleton-card">
+                                <div class="skeleton skeleton-image"></div>
+                                <div class="skeleton skeleton-title"></div>
+                                <div class="skeleton skeleton-text"></div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </section>
+            `;
+        }
+
+        function renderInicio() {
+            return `
+                <section class="section">
+                    <div class="hero-banner">
+                        <div class="hero-content">
+                            <h2 class="hero-title">Bienvenido a San Martín de la Vega</h2>
+                            <p class="hero-description">
+                                Descubre un municipio con historia, naturaleza y diversión. 
+                                Desde el emocionante Parque Warner hasta las tranquilas riberas del Jarama.
+                            </p>
+                            <button class="hero-button" onclick="window.location.hash='que-ver'">
+                                Descubre San Martín de la Vega
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="welcome-section">
+                        <h2 class="section-title">Un pueblo con encanto</h2>
+                        <p class="welcome-text">
+                            San Martín de la Vega es un municipio madrileño situado en la Comarca de las Vegas, 
+                            a orillas del río Jarama. Conocido internacionalmente por albergar el Parque Warner Madrid, 
+                            este pueblo también cuenta con un rico patrimonio histórico, espacios naturales protegidos 
+                            y unas fiestas patronales que se remontan al siglo XV.
+                        </p>
+                    </div>
+                    
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon">🎢</div>
+                            <h3 class="feature-title">Ocio y Diversión</h3>
+                            <p class="feature-description">
+                                Hogar del Parque Warner Madrid, uno de los parques temáticos más importantes de Europa
+                            </p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">🌳</div>
+                            <h3 class="feature-title">Naturaleza</h3>
+                            <p class="feature-description">
+                                Parte del Parque Regional del Sureste con encinares, pinares y el río Jarama
+                            </p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">⛪</div>
+                            <h3 class="feature-title">Historia</h3>
+                            <p class="feature-description">
+                                Patrimonio histórico con la Iglesia del siglo XVI y tradiciones centenarias
+                            </p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">🎊</div>
+                            <h3 class="feature-title">Fiestas</h3>
+                            <p class="feature-description">
+                                Fiestas de San Marcos desde 1483, con encierros, verbenas y tradición
+                            </p>
+                        </div>
+                    </div>
+                </section>
+            `;
+        }
+
+        function renderQueVer() {
+            const lugaresHTML = appData.lugares.map(lugar => `
+                <div class="place-card" data-id="${lugar.id}">
+                    <div class="place-image">
+                        ${lugar.imagenes ? 
+                            `<img src="${lugar.imagenes[0].url}" alt="${lugar.nombre}" loading="lazy">` :
+                            `<span>${lugar.icono}</span>`
+                        }
+                    </div>
+                    <button class="favorite-button ${isFavorite('lugares', lugar.id) ? 'active' : ''}" 
+                            data-type="lugares" data-id="${lugar.id}"
+                            onclick="event.stopPropagation(); toggleFavorite('lugares', ${lugar.id})">
+                        ${isFavorite('lugares', lugar.id) ? '❤️' : '🤍'}
+                    </button>
+                    <button class="share-button" 
+                            onclick="event.stopPropagation(); shareContent('lugar', ${JSON.stringify(lugar).replace(/"/g, '&quot;')})">
+                        📤
+                    </button>
+                    <div class="place-content">
+                        <h3 class="place-title">${lugar.nombre}</h3>
+                        <p class="place-description">${lugar.descripcion}</p>
+                        <button class="place-button" onclick="showPlaceDetails(${lugar.id})">
+                            Ver más información
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            
+            return `
+                <section class="section">
+                    <h2 class="section-title mb-lg">Qué Ver en San Martín de la Vega</h2>
+                    <p class="welcome-text mb-lg">
+                        Descubre los principales atractivos turísticos de nuestro municipio. 
+                        Desde el emblemático Parque Warner hasta espacios naturales protegidos.
+                    </p>
+                    <div class="places-grid">${lugaresHTML}</div>
+                </section>
+                
+                <div class="modal" id="placeModal">
+                    <div class="modal-content">
+                        <button class="modal-close" onclick="closePlaceModal()">&times;</button>
+                        <div id="modalBody"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderDondeComer() {
+            return `
+                <section class="section">
+                    <h2 class="section-title mb-lg">Dónde Comer</h2>
+                    <p class="welcome-text mb-lg">
+                        San Martín de la Vega ofrece una variada oferta gastronómica. 
+                        Descubre restaurantes, bares y cafeterías para todos los gustos.
+                    </p>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" data-filter="todos">Todos</button>
+                        <button class="filter-btn" data-filter="mediterranea">Mediterránea</button>
+                        <button class="filter-btn" data-filter="tradicional">Tradicional</button>
+                        <button class="filter-btn" data-filter="italiana">Italiana</button>
+                        <button class="filter-btn" data-filter="rapida">Comida Rápida</button>
+                    </div>
+                    <div class="restaurants-list">
+                        ${appData.restaurantes.map(r => `
+                            <div class="restaurant-card" data-categoria="${r.categoria}" data-id="${r.id}">
+                                <button class="favorite-button ${isFavorite('restaurantes', r.id) ? 'active' : ''}" 
+                                        data-type="restaurantes" data-id="${r.id}"
+                                        onclick="toggleFavorite('restaurantes', ${r.id})">
+                                    ${isFavorite('restaurantes', r.id) ? '❤️' : '🤍'}
+                                </button>
+                                <div onclick="window.open('${r.enlace}','_blank')" style="cursor:pointer; flex:1;">
+                                    <h3 class="restaurant-name">
+                                        <span class="restaurant-icon">${r.icono}</span>
+                                        ${r.nombre}
+                                    </h3>
+                                    <span class="restaurant-type">${r.tipo}</span>
+                                    <p class="restaurant-address">📍 ${r.direccion}</p>
+                                    <p class="restaurant-description">${r.descripcion}</p>
+                                </div>
+                                <button class="place-button" onclick="window.open('${r.enlace}','_blank')">
+                                    Visitar sitio web
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </section>
+            `;
+        }
+
+        function renderDondeDormir() {
+            return `
+                <section class="section">
+                    <h2 class="section-title mb-lg">Dónde Dormir</h2>
+                    <p class="welcome-text mb-lg">
+                        Encuentra el alojamiento perfecto para tu estancia en San Martín de la Vega. 
+                        Desde hoteles junto al Parque Warner hasta encantadoras casas rurales.
+                    </p>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" data-filter="todos">Todos</button>
+                        <button class="filter-btn" data-filter="hotel">Hoteles</button>
+                        <button class="filter-btn" data-filter="rural">Casas Rurales</button>
+                        <button class="filter-btn" data-filter="apartamento">Apartamentos</button>
+                        <button class="filter-btn" data-filter="hostal">Hostales</button>
+                        <button class="filter-btn" data-filter="camping">Camping</button>
+                    </div>
+                    <div class="accommodations-list">
+                        ${appData.alojamientos.map(a => `
+                            <div class="accommodation-card" data-categoria="${a.categoria}" onclick="window.open('${a.enlace}','_blank')" style="cursor:pointer">
+                                <h3 class="accommodation-name">
+                                    <span class="accommodation-icon">${a.icono}</span>
+                                    ${a.nombre}
+                                </h3>
+                                <span class="accommodation-type">${a.tipo}</span>
+                                <p class="accommodation-address">📍 ${a.direccion}</p>
+                                <p class="accommodation-description">${a.descripcion}</p>
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:auto; padding-top:1rem;">
+                                    <span style="font-weight:bold; color:var(--primary-color);">${a.precio}</span>
+                                    <button class="place-button" style="width:auto;" onclick="event.stopPropagation();window.open('${a.enlace}','_blank')">
+                                        Ver disponibilidad
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </section>
+            `;
+        }
+
+        function renderComoLlegar() {
+            return `
+                <section class="section">
+                    <h2 class="section-title mb-lg">Cómo Llegar a San Martín de la Vega</h2>
+                    <p class="welcome-text mb-lg">
+                        San Martín de la Vega está muy bien comunicado con Madrid y otras ciudades. 
+                        Aquí te mostramos todas las opciones de transporte disponibles.
+                    </p>
+                    
+                    <div class="transport-grid">
+                        <div class="transport-card">
+                            <div class="transport-icon">🚌</div>
+                            <h3 class="transport-title">Autobús</h3>
+                            <ul class="transport-info">
+                                ${appData.transporte.autobus.lineas.map(l => `<li>${l}</li>`).join('')}
+                                <li><strong>Duración:</strong> ${appData.transporte.autobus.duracion}</li>
+                                <li><strong>Salida:</strong> ${appData.transporte.autobus.info}</li>
+                            </ul>
+                        </div>
+                        <div class="transport-card">
+                            <div class="transport-icon">🚗</div>
+                            <h3 class="transport-title">Coche</h3>
+                            <ul class="transport-info">
+                                <li><strong>Ruta:</strong> ${appData.transporte.coche.ruta}</li>
+                                <li><strong>Duración:</strong> ${appData.transporte.coche.duracion}</li>
+                                <li><strong>Parking:</strong> ${appData.transporte.coche.parking}</li>
+                            </ul>
+                        </div>
+                        <div class="transport-card">
+                            <div class="transport-icon">🚆</div>
+                            <h3 class="transport-title">Tren</h3>
+                            <ul class="transport-info">
+                                ${appData.transporte.tren.lineas.map(l => `<li>${l}</li>`).join('')}
+                                <li><strong>Duración:</strong> ${appData.transporte.tren.duracion}</li>
+                                <li><strong>Info:</strong> ${appData.transporte.tren.info}</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="map-container">
+                        <iframe 
+                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d24325.782374064396!2d-3.5743!3d40.2058!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xd4228b7e0d0e0e0%3A0x0!2sSan%20Mart%C3%ADn%20de%20la%20Vega%2C%20Madrid!5e0!3m2!1ses!2ses!4v1635000000000!5m2!1ses!2ses"
+                            allowfullscreen="" 
+                            loading="lazy"
+                            title="Mapa de San Martín de la Vega"
+                        ></iframe>
+                    </div>
+                </section>
+            `;
+        }
+
+        function renderEventos() {
+            return `
+                <section class="section">
+                    <h2 class="section-title mb-lg">Eventos y Fiestas</h2>
+                    <p class="welcome-text mb-lg">
+                        San Martín de la Vega celebra durante todo el año eventos culturales, 
+                        religiosos y festivos. Las Fiestas de San Marcos son las más destacadas, 
+                        con una tradición que se remonta al año 1483.
+                    </p>
+                    <div class="events-container">
+                        ${appData.eventos.map(e => `
+                            <div class="event-card">
+                                <div class="event-date">
+                                    <div class="event-day">${e.fecha.dia}</div>
+                                    <div class="event-month">${e.fecha.mes}</div>
+                                </div>
+                                <div class="event-details">
+                                    <h3 class="event-title">${e.icono} ${e.nombre}</h3>
+                                    <p class="event-location">📍 ${e.ubicacion}</p>
+                                    <p class="event-description">${e.descripcion}</p>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </section>
+            `;
+        }
+
+        function renderHistoria() {
+            return `
+                <section class="section">
+                    <h2 class="section-title mb-lg">Historia de San Martín de la Vega</h2>
+                    <p class="welcome-text mb-lg">
+                        Descubre la rica historia de nuestro municipio, desde sus orígenes medievales 
+                        hasta la actualidad. Una historia marcada por la agricultura, la devoción religiosa 
+                        y la transformación moderna.
+                    </p>
+                    <div class="timeline">
+                        ${appData.historia.map(h => `
+                            <div class="timeline-item">
+                                <div class="timeline-marker"></div>
+                                <div class="timeline-content">
+                                    <h3 class="timeline-year">${h.year}</h3>
+                                    <h4 class="place-title">${h.titulo}</h4>
+                                    <p class="timeline-text">${h.texto}</p>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </section>
+            `;
+        }
+
+        function renderDatosUtiles() {
+            return `
+                <section class="section">
+                    <h2 class="section-title mb-lg">Datos Útiles</h2>
+                    <p class="welcome-text mb-lg">
+                        Información práctica y contactos importantes para tu visita a San Martín de la Vega.
+                    </p>
+                    ${appData.datosUtiles.map(c => `
+                        <div>
+                            <h3 class="section-title" style="font-size:1.5rem; text-align:left; margin-bottom:1rem;">${c.categoria}</h3>
+                            <div class="useful-data-grid">
+                                ${c.items.map(i => `
+                                    <div class="useful-data-card">
+                                        <div class="useful-data-title">${i.icono} ${i.nombre}</div>
+                                        <div class="useful-data-info"><strong>${i.valor}</strong></div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `).join('')}
+                </section>
+            `;
+        }
+
+        function renderFavoritos() {
+            const favLugares = appData.lugares.filter(l => favorites.lugares.includes(l.id));
+            const favRestaurantes = appData.restaurantes.filter(r => favorites.restaurantes.includes(r.id));
+            
+            if (favLugares.length === 0 && favRestaurantes.length === 0) {
+                return `
+                    <section class="section">
+                        <h2 class="section-title mb-lg">Mis Favoritos</h2>
+                        <div class="welcome-section" style="text-align:center;">
+                            <p style="font-size:3rem; margin-bottom:1rem;">❤️</p>
+                            <h3 style="color:var(--primary-color); margin-bottom:1rem;">No tienes favoritos guardados</h3>
+                            <p style="color:var(--text-secondary);">
+                                Explora lugares y restaurantes, y guarda tus favoritos haciendo clic en el corazón 🤍
+                            </p>
+                            <button class="hero-button" style="margin-top:2rem;" onclick="window.location.hash='que-ver'">
+                                Explorar lugares
+                            </button>
+                        </div>
+                    </section>
+                `;
+            }
+            
+            let html = `
+                <section class="section">
+                    <h2 class="section-title mb-lg">Mis Favoritos ❤️</h2>
+                    <div style="text-align:center; margin-bottom:2rem;">
+                        <button class="place-button" style="width:auto; display:inline-block;" onclick="exportFavorites()">
+                            📥 Exportar favoritos
+                        </button>
+                    </div>
+            `;
+            
+            if (favLugares.length > 0) {
+                html += `
+                    <h3 style="color:var(--primary-color); margin:2rem 0 1rem;">📍 Lugares para visitar</h3>
+                    <div class="places-grid">
+                        ${favLugares.map(lugar => `
+                            <div class="place-card" data-id="${lugar.id}">
+                                <div class="place-image">
+                                    ${lugar.imagenes ? 
+                                        `<img src="${lugar.imagenes[0].url}" alt="${lugar.nombre}">` :
+                                        `<span>${lugar.icono}</span>`
+                                    }
+                                </div>
+                                <button class="favorite-button active" 
+                                        data-type="lugares" data-id="${lugar.id}"
+                                        onclick="toggleFavorite('lugares', ${lugar.id})">
+                                    ❤️
+                                </button>
+                                <div class="place-content">
+                                    <h3 class="place-title">${lugar.nombre}</h3>
+                                    <p class="place-description">${lugar.descripcion}</p>
+                                    <button class="place-button" onclick="showPlaceDetails(${lugar.id})">
+                                        Ver más información
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            
+            if (favRestaurantes.length > 0) {
+                html += `
+                    <h3 style="color:var(--primary-color); margin:3rem 0 1rem;">🍽️ Restaurantes</h3>
+                    <div class="restaurants-list">
+                        ${favRestaurantes.map(r => `
+                            <div class="restaurant-card" data-id="${r.id}">
+                                <button class="favorite-button active" 
+                                        data-type="restaurantes" data-id="${r.id}"
+                                        onclick="toggleFavorite('restaurantes', ${r.id})">
+                                    ❤️
+                                </button>
+                                <div onclick="window.open('${r.enlace}','_blank')" style="cursor:pointer; flex:1;">
+                                    <h3 class="restaurant-name">
+                                        <span class="restaurant-icon">${r.icono}</span>
+                                        ${r.nombre}
+                                    </h3>
+                                    <span class="restaurant-type">${r.tipo}</span>
+                                    <p class="restaurant-address">📍 ${r.direccion}</p>
+                                    <p class="restaurant-description">${r.descripcion}</p>
+                                </div>
+                                <button class="place-button" onclick="window.open('${r.enlace}','_blank')">
+                                    Visitar sitio web
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            
+            html += `</section>
+                <div class="modal" id="placeModal">
+                    <div class="modal-content">
+                        <button class="modal-close" onclick="closePlaceModal()">&times;</button>
+                        <div id="modalBody"></div>
+                    </div>
+                </div>`;
+            return html;
+        }
+
+        function renderContacto() {
+            return `
+                <section class="section">
+                    <div class="contact-container">
+                        <h2 class="section-title mb-lg">Contacto</h2>
+                        <p class="contact-intro">
+                            ¿Tienes alguna pregunta o sugerencia? Nos encantaría escucharte. 
+                            Completa el formulario y te responderemos lo antes posible.
+                        </p>
+                        
+                        <form class="contact-form" id="contactForm">
+                            <div class="form-group">
+                                <label class="form-label">Nombre *</label>
+                                <input type="text" id="nombre" class="form-input" required placeholder="Tu nombre completo">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Email *</label>
+                                <input type="email" id="email" class="form-input" required placeholder="tu@email.com">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Mensaje *</label>
+                                <textarea id="mensaje" class="form-textarea" required placeholder="Escribe tu mensaje aquí..."></textarea>
+                            </div>
+                            <button type="submit" class="form-button">
+                                <span>Enviar Mensaje</span>
+                                <div class="form-spinner"></div>
+                            </button>
+                            <div id="formMessage"></div>
+                        </form>
+                        
+                        <div class="map-container">
+                            <iframe 
+                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d24325.782374064396!2d-3.5743!3d40.2058!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xd4228b7e0d0e0e0%3A0x0!2sSan%20Mart%C3%ADn%20de%20la%20Vega%2C%20Madrid!5e0!3m2!1ses!2ses!4v1635000000000!5m2!1ses!2ses"
+                                allowfullscreen="" 
+                                loading="lazy"
+                                title="Ubicación de San Martín de la Vega"
+                            ></iframe>
+                        </div>
+                    </div>
+                </section>
+            `;
+        }
+
+        function showPlaceDetails(id) {
+            const lugar = appData.lugares.find(l => l.id === id);
+            if (!lugar) return;
+            
+            if (lugar.imagenes && lugar.imagenes.length > 0) {
+                initGallery(lugar.imagenes, 0);
+            } else {
+                const modalBody = document.getElementById('modalBody');
+                modalBody.innerHTML = `
+                    <div style="text-align:center; font-size:3.5rem; margin-bottom:1rem;">${lugar.icono}</div>
+                    <h2 class="place-title" style="text-align:center; margin-bottom:1rem;">${lugar.nombre}</h2>
+                    <p style="color:var(--text-secondary); line-height:1.8;">${lugar.detalles}</p>
+                `;
+                document.getElementById('placeModal').classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closePlaceModal() {
+            document.getElementById('placeModal').classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        function initDondeComerEvents() {
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    const filter = btn.getAttribute('data-filter');
+                    document.querySelectorAll('.restaurant-card').forEach(card => {
+                        if (filter === 'todos' || card.getAttribute('data-categoria') === filter) {
+                            card.style.display = 'flex';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                });
+            });
+        }
+
+        function initDondeDormirEvents() {
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    const filter = btn.getAttribute('data-filter');
+                    document.querySelectorAll('.accommodation-card').forEach(card => {
+                        if (filter === 'todos' || card.getAttribute('data-categoria') === filter) {
+                            card.style.display = 'flex';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                });
+            });
+        }
+
+        function initContactoEvents() {
+            const form = document.getElementById('contactForm');
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const nombre = document.getElementById('nombre').value;
+                const email = document.getElementById('email').value;
+                const mensaje = document.getElementById('mensaje').value;
+                
+                if (!nombre || !email || !mensaje) {
+                    showFormMessage('Por favor, completa todos los campos.', 'error');
+                    return;
+                }
+                
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) {
+                    showFormMessage('Por favor, introduce un email válido.', 'error');
+                    return;
+                }
+                
+                const btn = form.querySelector('.form-button');
+                btn.disabled = true;
+                btn.classList.add('loading');
+                
+                setTimeout(() => {
+                    document.getElementById('formMessage').innerHTML = `
+                        <div class="form-message success">¡Gracias ${nombre}! Tu mensaje ha sido enviado correctamente. Te responderemos pronto a ${email}.</div>
+                    `;
+                    form.reset();
+                    btn.disabled = false;
+                    btn.classList.remove('loading');
+                }, 1500);
+            });
+        }
+
+        function showFormMessage(message, type) {
+            const formMessage = document.getElementById('formMessage');
+            formMessage.innerHTML = `<div class="form-message ${type}">${message}</div>`;
+            setTimeout(() => {
+                formMessage.innerHTML = '';
+            }, 5000);
+        }
+
+        function initHamburgerMenu() {
+            const hamburger = document.getElementById('hamburger');
+            const navMenu = document.getElementById('navMenu');
+            
+            hamburger.addEventListener('click', () => {
+                hamburger.classList.toggle('active');
+                navMenu.classList.toggle('active');
+            });
+        }
+
+        function initThemeToggle() {
+            const themeToggle = document.getElementById('themeToggle');
+            const themeIcon = themeToggle.querySelector('.theme-icon');
+            
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+                themeIcon.textContent = '☀️';
+            }
+            
+            themeToggle.addEventListener('click', () => {
+                document.body.classList.toggle('dark-mode');
+                const isDark = document.body.classList.contains('dark-mode');
+                themeIcon.textContent = isDark ? '☀️' : '🌙';
+                localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            });
+        }
+
+        function initAccessibilityToggle() {
+            const accessibilityToggle = document.getElementById('accessibilityToggle');
+            const saved = localStorage.getItem('accessibility') === 'true';
+            
+            if (saved) {
+                document.body.classList.add('accessibility-mode');
+                accessibilityToggle.classList.add('active');
+            }
+            
+            accessibilityToggle.addEventListener('click', () => {
+                document.body.classList.toggle('accessibility-mode');
+                const isActive = document.body.classList.contains('accessibility-mode');
+                accessibilityToggle.classList.toggle('active', isActive);
+                localStorage.setItem('accessibility', isActive);
+            });
+        }
+
+        function initScrollTop() {
+            const scrollTopBtn = document.getElementById('scrollTop');
+            
+            window.addEventListener('scroll', () => {
+                if (window.pageYOffset > 300) {
+                    scrollTopBtn.classList.add('visible');
+                } else {
+                    scrollTopBtn.classList.remove('visible');
+                }
+            });
+            
+            scrollTopBtn.addEventListener('click', () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initRouter();
+            initHamburgerMenu();
+            initThemeToggle();
+            initAccessibilityToggle();
+            initScrollTop();
+            initSearch();
+            
+            window.addEventListener('click', (e) => {
+                const modal = document.getElementById('placeModal');
+                if (modal && e.target === modal) {
+                    closePlaceModal();
+                }
+            });
+        });
+
+        window.showPlaceDetails = showPlaceDetails;
+        window.closePlaceModal = closePlaceModal;
+        window.toggleFavorite = toggleFavorite;
+        window.exportFavorites = exportFavorites;
+        window.shareContent = shareContent;
+        window.moveGallery = moveGallery;
+        window.goToSlide = goToSlide;
+    </script>
+</body>
+</html>
+
