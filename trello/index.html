@@ -61,6 +61,24 @@
                     <h1 class="text-blue-600 text-2xl font-bold tracking-tight">📋 Trello Colaborativo</h1>
                 </div>
                 <div class="user-info flex items-center gap-4">
+                    <!-- Botón de Notificaciones -->
+                    <div class="relative">
+                        <button id="notifications-btn" class="relative p-2 hover:bg-slate-100 rounded-lg transition">
+                            <i data-lucide="bell" class="w-5 h-5 text-slate-600"></i>
+                            <span id="notifications-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">0</span>
+                        </button>
+                        <!-- Dropdown de Notificaciones -->
+                        <div id="notifications-dropdown" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-slate-200 max-h-96 overflow-y-auto z-50">
+                            <div class="p-4 border-b border-slate-200 flex justify-between items-center">
+                                <h3 class="font-bold text-slate-800">Notificaciones</h3>
+                                <button id="mark-all-read-btn" class="text-xs text-blue-600 hover:underline">Marcar todas como leídas</button>
+                            </div>
+                            <div id="notifications-list" class="divide-y divide-slate-100">
+                                <p class="p-4 text-center text-slate-500 text-sm">No hay notificaciones</p>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <span id="user-name" class="text-slate-700 font-medium hidden md:block"></span>
                     <button id="logout-btn" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white border-none rounded-lg cursor-pointer transition text-sm font-medium">
                         Cerrar Sesión
@@ -79,21 +97,72 @@
             <div id="boards-container" class="boards-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5"></div>
         </div>
 
-        <div id="board-view" class="hidden flex-1 flex flex-col bg-blue-50">
-            <div class="board-header flex justify-between items-center mb-5 bg-white/70 backdrop-blur-sm px-5 py-4 border-b border-slate-200 shadow-sm">
-                <div class="flex items-center gap-3">
-                    <button id="back-to-boards-btn" class="p-2 hover:bg-slate-200 rounded-lg text-slate-600 transition">
-                        <i data-lucide="arrow-left" class="w-5 h-5"></i>
-                    </button>
-                    <h2 id="board-title" class="text-slate-800 text-2xl font-bold"></h2>
+        <div id="board-view" class="hidden flex-1 flex bg-blue-50 overflow-hidden">
+            <!-- Contenedor principal con sidebar -->
+            <div class="flex-1 flex flex-col overflow-hidden">
+                <div class="board-header flex justify-between items-center mb-0 bg-white/70 backdrop-blur-sm px-5 py-4 border-b border-slate-200 shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <button id="back-to-boards-btn" class="p-2 hover:bg-slate-200 rounded-lg text-slate-600 transition">
+                            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                        </button>
+                        <h2 id="board-title" class="text-slate-800 text-2xl font-bold"></h2>
+                        <!-- Badge de Rol del Usuario -->
+                        <span id="user-role-badge" class="px-3 py-1 text-xs font-bold rounded-full"></span>
+                    </div>
+                    <div class="board-actions flex gap-3">
+                        <button id="toggle-members-btn" class="px-4 py-2 bg-slate-500 hover:bg-slate-600 text-white border-none rounded-lg cursor-pointer text-sm font-bold transition flex items-center gap-2">
+                            <i data-lucide="users" class="w-4 h-4"></i> Miembros
+                        </button>
+                        <button id="toggle-activity-btn" class="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white border-none rounded-lg cursor-pointer text-sm font-bold transition flex items-center gap-2">
+                            <i data-lucide="activity" class="w-4 h-4"></i> Actividad
+                        </button>
+                        <button id="add-list-btn" class="btn-primary px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white border-none rounded-lg cursor-pointer text-sm font-bold transition flex items-center gap-2">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Añadir Lista
+                        </button>
+                    </div>
                 </div>
-                <div class="board-actions flex gap-3">
-                    <button id="add-list-btn" class="btn-primary px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white border-none rounded-lg cursor-pointer text-sm font-bold transition flex items-center gap-2">
-                        <i data-lucide="plus" class="w-4 h-4"></i> Añadir Lista
+                <div id="lists-container" class="lists-container flex gap-5 overflow-x-auto p-5 flex-1"></div>
+            </div>
+            
+            <!-- Panel Lateral de Miembros -->
+            <div id="members-panel" class="hidden w-80 bg-white border-l border-slate-200 overflow-y-auto flex-shrink-0">
+                <div class="p-5">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
+                            <i data-lucide="users" class="w-5 h-5"></i> Miembros
+                        </h3>
+                        <button id="close-members-btn" class="text-slate-400 hover:text-slate-600">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    
+                    <button id="invite-member-btn" class="w-full mb-4 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition flex items-center justify-center gap-2">
+                        <i data-lucide="user-plus" class="w-4 h-4"></i> Invitar Miembro
                     </button>
+                    
+                    <div id="members-list" class="space-y-3">
+                        <!-- Lista de miembros se carga dinámicamente -->
+                    </div>
                 </div>
             </div>
-            <div id="lists-container" class="lists-container flex gap-5 overflow-x-auto p-5 min-h-[500px]"></div>
+            
+            <!-- Panel Lateral de Actividad -->
+            <div id="activity-panel" class="hidden w-80 bg-white border-l border-slate-200 overflow-y-auto flex-shrink-0">
+                <div class="p-5">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
+                            <i data-lucide="activity" class="w-5 h-5"></i> Actividad
+                        </h3>
+                        <button id="close-activity-btn" class="text-slate-400 hover:text-slate-600">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    
+                    <div id="activity-list" class="space-y-3">
+                        <!-- Actividad se carga dinámicamente -->
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -109,6 +178,44 @@
                 </button>
                 <button id="save-board-btn" class="btn-primary px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white border-none rounded-lg cursor-pointer text-base font-bold transition">
                     Crear
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para invitar miembro -->
+    <div id="invite-modal" class="modal hidden fixed inset-0 bg-black/50 z-[1000] flex justify-center items-center">
+        <div class="modal-content bg-white p-8 rounded-xl shadow-2xl w-11/12 max-w-md">
+            <h3 class="text-slate-800 mb-5 text-xl font-bold">Invitar Colaborador</h3>
+            <input type="email" id="invite-email-input" placeholder="correo@ejemplo.com" 
+                   class="w-full p-3 mb-4 border-2 border-slate-300 rounded-lg text-base focus:outline-none focus:border-blue-500 transition">
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-slate-700 mb-2">Rol:</label>
+                <div class="space-y-2">
+                    <label class="flex items-center p-3 border-2 border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition">
+                        <input type="radio" name="invite-role" value="editor" checked class="mr-3">
+                        <div>
+                            <div class="font-medium text-slate-800">Editor</div>
+                            <div class="text-xs text-slate-500">Puede crear y editar tarjetas</div>
+                        </div>
+                    </label>
+                    <label class="flex items-center p-3 border-2 border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition">
+                        <input type="radio" name="invite-role" value="viewer" class="mr-3">
+                        <div>
+                            <div class="font-medium text-slate-800">Observador</div>
+                            <div class="text-xs text-slate-500">Solo puede ver y comentar</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="modal-actions flex gap-3 justify-end mt-5">
+                <button id="cancel-invite-btn" class="btn-secondary px-5 py-2.5 bg-slate-400 hover:bg-slate-500 text-white border-none rounded-lg cursor-pointer text-base font-bold transition">
+                    Cancelar
+                </button>
+                <button id="send-invite-btn" class="btn-primary px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white border-none rounded-lg cursor-pointer text-base font-bold transition">
+                    Enviar Invitación
                 </button>
             </div>
         </div>
@@ -173,7 +280,9 @@
     
     <!-- Inicializar iconos Lucide -->
     <script>
-        lucide.createIcons();
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
     </script>
 </body>
 </html>
