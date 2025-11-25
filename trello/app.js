@@ -1,491 +1,412 @@
-import { auth, db } from './firebase-config.js';
-import { 
-    collection, 
-    addDoc, 
-    doc, 
-    updateDoc, 
-    deleteDoc, 
-    query, 
-    where, 
-    onSnapshot,
-    orderBy,
-    arrayUnion,
-    serverTimestamp,
-    getDoc
-} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+/* Reset básico */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
-// Variables globales
-let currentUser = null;
-let currentBoardId = null;
-let currentCardData = null;
-let unsubscribeBoards = null;
-let unsubscribeLists = null;
-let unsubscribeCards = {};
+/* Estilos para Drag & Drop */
+.dragging {
+    opacity: 0.5;
+    transform: scale(0.95);
+    transition: opacity 0.2s, transform 0.2s;
+}
 
-// Elementos del DOM
-const boardsContainer = document.getElementById('boards-container');
-const boardView = document.getElementById('board-view');
-const boardTitle = document.getElementById('board-title');
-const listsContainer = document.getElementById('lists-container');
+.drag-over {
+    background-color: #e2e8f0 !important;
+    border: 2px dashed #3b82f6 !important;
+    transition: all 0.2s;
+}
 
-// Modals
-const boardModal = document.getElementById('board-modal');
-const listModal = document.getElementById('list-modal');
-const cardModal = document.getElementById('card-modal');
+/* Scrollbar personalizada para listas horizontales */
+.lists-container::-webkit-scrollbar {
+    height: 8px;
+}
 
-// Event listeners principales
-document.getElementById('create-board-btn').addEventListener('click', () => {
-    boardModal.style.display = 'flex';
-    document.getElementById('board-name-input').value = '';
-});
+.lists-container::-webkit-scrollbar-track {
+    background: #f1f5f9; 
+    border-radius: 4px;
+}
 
-document.getElementById('cancel-board-btn').addEventListener('click', () => {
-    boardModal.style.display = 'none';
-});
+.lists-container::-webkit-scrollbar-thumb {
+    background: #cbd5e1; 
+    border-radius: 4px;
+}
 
-document.getElementById('save-board-btn').addEventListener('click', createBoard);
+.lists-container::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8; 
+}
 
-document.getElementById('add-list-btn').addEventListener('click', () => {
-    listModal.style.display = 'flex';
-    document.getElementById('list-name-input').value = '';
-});
+/* Scrollbar para paneles laterales */
+#members-panel::-webkit-scrollbar,
+#activity-panel::-webkit-scrollbar,
+#notifications-dropdown::-webkit-scrollbar {
+    width: 6px;
+}
 
-document.getElementById('cancel-list-btn').addEventListener('click', () => {
-    listModal.style.display = 'none';
-});
+#members-panel::-webkit-scrollbar-track,
+#activity-panel::-webkit-scrollbar-track,
+#notifications-dropdown::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
 
-document.getElementById('save-list-btn').addEventListener('click', createList);
+#members-panel::-webkit-scrollbar-thumb,
+#activity-panel::-webkit-scrollbar-thumb,
+#notifications-dropdown::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
 
-document.getElementById('back-to-boards-btn').addEventListener('click', () => {
-    boardView.style.display = 'none';
-    document.querySelector('.boards-section').style.display = 'block';
-    currentBoardId = null;
-    
-    // Limpiar listeners de listas
-    if (unsubscribeLists) unsubscribeLists();
-    Object.values(unsubscribeCards).forEach(unsub => unsub());
-    unsubscribeCards = {};
-});
+/* Estilos para las listas */
+.list {
+    background: rgba(236, 240, 241, 0.9);
+    border-radius: 12px;
+    padding: 15px;
+    min-width: 300px;
+    max-width: 300px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #cbd5e1;
+    transition: box-shadow 0.2s;
+}
 
-document.getElementById('cancel-card-btn').addEventListener('click', () => {
-    cardModal.style.display = 'none';
-    currentCardData = null;
-});
+.list:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
 
-document.getElementById('save-card-btn').addEventListener('click', saveCard);
-document.getElementById('delete-card-btn').addEventListener('click', deleteCard);
-document.getElementById('add-comment-btn').addEventListener('click', addComment);
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #cbd5e1;
+}
 
-// Escuchar cuando el usuario se autentica
-window.addEventListener('user-authenticated', (e) => {
-    currentUser = e.detail.user;
-    loadBoards();
-});
+.list-header h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1e293b;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 
-// Función para crear un tablero
-async function createBoard() {
-    const name = document.getElementById('board-name-input').value.trim();
-    
-    if (!name) {
-        alert('Por favor ingresa un nombre para el tablero');
-        return;
+/* Contenedor de tarjetas */
+.cards-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 100px;
+    max-height: calc(100vh - 300px);
+    overflow-y: auto;
+    padding: 4px;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.cards-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.cards-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.cards-container::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+/* Tarjetas individuales */
+.card {
+    background: white;
+    padding: 12px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    cursor: grab;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid #e2e8f0;
+    position: relative;
+}
+
+.card:active {
+    cursor: grabbing;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card h4 {
+    color: #1e293b;
+    margin-bottom: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.card p {
+    color: #64748b;
+    font-size: 0.75rem;
+    margin-bottom: 6px;
+    line-height: 1.4;
+}
+
+/* Board cards en la vista principal */
+.board-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+    transition: transform 0.3s, box-shadow 0.3s;
+    border: 1px solid #e2e8f0;
+    position: relative;
+}
+
+.board-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.board-card h3 {
+    color: #1e293b;
+    margin-bottom: 12px;
+    font-size: 1.125rem;
+    font-weight: 700;
+}
+
+/* Comentarios */
+.comment {
+    background: #f8fafc;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #e2e8f0;
+}
+
+.comment strong {
+    color: #3b82f6;
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.comment p {
+    color: #334155;
+    margin-bottom: 6px;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.comment small {
+    color: #94a3b8;
+    font-size: 0.75rem;
+}
+
+/* Paneles laterales */
+#members-panel,
+#activity-panel {
+    transition: transform 0.3s ease;
+}
+
+.member-item,
+.activity-item {
+    transition: background 0.2s;
+}
+
+.member-item:hover,
+.activity-item:hover {
+    background: #f1f5f9 !important;
+}
+
+/* Notificaciones */
+.notification-item {
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.notification-item:last-child {
+    border-bottom: none;
+}
+
+.notification-item:hover {
+    background: #f8fafc !important;
+}
+
+/* Badges de rol */
+.role-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
     }
-
-    try {
-        await addDoc(collection(db, 'boards'), {
-            name: name,
-            members: [currentUser.uid],
-            createdBy: currentUser.uid,
-            createdAt: serverTimestamp()
-        });
-        
-        boardModal.style.display = 'none';
-    } catch (error) {
-        console.error('Error al crear tablero:', error);
-        alert('Error al crear el tablero');
-    }
-}
-
-// Función para cargar tableros en tiempo real
-function loadBoards() {
-    if (unsubscribeBoards) unsubscribeBoards();
-
-    const q = query(
-        collection(db, 'boards'),
-        where('members', 'array-contains', currentUser.uid)
-    );
-
-    unsubscribeBoards = onSnapshot(q, (snapshot) => {
-        boardsContainer.innerHTML = '';
-        
-        snapshot.forEach((doc) => {
-            const board = doc.data();
-            const boardCard = createBoardCard(doc.id, board);
-            boardsContainer.appendChild(boardCard);
-        });
-    });
-}
-
-// Crear card de tablero
-function createBoardCard(id, board) {
-    const card = document.createElement('div');
-    card.className = 'board-card';
-    card.innerHTML = `
-        <h3>${board.name}</h3>
-        <p>Creado: ${board.createdAt ? new Date(board.createdAt.toDate()).toLocaleDateString() : 'Hoy'}</p>
-    `;
-    
-    card.addEventListener('click', () => openBoard(id, board.name));
-    
-    return card;
-}
-
-// Abrir un tablero
-function openBoard(boardId, boardName) {
-    currentBoardId = boardId;
-    boardTitle.textContent = boardName;
-    document.querySelector('.boards-section').style.display = 'none';
-    boardView.style.display = 'block';
-    
-    loadLists(boardId);
-}
-
-// Crear una lista
-async function createList() {
-    const name = document.getElementById('list-name-input').value.trim();
-    
-    if (!name) {
-        alert('Por favor ingresa un nombre para la lista');
-        return;
-    }
-
-    try {
-        await addDoc(collection(db, 'boards', currentBoardId, 'lists'), {
-            name: name,
-            position: Date.now(),
-            createdAt: serverTimestamp()
-        });
-        
-        listModal.style.display = 'none';
-    } catch (error) {
-        console.error('Error al crear lista:', error);
-        alert('Error al crear la lista');
-    }
-}
-
-// Cargar listas en tiempo real
-function loadLists(boardId) {
-    if (unsubscribeLists) unsubscribeLists();
-    
-    const q = query(
-        collection(db, 'boards', boardId, 'lists'),
-        orderBy('position')
-    );
-
-    unsubscribeLists = onSnapshot(q, (snapshot) => {
-        listsContainer.innerHTML = '';
-        
-        snapshot.forEach((doc) => {
-            const list = doc.data();
-            const listElement = createListElement(doc.id, list);
-            listsContainer.appendChild(listElement);
-            
-            // Cargar tarjetas de esta lista
-            loadCards(boardId, doc.id, listElement.querySelector('.cards-container'));
-        });
-    });
-}
-
-// Crear elemento de lista
-function createListElement(listId, list) {
-    const listDiv = document.createElement('div');
-    listDiv.className = 'list';
-    listDiv.dataset.listId = listId;
-    listDiv.innerHTML = `
-        <div class="list-header">
-            <h3>${list.name}</h3>
-            <button class="add-card-btn" data-list-id="${listId}">+ Tarjeta</button>
-        </div>
-        <div class="cards-container" data-list-id="${listId}"></div>
-    `;
-    
-    // Event listener para añadir tarjeta
-    listDiv.querySelector('.add-card-btn').addEventListener('click', () => {
-        openCardModal(listId);
-    });
-    
-    // Hacer la zona de tarjetas un drop zone
-    const cardsContainer = listDiv.querySelector('.cards-container');
-    setupDropZone(cardsContainer, listId);
-    
-    return listDiv;
-}
-
-// Cargar tarjetas en tiempo real
-function loadCards(boardId, listId, container) {
-    // Limpiar listener anterior si existe
-    if (unsubscribeCards[listId]) {
-        unsubscribeCards[listId]();
-    }
-    
-    const q = query(
-        collection(db, 'boards', boardId, 'lists', listId, 'cards'),
-        orderBy('position')
-    );
-
-    unsubscribeCards[listId] = onSnapshot(q, (snapshot) => {
-        container.innerHTML = '';
-        
-        snapshot.forEach((doc) => {
-            const card = doc.data();
-            const cardElement = createCardElement(doc.id, listId, card);
-            container.appendChild(cardElement);
-        });
-    });
-}
-
-// Crear elemento de tarjeta con drag and drop
-function createCardElement(cardId, listId, card) {
-    const cardDiv = document.createElement('div');
-    cardDiv.className = 'card';
-    cardDiv.draggable = true;
-    cardDiv.dataset.cardId = cardId;
-    cardDiv.dataset.listId = listId;
-    
-    cardDiv.innerHTML = `
-        <h4>${card.title}</h4>
-        ${card.description ? `<p>${card.description}</p>` : ''}
-        ${card.assignedTo ? `<span class="assigned">👤 ${card.assignedTo}</span>` : ''}
-    `;
-    
-    // Event listener para abrir modal de edición
-    cardDiv.addEventListener('click', () => {
-        openCardModal(listId, cardId, card);
-    });
-    
-    // Drag and drop events
-    cardDiv.addEventListener('dragstart', handleDragStart);
-    cardDiv.addEventListener('dragend', handleDragEnd);
-    
-    return cardDiv;
-}
-
-// Configurar zona de drop
-function setupDropZone(container, listId) {
-    container.addEventListener('dragover', handleDragOver);
-    container.addEventListener('drop', (e) => handleDrop(e, listId));
-    container.addEventListener('dragenter', handleDragEnter);
-    container.addEventListener('dragleave', handleDragLeave);
-}
-
-// Handlers de drag and drop
-let draggedCard = null;
-
-function handleDragStart(e) {
-    draggedCard = e.target;
-    e.target.style.opacity = '0.5';
-    e.dataTransfer.effectAllowed = 'move';
-}
-
-function handleDragEnd(e) {
-    e.target.style.opacity = '1';
-}
-
-function handleDragOver(e) {
-    if (e.preventDefault) {
-        e.preventDefault();
-    }
-    e.dataTransfer.dropEffect = 'move';
-    return false;
-}
-
-function handleDragEnter(e) {
-    if (e.target.classList.contains('cards-container')) {
-        e.target.classList.add('drag-over');
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }
 
-function handleDragLeave(e) {
-    if (e.target.classList.contains('cards-container')) {
-        e.target.classList.remove('drag-over');
+.modal {
+    animation: fadeIn 0.2s ease;
+}
+
+/* Estados deshabilitados */
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+input:disabled,
+textarea:disabled {
+    background-color: #f1f5f9;
+    cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .boards-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .lists-container {
+        flex-direction: column;
+        padding: 10px;
+    }
+    
+    .list {
+        min-width: 100%;
+        max-width: 100%;
+        margin-bottom: 15px;
+    }
+    
+    .board-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch !important;
+    }
+    
+    .board-actions {
+        width: 100%;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .board-actions button {
+        width: 100%;
+    }
+    
+    #members-panel,
+    #activity-panel {
+        position: fixed;
+        top: 0;
+        right: 0;
+        height: 100vh;
+        z-index: 999;
+        box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    #user-role-badge {
+        display: none;
+    }
+    
+    .modal-content {
+        width: 95% !important;
+        max-width: 95% !important;
     }
 }
 
-async function handleDrop(e, newListId) {
-    if (e.stopPropagation) {
-        e.stopPropagation();
+@media (max-width: 640px) {
+    .user-info span {
+        display: none !important;
     }
     
-    e.target.classList.remove('drag-over');
-    
-    if (!draggedCard) return;
-    
-    const cardId = draggedCard.dataset.cardId;
-    const oldListId = draggedCard.dataset.listId;
-    
-    if (oldListId === newListId) return;
-    
-    try {
-        // Obtener datos de la tarjeta
-        const oldCardRef = doc(db, 'boards', currentBoardId, 'lists', oldListId, 'cards', cardId);
-        const cardSnap = await getDoc(oldCardRef);
-        const cardData = cardSnap.data();
-        
-        // Crear tarjeta en la nueva lista
-        await addDoc(collection(db, 'boards', currentBoardId, 'lists', newListId, 'cards'), {
-            ...cardData,
-            position: Date.now()
-        });
-        
-        // Eliminar tarjeta de la lista anterior
-        await deleteDoc(oldCardRef);
-        
-    } catch (error) {
-        console.error('Error al mover tarjeta:', error);
-        alert('Error al mover la tarjeta');
+    .boards-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
     }
     
-    draggedCard = null;
-}
-
-// Abrir modal de tarjeta
-function openCardModal(listId, cardId = null, cardData = null) {
-    currentCardData = { listId, cardId, data: cardData };
-    
-    const modalTitle = document.getElementById('card-modal-title');
-    const titleInput = document.getElementById('card-title-input');
-    const descInput = document.getElementById('card-description-input');
-    const assignedInput = document.getElementById('card-assigned-input');
-    const deleteBtn = document.getElementById('delete-card-btn');
-    const commentsSection = document.getElementById('card-comments-section');
-    
-    if (cardId && cardData) {
-        // Modo edición
-        modalTitle.textContent = 'Editar Tarjeta';
-        titleInput.value = cardData.title || '';
-        descInput.value = cardData.description || '';
-        assignedInput.value = cardData.assignedTo || '';
-        deleteBtn.style.display = 'block';
-        commentsSection.style.display = 'block';
-        loadComments(listId, cardId);
-    } else {
-        // Modo creación
-        modalTitle.textContent = 'Nueva Tarjeta';
-        titleInput.value = '';
-        descInput.value = '';
-        assignedInput.value = '';
-        deleteBtn.style.display = 'none';
-        commentsSection.style.display = 'none';
-    }
-    
-    cardModal.style.display = 'flex';
-}
-
-// Guardar tarjeta
-async function saveCard() {
-    const title = document.getElementById('card-title-input').value.trim();
-    const description = document.getElementById('card-description-input').value.trim();
-    const assignedTo = document.getElementById('card-assigned-input').value.trim();
-    
-    if (!title) {
-        alert('Por favor ingresa un título para la tarjeta');
-        return;
-    }
-
-    const cardData = {
-        title,
-        description,
-        assignedTo,
-        updatedAt: serverTimestamp()
-    };
-
-    try {
-        if (currentCardData.cardId) {
-            // Actualizar tarjeta existente
-            const cardRef = doc(db, 'boards', currentBoardId, 'lists', currentCardData.listId, 'cards', currentCardData.cardId);
-            await updateDoc(cardRef, cardData);
-        } else {
-            // Crear nueva tarjeta
-            await addDoc(collection(db, 'boards', currentBoardId, 'lists', currentCardData.listId, 'cards'), {
-                ...cardData,
-                position: Date.now(),
-                createdAt: serverTimestamp(),
-                createdBy: currentUser.uid
-            });
-        }
-        
-        cardModal.style.display = 'none';
-        currentCardData = null;
-    } catch (error) {
-        console.error('Error al guardar tarjeta:', error);
-        alert('Error al guardar la tarjeta');
+    #create-board-btn {
+        width: 100%;
+        justify-content: center;
     }
 }
 
-// Eliminar tarjeta
-async function deleteCard() {
-    if (!confirm('¿Estás seguro de que deseas eliminar esta tarjeta?')) {
-        return;
-    }
-
-    try {
-        const cardRef = doc(db, 'boards', currentBoardId, 'lists', currentCardData.listId, 'cards', currentCardData.cardId);
-        await deleteDoc(cardRef);
-        
-        cardModal.style.display = 'none';
-        currentCardData = null;
-    } catch (error) {
-        console.error('Error al eliminar tarjeta:', error);
-        alert('Error al eliminar la tarjeta');
-    }
+/* Utilidades adicionales */
+.truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-// Cargar comentarios
-function loadComments(listId, cardId) {
-    const commentsList = document.getElementById('comments-list');
-    
-    const q = query(
-        collection(db, 'boards', currentBoardId, 'lists', listId, 'cards', cardId, 'comments'),
-        orderBy('createdAt')
-    );
-
-    onSnapshot(q, (snapshot) => {
-        commentsList.innerHTML = '';
-        
-        snapshot.forEach((doc) => {
-            const comment = doc.data();
-            const commentDiv = document.createElement('div');
-            commentDiv.className = 'comment';
-            commentDiv.innerHTML = `
-                <strong>${comment.userName}</strong>
-                <p>${comment.text}</p>
-                <small>${comment.createdAt ? new Date(comment.createdAt.toDate()).toLocaleString() : 'Ahora'}</small>
-            `;
-            commentsList.appendChild(commentDiv);
-        });
-    });
+.transition-all {
+    transition: all 0.3s ease;
 }
 
-// Añadir comentario
-async function addComment() {
-    const commentText = document.getElementById('comment-input').value.trim();
-    
-    if (!commentText) {
-        alert('Por favor escribe un comentario');
-        return;
-    }
+/* Loading states */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
 
-    try {
-        await addDoc(collection(db, 'boards', currentBoardId, 'lists', currentCardData.listId, 'cards', currentCardData.cardId, 'comments'), {
-            text: commentText,
-            userName: currentUser.displayName || currentUser.email,
-            userId: currentUser.uid,
-            createdAt: serverTimestamp()
-        });
-        
-        document.getElementById('comment-input').value = '';
-    } catch (error) {
-        console.error('Error al añadir comentario:', error);
-        alert('Error al añadir el comentario');
-    }
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #3b82f6;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Focus states mejorados */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* Tooltips (opcional, para futuras mejoras) */
+[data-tooltip] {
+    position: relative;
+}
+
+[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 12px;
+    background: #1e293b;
+    color: white;
+    font-size: 0.75rem;
+    border-radius: 6px;
+    white-space: nowrap;
+    z-index: 1000;
+    margin-bottom: 5px;
 }
