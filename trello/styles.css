@@ -5,6 +5,608 @@
     box-sizing: border-box;
 }
 
+/* Transiciones suaves para modo oscuro */
+body, header, .modal-content, .board-card, .list, .card, 
+.member-item, .activity-item, .notification-item {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Estilos para Drag & Drop */
+.dragging {
+    opacity: 0.5;
+    transform: scale(0.95);
+    transition: opacity 0.2s, transform 0.2s;
+}
+
+.drag-over {
+    background-color: #e2e8f0 !important;
+    border: 2px dashed #3b82f6 !important;
+    transition: all 0.2s;
+}
+
+/* Modo Oscuro - Iconos Toggle */
+.dark .dark-mode-icon-moon {
+    display: none;
+}
+
+.dark .dark-mode-icon-sun {
+    display: block !important;
+}
+
+/* Scrollbar personalizada para listas horizontales */
+.lists-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+.lists-container::-webkit-scrollbar-track {
+    background: #f1f5f9; 
+    border-radius: 4px;
+}
+
+.dark .lists-container::-webkit-scrollbar-track {
+    background: #1e293b;
+}
+
+.lists-container::-webkit-scrollbar-thumb {
+    background: #cbd5e1; 
+    border-radius: 4px;
+}
+
+.dark .lists-container::-webkit-scrollbar-thumb {
+    background: #475569;
+}
+
+.lists-container::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8; 
+}
+
+.dark .lists-container::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+/* Scrollbar para paneles laterales */
+#members-panel::-webkit-scrollbar,
+#activity-panel::-webkit-scrollbar,
+#notifications-dropdown::-webkit-scrollbar,
+#search-results-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+#members-panel::-webkit-scrollbar-track,
+#activity-panel::-webkit-scrollbar-track,
+#notifications-dropdown::-webkit-scrollbar-track,
+#search-results-list::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+.dark #members-panel::-webkit-scrollbar-track,
+.dark #activity-panel::-webkit-scrollbar-track,
+.dark #notifications-dropdown::-webkit-scrollbar-track,
+.dark #search-results-list::-webkit-scrollbar-track {
+    background: #1e293b;
+}
+
+#members-panel::-webkit-scrollbar-thumb,
+#activity-panel::-webkit-scrollbar-thumb,
+#notifications-dropdown::-webkit-scrollbar-thumb,
+#search-results-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.dark #members-panel::-webkit-scrollbar-thumb,
+.dark #activity-panel::-webkit-scrollbar-thumb,
+.dark #notifications-dropdown::-webkit-scrollbar-thumb,
+.dark #search-results-list::-webkit-scrollbar-thumb {
+    background: #475569;
+}
+
+/* Estilos para las listas */
+.list {
+    background: rgba(236, 240, 241, 0.9);
+    border-radius: 12px;
+    padding: 15px;
+    min-width: 300px;
+    max-width: 300px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #cbd5e1;
+    transition: box-shadow 0.2s, background-color 0.3s;
+}
+
+.dark .list {
+    background: rgba(51, 65, 85, 0.9);
+    border-color: #475569;
+}
+
+.list:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #cbd5e1;
+}
+
+.dark .list-header {
+    border-bottom-color: #475569;
+}
+
+.list-header h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1e293b;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dark .list-header h3 {
+    color: #e2e8f0;
+}
+
+/* Contenedor de tarjetas */
+.cards-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 100px;
+    max-height: calc(100vh - 300px);
+    overflow-y: auto;
+    padding: 4px;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.cards-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.cards-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.cards-container::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.dark .cards-container::-webkit-scrollbar-thumb {
+    background: #475569;
+}
+
+/* Tarjetas individuales */
+.card {
+    background: white;
+    padding: 12px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    cursor: grab;
+    transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s;
+    border: 1px solid #e2e8f0;
+    position: relative;
+    overflow: hidden;
+}
+
+.dark .card {
+    background: #334155;
+    border-color: #475569;
+}
+
+.card:active {
+    cursor: grabbing;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Portadas de tarjetas */
+.card-cover {
+    margin: -12px -12px 12px -12px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    border-radius: 8px 8px 0 0;
+}
+
+.card h4 {
+    color: #1e293b;
+    margin-bottom: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.dark .card h4 {
+    color: #f1f5f9;
+}
+
+.card p {
+    color: #64748b;
+    font-size: 0.75rem;
+    margin-bottom: 6px;
+    line-height: 1.4;
+}
+
+.dark .card p {
+    color: #cbd5e1;
+}
+
+/* Board cards en la vista principal */
+.board-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+    transition: transform 0.3s, box-shadow 0.3s, background-color 0.3s;
+    border: 1px solid #e2e8f0;
+    position: relative;
+}
+
+.dark .board-card {
+    background: #334155;
+    border-color: #475569;
+}
+
+.board-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.board-card h3 {
+    color: #1e293b;
+    margin-bottom: 12px;
+    font-size: 1.125rem;
+    font-weight: 700;
+}
+
+.dark .board-card h3 {
+    color: #f1f5f9;
+}
+
+/* Comentarios */
+.comment {
+    background: #f8fafc;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #e2e8f0;
+}
+
+.dark .comment {
+    background: #1e293b;
+    border-color: #475569;
+}
+
+.comment strong {
+    color: #3b82f6;
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.comment p {
+    color: #334155;
+    margin-bottom: 6px;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.dark .comment p {
+    color: #e2e8f0;
+}
+
+.comment small {
+    color: #94a3b8;
+    font-size: 0.75rem;
+}
+
+/* Paneles laterales */
+#members-panel,
+#activity-panel {
+    transition: transform 0.3s ease, background-color 0.3s;
+}
+
+.member-item,
+.activity-item {
+    transition: background 0.2s;
+}
+
+.member-item:hover,
+.activity-item:hover {
+    background: #f1f5f9 !important;
+}
+
+.dark .member-item:hover,
+.dark .activity-item:hover {
+    background: #334155 !important;
+}
+
+/* Notificaciones */
+.notification-item {
+    border-bottom: 1px solid #e2e8f0;
+    transition: background 0.2s;
+}
+
+.dark .notification-item {
+    border-bottom-color: #475569;
+}
+
+.notification-item:last-child {
+    border-bottom: none;
+}
+
+.notification-item:hover {
+    background: #f8fafc !important;
+}
+
+.dark .notification-item:hover {
+    background: #1e293b !important;
+}
+
+/* Resultados de búsqueda */
+.search-result-item {
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+    border: 1px solid #e2e8f0;
+}
+
+.dark .search-result-item {
+    border-color: #475569;
+}
+
+.search-result-item:hover {
+    background: #f1f5f9;
+}
+
+.dark .search-result-item:hover {
+    background: #334155;
+}
+
+.search-result-highlight {
+    background-color: #fef08a;
+    padding: 0 2px;
+    border-radius: 2px;
+    font-weight: 600;
+}
+
+.dark .search-result-highlight {
+    background-color: #854d0e;
+    color: #fef08a;
+}
+
+/* Badges de rol */
+.role-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal {
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+    }
+    to {
+        transform: translateX(0);
+    }
+}
+
+#members-panel:not(.hidden),
+#activity-panel:not(.hidden) {
+    animation: slideInRight 0.3s ease;
+}
+
+/* Estados deshabilitados */
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+input:disabled,
+textarea:disabled {
+    background-color: #f1f5f9;
+    cursor: not-allowed;
+}
+
+.dark input:disabled,
+.dark textarea:disabled {
+    background-color: #1e293b;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .boards-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .lists-container {
+        flex-direction: column;
+        padding: 10px;
+    }
+    
+    .list {
+        min-width: 100%;
+        max-width: 100%;
+        margin-bottom: 15px;
+    }
+    
+    .board-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch !important;
+    }
+    
+    .board-actions {
+        width: 100%;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .board-actions button {
+        width: 100%;
+    }
+    
+    #members-panel,
+    #activity-panel {
+        position: fixed;
+        top: 0;
+        right: 0;
+        height: 100vh;
+        z-index: 999;
+        box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    #user-role-badge {
+        display: none;
+    }
+    
+    .modal-content {
+        width: 95% !important;
+        max-width: 95% !important;
+    }
+    
+    #global-search {
+        display: none !important;
+    }
+}
+
+@media (max-width: 640px) {
+    .user-info span {
+        display: none !important;
+    }
+    
+    .boards-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
+    }
+    
+    #create-board-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Utilidades adicionales */
+.truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.transition-all {
+    transition: all 0.3s ease;
+}
+
+/* Loading states */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #3b82f6;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Focus states mejorados */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* Animación para badges de notificaciones */
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+#notifications-badge:not(.hidden) {
+    animation: pulse 2s infinite;
+}
+
+/* Estilos para kbd (teclas) */
+kbd {
+    font-family: 'Monaco', 'Courier New', monospace;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+/* Smooth scroll */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Selección de texto personalizada */
+::selection {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.dark ::selection {
+    background-color: #60a5fa;
+    color: #1e293b;
+}
+/* Reset básico */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
 /* Estilos para Drag & Drop */
 .dragging {
     opacity: 0.5;
@@ -410,3 +1012,4 @@ textarea:focus-visible {
     z-index: 1000;
     margin-bottom: 5px;
 }
+
