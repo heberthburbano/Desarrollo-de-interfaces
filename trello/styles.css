@@ -1,279 +1,43 @@
+/* Reset básico */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh;
+/* Estilos para Drag & Drop */
+.dragging {
+    opacity: 0.5;
+    transform: scale(0.95);
 }
 
-/* Contenedor de autenticación */
-#auth-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    padding: 20px;
+.drag-over {
+    background-color: #e2e8f0 !important; /* slate-200 */
+    border: 2px dashed #94a3b8 !important;
 }
 
-.auth-box {
-    background: white;
-    padding: 40px;
-    border-radius: 15px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-    width: 100%;
-    max-width: 400px;
+/* Scrollbar personalizada para listas horizontales */
+.lists-container::-webkit-scrollbar {
+    height: 8px;
 }
 
-.auth-box h1 {
-    text-align: center;
-    color: #667eea;
-    margin-bottom: 30px;
-    font-size: 2em;
+.lists-container::-webkit-scrollbar-track {
+    background: #f1f5f9; 
+    border-radius: 4px;
 }
 
-.auth-box h2 {
-    color: #333;
-    margin-bottom: 20px;
-    font-size: 1.5em;
+.lists-container::-webkit-scrollbar-thumb {
+    background: #cbd5e1; 
+    border-radius: 4px;
 }
 
-.auth-box input {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 15px;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    font-size: 16px;
-    transition: border-color 0.3s;
+.lists-container::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8; 
 }
 
-.auth-box input:focus {
-    outline: none;
-    border-color: #667eea;
-}
-
-.auth-box button {
-    width: 100%;
-    padding: 12px;
-    background: #667eea;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background 0.3s;
-}
-
-.auth-box button:hover {
-    background: #5568d3;
-}
-
-.auth-box p {
-    text-align: center;
-    margin-top: 15px;
-    color: #666;
-}
-
-.auth-box a {
-    color: #667eea;
-    text-decoration: none;
-    font-weight: bold;
-}
-
-.error-message {
-    color: #e74c3c;
-    text-align: center;
-    margin-top: 15px;
-    font-size: 14px;
-}
-
-/* Header de la aplicación */
-header {
-    background: white;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    padding: 15px 0;
-}
-
-.header-content {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 0 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-header h1 {
-    color: #667eea;
-    font-size: 1.8em;
-}
-
-.user-info {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.user-info span {
-    color: #333;
-    font-weight: 500;
-}
-
-#logout-btn {
-    padding: 8px 16px;
-    background: #e74c3c;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background 0.3s;
-}
-
-#logout-btn:hover {
-    background: #c0392b;
-}
-
-/* Sección de tableros */
-.boards-section {
-    max-width: 1400px;
-    margin: 30px auto;
-    padding: 0 20px;
-}
-
-.boards-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.boards-header h2 {
-    color: white;
-    font-size: 1.8em;
-}
-
-.btn-primary {
-    padding: 10px 20px;
-    background: #2ecc71;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: bold;
-    transition: background 0.3s;
-}
-
-.btn-primary:hover {
-    background: #27ae60;
-}
-
-.btn-secondary {
-    padding: 10px 20px;
-    background: #95a5a6;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: bold;
-    transition: background 0.3s;
-}
-
-.btn-secondary:hover {
-    background: #7f8c8d;
-}
-
-.btn-danger {
-    padding: 10px 20px;
-    background: #e74c3c;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: bold;
-    transition: background 0.3s;
-}
-
-.btn-danger:hover {
-    background: #c0392b;
-}
-
-.boards-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 20px;
-}
-
-.board-card {
-    background: white;
-    padding: 25px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    cursor: pointer;
-    transition: transform 0.3s, box-shadow 0.3s;
-}
-
-.board-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-}
-
-.board-card h3 {
-    color: #333;
-    margin-bottom: 10px;
-    font-size: 1.4em;
-}
-
-.board-card p {
-    color: #666;
-    font-size: 0.9em;
-}
-
-/* Vista de tablero */
-#board-view {
-    max-width: 100%;
-    margin: 20px;
-}
-
-.board-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.board-header h2 {
-    color: #333;
-    font-size: 1.8em;
-}
-
-.board-actions {
-    display: flex;
-    gap: 10px;
-}
-
-/* Listas */
-.lists-container {
-    display: flex;
-    gap: 20px;
-    overflow-x: auto;
-    padding: 20px;
-    min-height: 500px;
-}
-
+/* Estilos para las listas */
 .list {
-    background: #ecf0f1;
+    background: rgba(236, 240, 241, 0.9);
     border-radius: 12px;
     padding: 15px;
     min-width: 300px;
@@ -281,6 +45,7 @@ header h1 {
     display: flex;
     flex-direction: column;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border: 1px solid #cbd5e1;
 }
 
 .list-header {
@@ -288,29 +53,45 @@ header h1 {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 15px;
+    font-weight: 600;
+    color: #334155;
+    cursor: grab;
+}
+
+.list-header:active {
+    cursor: grabbing;
 }
 
 .list-header h3 {
-    color: #333;
-    font-size: 1.2em;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1e293b;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .add-card-btn {
-    padding: 6px 12px;
-    background: #3498db;
+    padding: 8px 12px;
+    background: #3b82f6;
     color: white;
     border: none;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 14px;
     transition: background 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
 }
 
 .add-card-btn:hover {
-    background: #2980b9;
+    background: #2563eb;
 }
 
-/* Tarjetas */
+/* Contenedor de tarjetas */
 .cards-container {
     flex: 1;
     display: flex;
@@ -322,17 +103,19 @@ header h1 {
     transition: background 0.3s;
 }
 
-.cards-container.drag-over {
-    background: #d5dbdb;
-}
-
+/* Tarjetas individuales */
 .card {
     background: white;
-    padding: 15px;
+    padding: 12px 15px;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    cursor: grab;
     transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid #e2e8f0;
+}
+
+.card:active {
+    cursor: grabbing;
 }
 
 .card:hover {
@@ -341,128 +124,84 @@ header h1 {
 }
 
 .card h4 {
-    color: #333;
+    color: #1e293b;
     margin-bottom: 8px;
-    font-size: 1.1em;
+    font-size: 0.95rem;
+    font-weight: 600;
 }
 
 .card p {
-    color: #666;
-    font-size: 0.9em;
+    color: #64748b;
+    font-size: 0.875rem;
     margin-bottom: 8px;
+    line-height: 1.4;
 }
 
 .card .assigned {
     display: inline-block;
-    padding: 4px 8px;
-    background: #e8f5e9;
-    color: #2ecc71;
-    border-radius: 4px;
-    font-size: 0.85em;
+    padding: 4px 10px;
+    background: #dbeafe;
+    color: #1e40af;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
 }
 
-/* Modals */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    justify-content: center;
-    align-items: center;
-}
-
-.modal-content {
+/* Board cards en la vista principal */
+.board-card {
     background: white;
-    padding: 30px;
+    padding: 20px;
     border-radius: 12px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    width: 90%;
-    max-width: 500px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+    transition: transform 0.3s, box-shadow 0.3s;
+    border: 1px solid #e2e8f0;
 }
 
-.card-modal-content {
-    max-width: 600px;
+.board-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
 }
 
-.modal-content h3 {
-    color: #333;
-    margin-bottom: 20px;
-    font-size: 1.5em;
+.board-card h3 {
+    color: #1e293b;
+    margin-bottom: 8px;
+    font-size: 1.25rem;
+    font-weight: 700;
 }
 
-.modal-content input,
-.modal-content textarea {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 15px;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    font-size: 16px;
-    font-family: inherit;
-    transition: border-color 0.3s;
-}
-
-.modal-content textarea {
-    min-height: 100px;
-    resize: vertical;
-}
-
-.modal-content input:focus,
-.modal-content textarea:focus {
-    outline: none;
-    border-color: #667eea;
-}
-
-.modal-actions {
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-    margin-top: 20px;
+.board-card p {
+    color: #64748b;
+    font-size: 0.875rem;
 }
 
 /* Comentarios */
-#card-comments-section {
-    margin-top: 20px;
-    padding-top: 20px;
-    border-top: 2px solid #e0e0e0;
-}
-
-#card-comments-section h4 {
-    color: #333;
-    margin-bottom: 15px;
-}
-
-#comments-list {
-    max-height: 200px;
-    overflow-y: auto;
-    margin-bottom: 15px;
-}
-
 .comment {
-    background: #f8f9fa;
-    padding: 10px;
-    border-radius: 6px;
+    background: #f8fafc;
+    padding: 12px;
+    border-radius: 8px;
     margin-bottom: 10px;
+    border: 1px solid #e2e8f0;
 }
 
 .comment strong {
-    color: #667eea;
+    color: #3b82f6;
     display: block;
-    margin-bottom: 5px;
+    margin-bottom: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
 }
 
 .comment p {
-    color: #333;
-    margin-bottom: 5px;
+    color: #334155;
+    margin-bottom: 6px;
+    font-size: 0.875rem;
+    line-height: 1.5;
 }
 
 .comment small {
-    color: #999;
-    font-size: 0.8em;
+    color: #94a3b8;
+    font-size: 0.75rem;
 }
 
 /* Responsive */
