@@ -4,109 +4,164 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trello Colaborativo</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body class="bg-slate-100 min-h-screen flex flex-col overflow-hidden">
+
     <!-- Pantalla de autenticación -->
-    <div id="auth-container">
-        <div class="auth-box">
-            <h1>🚀 Trello Colaborativo</h1>
+    <div id="auth-container" class="flex justify-center items-center min-h-screen p-5 bg-slate-50 absolute inset-0 z-50">
+        <div class="auth-box bg-white p-10 rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="flex justify-center mb-6">
+                <div class="p-3 bg-blue-100 rounded-full">
+                    <i data-lucide="trello" class="w-10 h-10 text-blue-600"></i>
+                </div>
+            </div>
+            <h1 class="text-center text-blue-600 mb-8 text-3xl font-bold">🚀 Trello Colaborativo</h1>
+            
             <div id="login-form">
-                <h2>Iniciar Sesión</h2>
-                <input type="email" id="login-email" placeholder="Correo electrónico">
-                <input type="password" id="login-password" placeholder="Contraseña">
-                <button id="login-btn">Iniciar Sesión</button>
-                <p>¿No tienes cuenta? <a href="#" id="show-register">Regístrate</a></p>
+                <h2 class="text-slate-800 mb-5 text-xl font-semibold">Iniciar Sesión</h2>
+                <input type="email" id="login-email" placeholder="Correo electrónico" 
+                       class="w-full p-3 mb-4 border-2 border-slate-200 rounded-lg text-base focus:outline-none focus:border-blue-500 transition">
+                <input type="password" id="login-password" placeholder="Contraseña" 
+                       class="w-full p-3 mb-4 border-2 border-slate-200 rounded-lg text-base focus:outline-none focus:border-blue-500 transition">
+                <button id="login-btn" class="w-full p-3 bg-blue-600 hover:bg-blue-700 text-white border-none rounded-lg text-base font-bold cursor-pointer transition">
+                    Iniciar Sesión
+                </button>
+                <p class="text-center mt-4 text-slate-600">¿No tienes cuenta? <a href="#" id="show-register" class="text-blue-600 no-underline font-bold hover:underline">Regístrate</a></p>
             </div>
             
             <div id="register-form" style="display: none;">
-                <h2>Registrarse</h2>
-                <input type="text" id="register-name" placeholder="Nombre completo">
-                <input type="email" id="register-email" placeholder="Correo electrónico">
-                <input type="password" id="register-password" placeholder="Contraseña">
-                <button id="register-btn">Registrarse</button>
-                <p>¿Ya tienes cuenta? <a href="#" id="show-login">Inicia sesión</a></p>
+                <h2 class="text-slate-800 mb-5 text-xl font-semibold">Registrarse</h2>
+                <input type="text" id="register-name" placeholder="Nombre completo" 
+                       class="w-full p-3 mb-4 border-2 border-slate-200 rounded-lg text-base focus:outline-none focus:border-blue-500 transition">
+                <input type="email" id="register-email" placeholder="Correo electrónico" 
+                       class="w-full p-3 mb-4 border-2 border-slate-200 rounded-lg text-base focus:outline-none focus:border-blue-500 transition">
+                <input type="password" id="register-password" placeholder="Contraseña" 
+                       class="w-full p-3 mb-4 border-2 border-slate-200 rounded-lg text-base focus:outline-none focus:border-blue-500 transition">
+                <button id="register-btn" class="w-full p-3 bg-blue-600 hover:bg-blue-700 text-white border-none rounded-lg text-base font-bold cursor-pointer transition">
+                    Registrarse
+                </button>
+                <p class="text-center mt-4 text-slate-600">¿Ya tienes cuenta? <a href="#" id="show-login" class="text-blue-600 no-underline font-bold hover:underline">Inicia sesión</a></p>
             </div>
             
-            <div id="auth-error" class="error-message"></div>
+            <div id="auth-error" class="error-message text-red-500 text-center mt-4 text-sm"></div>
         </div>
     </div>
 
     <!-- Aplicación principal -->
-    <div id="app-container" style="display: none;">
-        <header>
-            <div class="header-content">
-                <h1>📋 Trello Colaborativo</h1>
-                <div class="user-info">
-                    <span id="user-name"></span>
-                    <button id="logout-btn">Cerrar Sesión</button>
+    <div id="app-container" class="hidden flex-1 flex flex-col">
+        <header class="bg-white border-b border-slate-200 shadow-sm z-10 shrink-0">
+            <div class="header-content max-w-screen-2xl mx-auto px-5 py-4 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="trello" class="text-blue-600 w-7 h-7"></i>
+                    <h1 class="text-blue-600 text-2xl font-bold tracking-tight">📋 Trello Colaborativo</h1>
+                </div>
+                <div class="user-info flex items-center gap-4">
+                    <span id="user-name" class="text-slate-700 font-medium hidden md:block"></span>
+                    <button id="logout-btn" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white border-none rounded-lg cursor-pointer transition text-sm font-medium">
+                        Cerrar Sesión
+                    </button>
                 </div>
             </div>
         </header>
 
-        <div class="boards-section">
-            <div class="boards-header">
-                <h2>Mis Tableros</h2>
-                <button id="create-board-btn" class="btn-primary">+ Nuevo Tablero</button>
+        <div class="boards-section flex-1 max-w-screen-2xl mx-auto px-5 py-8 overflow-y-auto">
+            <div class="boards-header flex justify-between items-center mb-6">
+                <h2 class="text-slate-800 text-3xl font-bold">Mis Tableros</h2>
+                <button id="create-board-btn" class="btn-primary px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white border-none rounded-lg cursor-pointer text-base font-bold transition shadow-sm flex items-center gap-2">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Nuevo Tablero
+                </button>
             </div>
-            <div id="boards-container" class="boards-grid"></div>
+            <div id="boards-container" class="boards-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5"></div>
         </div>
 
-        <div id="board-view" style="display: none;">
-            <div class="board-header">
-                <h2 id="board-title"></h2>
-                <div class="board-actions">
-                    <button id="add-list-btn" class="btn-primary">+ Añadir Lista</button>
-                    <button id="back-to-boards-btn" class="btn-secondary">← Volver</button>
+        <div id="board-view" class="hidden flex-1 flex flex-col bg-blue-50">
+            <div class="board-header flex justify-between items-center mb-5 bg-white/70 backdrop-blur-sm px-5 py-4 border-b border-slate-200 shadow-sm">
+                <div class="flex items-center gap-3">
+                    <button id="back-to-boards-btn" class="p-2 hover:bg-slate-200 rounded-lg text-slate-600 transition">
+                        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                    </button>
+                    <h2 id="board-title" class="text-slate-800 text-2xl font-bold"></h2>
+                </div>
+                <div class="board-actions flex gap-3">
+                    <button id="add-list-btn" class="btn-primary px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white border-none rounded-lg cursor-pointer text-sm font-bold transition flex items-center gap-2">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Añadir Lista
+                    </button>
                 </div>
             </div>
-            <div id="lists-container" class="lists-container"></div>
+            <div id="lists-container" class="lists-container flex gap-5 overflow-x-auto p-5 min-h-[500px]"></div>
         </div>
     </div>
 
     <!-- Modal para crear tablero -->
-    <div id="board-modal" class="modal">
-        <div class="modal-content">
-            <h3>Crear Nuevo Tablero</h3>
-            <input type="text" id="board-name-input" placeholder="Nombre del tablero">
-            <div class="modal-actions">
-                <button id="save-board-btn" class="btn-primary">Crear</button>
-                <button id="cancel-board-btn" class="btn-secondary">Cancelar</button>
+    <div id="board-modal" class="modal hidden fixed inset-0 bg-black/50 z-[1000] flex justify-center items-center">
+        <div class="modal-content bg-white p-8 rounded-xl shadow-2xl w-11/12 max-w-md">
+            <h3 class="text-slate-800 mb-5 text-xl font-bold">Crear Nuevo Tablero</h3>
+            <input type="text" id="board-name-input" placeholder="Nombre del tablero" 
+                   class="w-full p-3 mb-4 border-2 border-slate-300 rounded-lg text-base focus:outline-none focus:border-blue-500 transition">
+            <div class="modal-actions flex gap-3 justify-end mt-5">
+                <button id="cancel-board-btn" class="btn-secondary px-5 py-2.5 bg-slate-400 hover:bg-slate-500 text-white border-none rounded-lg cursor-pointer text-base font-bold transition">
+                    Cancelar
+                </button>
+                <button id="save-board-btn" class="btn-primary px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white border-none rounded-lg cursor-pointer text-base font-bold transition">
+                    Crear
+                </button>
             </div>
         </div>
     </div>
 
     <!-- Modal para crear lista -->
-    <div id="list-modal" class="modal">
-        <div class="modal-content">
-            <h3>Crear Nueva Lista</h3>
-            <input type="text" id="list-name-input" placeholder="Nombre de la lista">
-            <div class="modal-actions">
-                <button id="save-list-btn" class="btn-primary">Crear</button>
-                <button id="cancel-list-btn" class="btn-secondary">Cancelar</button>
+    <div id="list-modal" class="modal hidden fixed inset-0 bg-black/50 z-[1000] flex justify-center items-center">
+        <div class="modal-content bg-white p-8 rounded-xl shadow-2xl w-11/12 max-w-md">
+            <h3 class="text-slate-800 mb-5 text-xl font-bold">Crear Nueva Lista</h3>
+            <input type="text" id="list-name-input" placeholder="Nombre de la lista" 
+                   class="w-full p-3 mb-4 border-2 border-slate-300 rounded-lg text-base focus:outline-none focus:border-blue-500 transition">
+            <div class="modal-actions flex gap-3 justify-end mt-5">
+                <button id="cancel-list-btn" class="btn-secondary px-5 py-2.5 bg-slate-400 hover:bg-slate-500 text-white border-none rounded-lg cursor-pointer text-base font-bold transition">
+                    Cancelar
+                </button>
+                <button id="save-list-btn" class="btn-primary px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white border-none rounded-lg cursor-pointer text-base font-bold transition">
+                    Crear
+                </button>
             </div>
         </div>
     </div>
 
     <!-- Modal para crear/editar tarjeta -->
-    <div id="card-modal" class="modal">
-        <div class="modal-content card-modal-content">
-            <h3 id="card-modal-title">Nueva Tarjeta</h3>
-            <input type="text" id="card-title-input" placeholder="Título de la tarjeta">
-            <textarea id="card-description-input" placeholder="Descripción (opcional)"></textarea>
-            <input type="text" id="card-assigned-input" placeholder="Asignar a (opcional)">
+    <div id="card-modal" class="modal hidden fixed inset-0 bg-black/50 z-[1000] flex justify-center items-center">
+        <div class="modal-content card-modal-content bg-white p-8 rounded-xl shadow-2xl w-11/12 max-w-2xl">
+            <h3 id="card-modal-title" class="text-slate-800 mb-5 text-xl font-bold">Nueva Tarjeta</h3>
+            <input type="text" id="card-title-input" placeholder="Título de la tarjeta" 
+                   class="w-full p-3 mb-4 border-2 border-slate-300 rounded-lg text-base focus:outline-none focus:border-blue-500 transition">
+            <textarea id="card-description-input" placeholder="Descripción (opcional)" 
+                      class="w-full p-3 mb-4 border-2 border-slate-300 rounded-lg text-base min-h-[100px] resize-y focus:outline-none focus:border-blue-500 transition"></textarea>
+            <input type="text" id="card-assigned-input" placeholder="Asignar a (opcional)" 
+                   class="w-full p-3 mb-4 border-2 border-slate-300 rounded-lg text-base focus:outline-none focus:border-blue-500 transition">
             
-            <div id="card-comments-section" style="display: none;">
-                <h4>Comentarios</h4>
-                <div id="comments-list"></div>
-                <textarea id="comment-input" placeholder="Añadir comentario..."></textarea>
-                <button id="add-comment-btn" class="btn-secondary">Comentar</button>
+            <div id="card-comments-section" style="display: none;" class="mt-5 pt-5 border-t-2 border-slate-200">
+                <h4 class="text-slate-800 mb-4 font-semibold">Comentarios</h4>
+                <div id="comments-list" class="max-h-[200px] overflow-y-auto mb-4"></div>
+                <textarea id="comment-input" placeholder="Añadir comentario..." 
+                          class="w-full p-3 mb-3 border-2 border-slate-300 rounded-lg text-sm resize-none focus:outline-none focus:border-blue-500 transition"></textarea>
+                <button id="add-comment-btn" class="btn-secondary px-4 py-2 bg-slate-500 hover:bg-slate-600 text-white border-none rounded-lg cursor-pointer text-sm font-medium transition">
+                    Comentar
+                </button>
             </div>
             
-            <div class="modal-actions">
-                <button id="save-card-btn" class="btn-primary">Guardar</button>
-                <button id="delete-card-btn" class="btn-danger" style="display: none;">Eliminar</button>
-                <button id="cancel-card-btn" class="btn-secondary">Cancelar</button>
+            <div class="modal-actions flex gap-3 justify-end mt-5">
+                <button id="delete-card-btn" class="btn-danger px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white border-none rounded-lg cursor-pointer text-base font-bold transition" style="display: none;">
+                    Eliminar
+                </button>
+                <button id="cancel-card-btn" class="btn-secondary px-5 py-2.5 bg-slate-400 hover:bg-slate-500 text-white border-none rounded-lg cursor-pointer text-base font-bold transition">
+                    Cancelar
+                </button>
+                <button id="save-card-btn" class="btn-primary px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white border-none rounded-lg cursor-pointer text-base font-bold transition">
+                    Guardar
+                </button>
             </div>
         </div>
     </div>
@@ -115,5 +170,10 @@
     <script type="module" src="firebase-config.js"></script>
     <script type="module" src="auth.js"></script>
     <script type="module" src="app.js"></script>
+    
+    <!-- Inicializar iconos Lucide -->
+    <script>
+        lucide.createIcons();
+    </script>
 </body>
 </html>
