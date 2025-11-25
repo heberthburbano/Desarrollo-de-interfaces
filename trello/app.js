@@ -10,19 +10,25 @@ document.addEventListener('DOMContentLoaded', initializeApp);
 function initializeApp() {
     console.log('🚀 Inicializando aplicación...');
 
+    // ========================================
     // VARIABLES GLOBALES
+    // ========================================
     let currentUser = null;
     let currentBoardId = null;
     let currentBoardData = null;
     let currentUserRole = null;
     let currentCardData = null;
+    let currentCardCover = { color: null, emoji: null };
     let unsubscribeBoards = null;
     let unsubscribeLists = null;
     let unsubscribeCards = {};
     let unsubscribeNotifications = null;
     let unsubscribeActivity = null;
+    let allCardsCache = [];
 
+    // ========================================
     // MATRIZ DE PERMISOS
+    // ========================================
     const PERMISSIONS = {
         owner: {
             viewBoard: true, editBoard: true, deleteBoard: true,
@@ -44,7 +50,9 @@ function initializeApp() {
         }
     };
 
+    // ========================================
     // ELEMENTOS DEL DOM
+    // ========================================
     const boardsContainer = document.getElementById('boards-container');
     const boardView = document.getElementById('board-view');
     const boardTitle = document.getElementById('board-title');
@@ -62,10 +70,266 @@ function initializeApp() {
     const notificationsBadge = document.getElementById('notifications-badge');
     const notificationsDropdown = document.getElementById('notifications-dropdown');
     const notificationsList = document.getElementById('notifications-list');
+    const globalSearch = document.getElementById('global-search');
+    const searchResults = document.getElementById('search-results');
+    const searchResultsList = document.getElementById('search-results-list');
+    const shortcutsModal = document.getElementById('shortcuts-modal');
+    const cardCoverModal = document.getElementById('card-cover-modal');
 
     console.log('✅ Elementos cargados:', { boardModal: !!boardModal, listModal: !!listModal });
 
+    // ========================================
+    // MODO OSCURO
+    // ========================================
+    function initDarkMode() {
+        const darkModeToggle = document.getElementById('dark-mode-toggle');
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        
+        if (savedTheme === 'dark') {
+            document.documentElement.classList.add('dark');
+        }
+        
+        darkModeToggle?.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            const isDark = document.documentElement.classList.contains('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            lucide.createIcons();
+        });
+    }
+
+    initDarkMode();
+
+    // ========================================
+    // ATAJOS DE TECLADO
+    // ========================================
+    function initKeyboardShortcuts() {
+        document.addEventListener('keydown', (e) => {
+            // Ignorar si estamos escribiendo en un input
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                // Permitir Esc para cerrar modales incluso en inputs
+                if (e.key === 'Escape') {
+                    closeAllModals();
+                }
+                return;
+            }
+
+            // Shortcuts
+            switch(e.key) {
+                case '/':
+                    e.preventDefault();
+                    globalSearch?.focus();
+                    break;
+                case '?':
+                    e.preventDefault();
+                    shortcutsModal.style.display = 'flex';
+                    shortcutsModal.classList.remove('hidden');
+                    lucide.createIcons();
+                    break;
+                case 'Escape':
+                    closeAllModals();
+                    break;
+                case 'b':
+                case 'B':
+                    if (document.querySelector('.boards-section').style.display !== 'none') {
+                        document.getElementById('create-board-btn')?.click();
+                    }
+                    break;
+                case 'l':
+                case 'L':
+                    if (currentBoardId && hasPermission('createList')) {
+                        document.getElementById('add-list-btn')?.click();
+                    }
+                    break;
+                case 'n':
+                case 'N':
+                    if (currentBoardId && hasPermission('createCard')) {
+                        const firstList = document.querySelector('.list');
+                        if (firstList) {
+                            firstList.querySelector('.add-card-btn')?.click();
+                        }
+                    }
+                    break;
+            }
+        });
+
+        // Cerrar modal de atajos
+        document.getElementById('close-shortcuts')?.addEventListener('click', () => {
+            shortcutsModal.style.display = 'none';
+            shortcutsModal.classList.add('hidden');
+        });
+
+        // Abrir modal de atajos
+        document.getElementById('shortcuts-btn')?.addEventListener('click', () => {
+            shortcutsModal.style.display = 'flex';
+            shortcutsModal.classList.remove('hidden');
+            lucide.createIcons();
+        });
+    }
+
+    initKeyboardShortcuts();
+
+    function closeAllModals() {
+        boardModal.style.display = 'none';
+        listModal.style.display = 'none';
+        cardModal.style.display = 'none';
+        inviteModal.style.display = 'none';
+        shortcutsModal.style.display = 'none';
+        cardCoverModal.style.display = 'none';
+        boardModal.classList.add('hidden');
+        listModal.classList.add('hidden');
+        cardModal.classList.add('hidden');
+        inviteModal.classList.add('hidden');
+        shortcutsModal.classList.add('hidden');
+        cardCoverModal.classList.add('hidden');
+        searchResults.classList.add('hidden');
+    }
+
+    // ========================================
+    // BÚSQUEDA GLOBAL
+    // ========================================
+    function initGlobalSearch() {
+        let searchTimeout;
+
+        globalSearch?.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            const searchTerm = e.target.value.trim().toLowerCase();
+
+            if (searchTerm.length < 2) {
+                searchResults.classList.add('hidden');
+                return;
+            }
+
+            searchTimeout = setTimeout(() => {
+                performSearch(searchTerm);
+            }, 300);
+        });
+
+        document.getElementById('close-search')?.addEventListener('click', () => {
+            searchResults.classList.add('hidden');
+            globalSearch.value = '';
+        });
+    }
+
+    initGlobalSearch();
+
+    function performSearch(searchTerm) {
+        const results = allCardsCache.filter(card => {
+            return card.title.toLowerCase().includes(searchTerm) ||
+                   (card.description && card.description.toLowerCase().includes(searchTerm)) ||
+                   (card.assignedTo && card.assignedTo.toLowerCase().includes(searchTerm));
+        });
+
+        displaySearchResults(results, searchTerm);
+    }
+
+    function displaySearchResults(results, searchTerm) {
+        searchResultsList.innerHTML = '';
+
+        if (results.length === 0) {
+            searchResultsList.innerHTML = '<p class="text-center text-slate-500 dark:text-slate-400 py-4">No se encontraron resultados</p>';
+            searchResults.classList.remove('hidden');
+            return;
+        }
+
+        results.forEach(card => {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'search-result-item bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600 p-3 rounded-lg cursor-pointer transition';
+            
+            const highlightedTitle = highlightText(card.title, searchTerm);
+            const highlightedDesc = card.description ? highlightText(card.description.substring(0, 100), searchTerm) : '';
+            
+            resultDiv.innerHTML = `
+                <div class="flex justify-between items-start mb-1">
+                    <h4 class="font-semibold text-slate-800 dark:text-slate-200 text-sm">${highlightedTitle}</h4>
+                    <span class="text-xs text-slate-500 dark:text-slate-400">${card.listName}</span>
+                </div>
+                ${highlightedDesc ? `<p class="text-xs text-slate-600 dark:text-slate-300">${highlightedDesc}...</p>` : ''}
+                ${card.assignedTo ? `<span class="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full inline-block mt-2">👤 ${card.assignedTo}</span>` : ''}
+            `;
+
+            resultDiv.addEventListener('click', () => {
+                openCardFromSearch(card);
+                searchResults.classList.add('hidden');
+                globalSearch.value = '';
+            });
+
+            searchResultsList.appendChild(resultDiv);
+        });
+
+        searchResults.classList.remove('hidden');
+        lucide.createIcons();
+    }
+
+    function highlightText(text, term) {
+        const regex = new RegExp(`(${term})`, 'gi');
+        return text.replace(regex, '<span class="search-result-highlight">$1</span>');
+    }
+
+    async function openCardFromSearch(cardData) {
+        // Abrir el tablero si no está abierto
+        if (currentBoardId !== cardData.boardId) {
+            const boardDoc = await getDoc(doc(db, 'boards', cardData.boardId));
+            if (boardDoc.exists()) {
+                openBoard(cardData.boardId, boardDoc.data());
+                // Esperar a que se carguen las listas
+                setTimeout(() => {
+                    openCardModal(cardData.listId, cardData.cardId, cardData);
+                }, 500);
+            }
+        } else {
+            openCardModal(cardData.listId, cardData.cardId, cardData);
+        }
+    }
+
+    // ========================================
+    // PORTADAS DE TARJETAS
+    // ========================================
+    function initCardCover() {
+        document.getElementById('card-cover-btn')?.addEventListener('click', () => {
+            cardCoverModal.style.display = 'flex';
+            cardCoverModal.classList.remove('hidden');
+            lucide.createIcons();
+        });
+
+        document.getElementById('cancel-cover-btn')?.addEventListener('click', () => {
+            cardCoverModal.style.display = 'none';
+            cardCoverModal.classList.add('hidden');
+        });
+
+        document.getElementById('remove-cover-btn')?.addEventListener('click', () => {
+            currentCardCover = { color: null, emoji: null };
+            cardCoverModal.style.display = 'none';
+            cardCoverModal.classList.add('hidden');
+        });
+
+        // Colores
+        document.querySelectorAll('.cover-color').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const color = btn.dataset.color;
+                currentCardCover.color = color === 'none' ? null : color;
+                currentCardCover.emoji = null;
+                cardCoverModal.style.display = 'none';
+                cardCoverModal.classList.add('hidden');
+            });
+        });
+
+        // Emojis
+        document.querySelectorAll('.cover-emoji').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const emoji = btn.dataset.emoji;
+                currentCardCover.emoji = emoji;
+                currentCardCover.color = null;
+                cardCoverModal.style.display = 'none';
+                cardCoverModal.classList.add('hidden');
+            });
+        });
+    }
+
+    initCardCover();
+
+    // ========================================
     // UTILIDADES
+    // ========================================
     function hasPermission(permission) {
         if (!currentUserRole) return false;
         return PERMISSIONS[currentUserRole]?.[permission] || false;
@@ -85,7 +349,10 @@ function initializeApp() {
         return `Hace ${Math.floor(seconds / 86400)} días`;
     }
 
-    // EVENT LISTENERS
+    // ========================================
+    // EVENT LISTENERS PRINCIPALES
+    // ========================================
+
     document.getElementById('create-board-btn')?.addEventListener('click', () => {
         boardModal.style.display = 'flex';
         boardModal.classList.remove('hidden');
@@ -120,6 +387,7 @@ function initializeApp() {
         cardModal.style.display = 'none';
         cardModal.classList.add('hidden');
         currentCardData = null;
+        currentCardCover = { color: null, emoji: null };
     });
 
     document.getElementById('save-card-btn')?.addEventListener('click', saveCard);
@@ -138,6 +406,7 @@ function initializeApp() {
         if (unsubscribeActivity) unsubscribeActivity();
         Object.values(unsubscribeCards).forEach(unsub => unsub());
         unsubscribeCards = {};
+        allCardsCache = [];
     });
 
     document.getElementById('invite-member-btn')?.addEventListener('click', () => {
@@ -200,7 +469,10 @@ function initializeApp() {
         loadNotifications();
     });
 
-    // FUNCIONES DE TABLEROS
+    // ========================================
+    // GESTIÓN DE TABLEROS
+    // ========================================
+
     async function createBoard() {
         const name = document.getElementById('board-name-input').value.trim();
         if (!name) {
@@ -247,7 +519,7 @@ function initializeApp() {
             boardsContainer.innerHTML = '';
             
             if (snapshot.empty) {
-                boardsContainer.innerHTML = '<p class="col-span-full text-center text-slate-500 py-10">No hay tableros aún. ¡Crea uno!</p>';
+                boardsContainer.innerHTML = '<p class="col-span-full text-center text-slate-500 dark:text-slate-400 py-10">No hay tableros aún. ¡Crea uno!</p>';
                 return;
             }
 
@@ -263,14 +535,14 @@ function initializeApp() {
 
     function createBoardCard(id, board) {
         const card = document.createElement('div');
-        card.className = 'board-card bg-white p-6 rounded-xl shadow-sm hover:shadow-lg transition cursor-pointer border border-slate-200 group';
+        card.className = 'board-card bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm hover:shadow-lg transition cursor-pointer border border-slate-200 dark:border-slate-700 group';
         
         const userMember = board.members?.[currentUser.uid];
         const userRole = userMember?.role || 'viewer';
         const roleColors = {
-            owner: 'bg-yellow-100 text-yellow-800',
-            editor: 'bg-blue-100 text-blue-800',
-            viewer: 'bg-gray-100 text-gray-800'
+            owner: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+            editor: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+            viewer: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
         };
         const roleLabels = {
             owner: '👑 Propietario',
@@ -282,7 +554,7 @@ function initializeApp() {
         
         card.innerHTML = `
             <div class="flex justify-between items-start mb-3">
-                <h3 class="font-bold text-lg text-slate-800 group-hover:text-blue-600 transition">${board.title}</h3>
+                <h3 class="font-bold text-lg text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">${board.title}</h3>
                 ${board.ownerId === currentUser.uid ? `
                     <button class="delete-board opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 transition" data-id="${id}">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
@@ -293,7 +565,7 @@ function initializeApp() {
                 <span class="text-xs px-2 py-1 rounded-full ${roleColors[userRole]} font-medium">
                     ${roleLabels[userRole]}
                 </span>
-                <span class="text-xs text-slate-500 flex items-center gap-1">
+                <span class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
                     <i data-lucide="users" class="w-3 h-3"></i> ${membersCount}
                 </span>
             </div>
@@ -353,7 +625,10 @@ function initializeApp() {
         lucide.createIcons();
     }
 
-    // FUNCIONES DE LISTAS
+    // ========================================
+    // GESTIÓN DE LISTAS
+    // ========================================
+
     async function createList() {
         const name = document.getElementById('list-name-input').value.trim();
         
@@ -405,14 +680,14 @@ function initializeApp() {
 
     function createListElement(listId, list) {
         const listDiv = document.createElement('div');
-        listDiv.className = 'list bg-slate-200/70 rounded-xl p-4 min-w-[300px] max-w-[300px] flex flex-col border border-slate-300 shadow-sm';
+        listDiv.className = 'list bg-slate-200/70 dark:bg-slate-700/70 rounded-xl p-4 min-w-[300px] max-w-[300px] flex flex-col border border-slate-300 dark:border-slate-600 shadow-sm';
         listDiv.dataset.listId = listId;
         
         const canDelete = hasPermission('deleteList');
         
         listDiv.innerHTML = `
-            <div class="list-header flex justify-between items-center mb-3 pb-2 border-b border-slate-300">
-                <h3 class="font-semibold text-slate-700 truncate flex-1">${list.name}</h3>
+            <div class="list-header flex justify-between items-center mb-3 pb-2 border-b border-slate-300 dark:border-slate-600">
+                <h3 class="font-semibold text-slate-700 dark:text-slate-200 truncate flex-1">${list.name}</h3>
                 ${canDelete ? `
                     <button class="delete-list text-slate-400 hover:text-red-500 transition p-1">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
@@ -421,7 +696,7 @@ function initializeApp() {
             </div>
             <div class="cards-container flex-1 overflow-y-auto space-y-2 mb-3 min-h-[100px]" data-list-id="${listId}"></div>
             ${hasPermission('createCard') ? `
-                <button class="add-card-btn w-full text-left text-slate-600 hover:bg-slate-300/50 p-2 rounded-lg text-sm font-medium flex items-center gap-2 transition">
+                <button class="add-card-btn w-full text-left text-slate-600 dark:text-slate-300 hover:bg-slate-300/50 dark:hover:bg-slate-600/50 p-2 rounded-lg text-sm font-medium flex items-center gap-2 transition">
                     <i data-lucide="plus" class="w-4 h-4"></i> Añadir tarjeta
                 </button>
             ` : ''}
@@ -455,7 +730,10 @@ function initializeApp() {
         return listDiv;
     }
 
-    // FUNCIONES DE TARJETAS
+    // ========================================
+    // GESTIÓN DE TARJETAS
+    // ========================================
+
     function loadCards(boardId, listId, container) {
         if (unsubscribeCards[listId]) {
             unsubscribeCards[listId]();
@@ -469,10 +747,30 @@ function initializeApp() {
         unsubscribeCards[listId] = onSnapshot(q, (snapshot) => {
             container.innerHTML = '';
             
+            // Obtener nombre de la lista para búsqueda
+            const listElement = container.closest('.list');
+            const listName = listElement?.querySelector('h3')?.textContent || '';
+            
             snapshot.forEach((docSnap) => {
                 const card = docSnap.data();
                 const cardElement = createCardElement(docSnap.id, listId, card);
                 container.appendChild(cardElement);
+                
+                // Agregar al caché de búsqueda
+                const cardIndex = allCardsCache.findIndex(c => c.cardId === docSnap.id);
+                const cardForSearch = {
+                    ...card,
+                    cardId: docSnap.id,
+                    listId: listId,
+                    listName: listName,
+                    boardId: boardId
+                };
+                
+                if (cardIndex >= 0) {
+                    allCardsCache[cardIndex] = cardForSearch;
+                } else {
+                    allCardsCache.push(cardForSearch);
+                }
             });
             
             lucide.createIcons();
@@ -481,15 +779,25 @@ function initializeApp() {
 
     function createCardElement(cardId, listId, card) {
         const cardDiv = document.createElement('div');
-        cardDiv.className = 'card bg-white p-3 rounded-lg shadow-sm border border-slate-200 cursor-grab hover:shadow-md transition group';
+        cardDiv.className = 'card bg-white dark:bg-slate-800 p-3 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 cursor-grab hover:shadow-md transition group';
         cardDiv.draggable = hasPermission('editCard');
         cardDiv.dataset.cardId = cardId;
         cardDiv.dataset.listId = listId;
         
+        let coverHTML = '';
+        if (card.cover) {
+            if (card.cover.color) {
+                coverHTML = `<div class="card-cover ${card.cover.color}"></div>`;
+            } else if (card.cover.emoji) {
+                coverHTML = `<div class="card-cover bg-slate-100 dark:bg-slate-700">${card.cover.emoji}</div>`;
+            }
+        }
+        
         cardDiv.innerHTML = `
-            <h4 class="font-semibold text-slate-800 mb-2 text-sm">${card.title}</h4>
-            ${card.description ? `<p class="text-xs text-slate-600 mb-2">${card.description}</p>` : ''}
-            ${card.assignedTo ? `<span class="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full inline-block">👤 ${card.assignedTo}</span>` : ''}
+            ${coverHTML}
+            <h4 class="font-semibold text-slate-800 dark:text-slate-200 mb-2 text-sm">${card.title}</h4>
+            ${card.description ? `<p class="text-xs text-slate-600 dark:text-slate-400 mb-2">${card.description}</p>` : ''}
+            ${card.assignedTo ? `<span class="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full inline-block">👤 ${card.assignedTo}</span>` : ''}
         `;
         
         cardDiv.addEventListener('click', () => {
@@ -537,6 +845,7 @@ function initializeApp() {
             assignedInput.value = cardData.assignedTo || '';
             deleteBtn.style.display = canDelete ? 'block' : 'none';
             commentsSection.style.display = 'block';
+            currentCardCover = cardData.cover || { color: null, emoji: null };
             loadComments(listId, cardId);
         } else {
             modalTitle.textContent = 'Nueva Tarjeta';
@@ -545,6 +854,7 @@ function initializeApp() {
             assignedInput.value = '';
             deleteBtn.style.display = 'none';
             commentsSection.style.display = 'none';
+            currentCardCover = { color: null, emoji: null };
         }
         
         cardModal.style.display = 'flex';
@@ -565,6 +875,7 @@ function initializeApp() {
             title,
             description,
             assignedTo,
+            cover: currentCardCover,
             updatedAt: serverTimestamp()
         };
 
@@ -587,6 +898,7 @@ function initializeApp() {
             cardModal.style.display = 'none';
             cardModal.classList.add('hidden');
             currentCardData = null;
+            currentCardCover = { color: null, emoji: null };
             showSuccess('Tarjeta guardada');
         } catch (error) {
             console.error('Error al guardar tarjeta:', error);
@@ -602,6 +914,9 @@ function initializeApp() {
             await deleteDoc(cardRef);
             await logActivity('deleted_card', 'card', currentCardData.cardId, { cardTitle: currentCardData.data.title });
             
+            // Eliminar del caché de búsqueda
+            allCardsCache = allCardsCache.filter(c => c.cardId !== currentCardData.cardId);
+            
             cardModal.style.display = 'none';
             cardModal.classList.add('hidden');
             currentCardData = null;
@@ -612,7 +927,10 @@ function initializeApp() {
         }
     }
 
+    // ========================================
     // DRAG & DROP
+    // ========================================
+
     let draggedCard = null;
 
     function handleDragStart(e) {
@@ -682,7 +1000,10 @@ function initializeApp() {
         draggedCard = null;
     }
 
+    // ========================================
     // COMENTARIOS
+    // ========================================
+
     function loadComments(listId, cardId) {
         const commentsList = document.getElementById('comments-list');
         
@@ -697,10 +1018,10 @@ function initializeApp() {
             snapshot.forEach((docSnap) => {
                 const comment = docSnap.data();
                 const commentDiv = document.createElement('div');
-                commentDiv.className = 'comment bg-slate-50 p-3 rounded-lg border border-slate-200';
+                commentDiv.className = 'comment bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600';
                 commentDiv.innerHTML = `
-                    <strong class="text-blue-600 text-sm block mb-1">${comment.userName}</strong>
-                    <p class="text-slate-700 text-sm mb-1">${comment.text}</p>
+                    <strong class="text-blue-600 dark:text-blue-400 text-sm block mb-1">${comment.userName}</strong>
+                    <p class="text-slate-700 dark:text-slate-300 text-sm mb-1">${comment.text}</p>
                     <small class="text-slate-400 text-xs">${getTimeAgo(comment.createdAt)}</small>
                 `;
                 commentsList.appendChild(commentDiv);
@@ -737,7 +1058,10 @@ function initializeApp() {
         }
     }
 
+    // ========================================
     // INVITACIONES Y MIEMBROS
+    // ========================================
+
     async function sendInvitation() {
         const email = document.getElementById('invite-email-input').value.trim();
         const roleInputs = document.getElementsByName('invite-role');
@@ -823,7 +1147,7 @@ function initializeApp() {
         
         Object.entries(currentBoardData.members).forEach(([uid, member]) => {
             const memberDiv = document.createElement('div');
-            memberDiv.className = 'member-item p-3 bg-slate-50 rounded-lg border border-slate-200 flex justify-between items-center';
+            memberDiv.className = 'member-item p-3 bg-slate-50 dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600 flex justify-between items-center';
             
             const roleLabels = {
                 owner: '👑 Propietario',
@@ -836,9 +1160,9 @@ function initializeApp() {
             
             memberDiv.innerHTML = `
                 <div class="flex-1">
-                    <div class="font-medium text-slate-800 text-sm">${member.name}${isCurrentUser ? ' (Tú)' : ''}</div>
-                    <div class="text-xs text-slate-500">${member.email}</div>
-                    <div class="text-xs text-blue-600 font-medium mt-1">${roleLabels[member.role]}</div>
+                    <div class="font-medium text-slate-800 dark:text-slate-200 text-sm">${member.name}${isCurrentUser ? ' (Tú)' : ''}</div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400">${member.email}</div>
+                    <div class="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">${roleLabels[member.role]}</div>
                 </div>
                 ${canRemove ? `
                     <button class="remove-member text-red-500 hover:text-red-700 p-1" data-uid="${uid}" data-email="${member.email}">
@@ -877,7 +1201,10 @@ function initializeApp() {
         }
     }
 
+    // ========================================
     // ACTIVIDAD
+    // ========================================
+
     async function logActivity(action, targetType, targetId, details) {
         try {
             await addDoc(collection(db, 'activity_logs'), {
@@ -908,7 +1235,7 @@ function initializeApp() {
             activityList.innerHTML = '';
             
             if (snapshot.empty) {
-                activityList.innerHTML = '<p class="text-center text-slate-500 text-sm py-4">No hay actividad reciente</p>';
+                activityList.innerHTML = '<p class="text-center text-slate-500 dark:text-slate-400 text-sm py-4">No hay actividad reciente</p>';
                 return;
             }
             
@@ -924,7 +1251,7 @@ function initializeApp() {
 
     function createActivityElement(activity) {
         const div = document.createElement('div');
-        div.className = 'activity-item p-3 bg-slate-50 rounded-lg border border-slate-200';
+        div.className = 'activity-item p-3 bg-slate-50 dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600';
         
         const icons = {
             created_card: { icon: 'plus-circle', color: 'text-green-500' },
@@ -956,7 +1283,7 @@ function initializeApp() {
             <div class="flex items-start gap-2">
                 <i data-lucide="${actionInfo.icon}" class="w-4 h-4 ${actionInfo.color} mt-0.5"></i>
                 <div class="flex-1">
-                    <p class="text-sm text-slate-700">
+                    <p class="text-sm text-slate-700 dark:text-slate-300">
                         <span class="font-medium">${activity.userName}</span> ${messages[activity.action] || activity.action}
                     </p>
                     <p class="text-xs text-slate-400 mt-1">${getTimeAgo(activity.timestamp)}</p>
@@ -967,7 +1294,10 @@ function initializeApp() {
         return div;
     }
 
+    // ========================================
     // NOTIFICACIONES
+    // ========================================
+
     function loadNotifications() {
         if (unsubscribeNotifications) unsubscribeNotifications();
         
@@ -990,7 +1320,7 @@ function initializeApp() {
             }
             
             if (snapshot.empty) {
-                notificationsList.innerHTML = '<p class="p-4 text-center text-slate-500 text-sm">No hay notificaciones</p>';
+                notificationsList.innerHTML = '<p class="p-4 text-center text-slate-500 dark:text-slate-400 text-sm">No hay notificaciones</p>';
                 return;
             }
             
@@ -1006,13 +1336,13 @@ function initializeApp() {
 
     function createNotificationElement(id, notif) {
         const div = document.createElement('div');
-        div.className = `notification-item p-3 hover:bg-slate-50 transition cursor-pointer ${!notif.read ? 'bg-blue-50' : ''}`;
+        div.className = `notification-item p-3 hover:bg-slate-50 dark:hover:bg-slate-700 transition cursor-pointer ${!notif.read ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`;
         
         div.innerHTML = `
             <div class="flex items-start gap-2">
-                <i data-lucide="${notif.type === 'invite' ? 'user-plus' : 'bell'}" class="w-4 h-4 text-blue-600 mt-0.5"></i>
+                <i data-lucide="${notif.type === 'invite' ? 'user-plus' : 'bell'}" class="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5"></i>
                 <div class="flex-1">
-                    <p class="text-sm text-slate-700">${notif.message}</p>
+                    <p class="text-sm text-slate-700 dark:text-slate-300">${notif.message}</p>
                     <p class="text-xs text-slate-400 mt-1">${getTimeAgo(notif.createdAt)}</p>
                 </div>
                 ${!notif.read ? '<div class="w-2 h-2 bg-blue-600 rounded-full"></div>' : ''}
