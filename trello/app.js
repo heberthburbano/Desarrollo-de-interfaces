@@ -1221,7 +1221,7 @@ async function openBoard(boardId, boardName) {
         
         // Cargar listas del tablero
         loadLists(boardId);
-        loadBoardMembers(boardId);
+        //loadBoardMembers(boardId);
         
     } catch (error) {
         console.error('❌ Error al abrir tablero:', error);
@@ -2321,3 +2321,4 @@ function getRoleDisplayName(role) {
     }
 
 } // FIN de initializeApp
+
