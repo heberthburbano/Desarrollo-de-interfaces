@@ -1,13 +1,8 @@
 /* ============================================
-   TRELLO COLABORATIVO - ESTILOS UNIFICADOS
-   Con !important para sobrescribir Tailwind
+   TRELLO COLABORATIVO - ESTILOS CORREGIDOS
    ============================================ */
 
-/* ==========================================
-   VARIABLES CSS (Tokens de Diseño)
-   ========================================== */
 :root {
-  /* Espaciado */
   --space-050: 4px;
   --space-100: 8px;
   --space-150: 12px;
@@ -15,12 +10,9 @@
   --space-300: 24px;
   --space-400: 32px;
   
-  /* Dimensiones */
   --list-width: 272px;
   --header-height: 48px;
-  --board-padding: 12px;
   
-  /* Colores Modo Claro */
   --color-bg-page: #FAFBFC;
   --color-bg-elevated: #FFFFFF;
   --color-bg-list: #EBECF0;
@@ -31,22 +23,18 @@
   --color-border: #DFE1E6;
   --color-border-subtle: #EBECF0;
   
-  /* Colores de Acción */
   --color-blue-primary: #0052CC;
   --color-blue-hover: #0747A6;
   --color-blue-trello: #0079BF;
   --color-red: #FF5630;
   --color-red-hover: #DE350B;
   
-  /* Sombras */
   --shadow-card: 0 1px 0 rgba(9, 30, 66, 0.25);
   --shadow-card-hover: 0 2px 8px -4px rgba(9, 30, 66, 0.25);
   
-  /* Tipografía */
   --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
-/* Modo Oscuro */
 .dark {
   --color-bg-page: #1D2125;
   --color-bg-elevated: #22272B;
@@ -59,9 +47,6 @@
   --color-border-subtle: #38414A;
 }
 
-/* ==========================================
-   RESET BASE
-   ========================================== */
 * {
   margin: 0;
   padding: 0;
@@ -77,9 +62,6 @@ html, body {
   background: var(--color-bg-page) !important;
 }
 
-/* ==========================================
-   CONTENEDOR PRINCIPAL
-   ========================================== */
 #app-container {
   display: flex !important;
   flex-direction: column !important;
@@ -96,7 +78,7 @@ header {
   background: var(--color-bg-elevated) !important;
   border-bottom: 1px solid var(--color-border-subtle) !important;
   flex-shrink: 0 !important;
-  display: block !important;
+  z-index: 10 !important;
 }
 
 .header-content {
@@ -128,7 +110,6 @@ header {
   overflow-y: auto !important;
   padding: var(--space-400) var(--space-200) !important;
   background: var(--color-bg-page) !important;
-  display: block !important;
 }
 
 .boards-header {
@@ -154,9 +135,6 @@ header {
   margin: 0 auto !important;
 }
 
-/* ==========================================
-   TARJETAS DE TABLERO (CRÍTICO)
-   ========================================== */
 .board-card {
   background: var(--color-bg-card) !important;
   border-radius: 8px !important;
@@ -168,7 +146,6 @@ header {
   display: flex !important;
   flex-direction: column !important;
   justify-content: space-between !important;
-  position: relative !important;
   border: none !important;
 }
 
@@ -186,25 +163,28 @@ header {
 }
 
 /* ==========================================
-   VISTA DE TABLERO
+   VISTA DE TABLERO - CORREGIDO
    ========================================== */
 #board-view {
-  flex: 1 !important;
   display: flex !important;
   flex-direction: column !important;
+  height: 100vh !important;
   overflow: hidden !important;
   background: var(--color-blue-trello) !important;
 }
 
 .board-header {
-  height: 52px !important;
+  height: auto !important;
+  min-height: 52px !important;
   background: rgba(0, 0, 0, 0.24) !important;
   backdrop-filter: blur(8px) !important;
-  padding: 0 var(--space-150) !important;
+  padding: 8px 16px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
   flex-shrink: 0 !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
 }
 
 .board-header h2 {
@@ -214,55 +194,159 @@ header {
   margin: 0 !important;
 }
 
-/* ==========================================
-   LISTAS
-   ========================================== */
-#lists-container,
-.lists-container {
-  display: grid !important;
-  grid-auto-flow: column !important;
-  grid-auto-columns: var(--list-width) !important;
-  gap: var(--space-100) !important;
-  padding: var(--board-padding) !important;
-  overflow-x: auto !important;
-  overflow-y: hidden !important;
-  align-items: start !important;
-  flex: 1 !important;
+.board-header button {
+  background: rgba(255, 255, 255, 0.24) !important;
+  border: none !important;
+  padding: 8px 12px !important;
+  border-radius: 3px !important;
+  color: #FFFFFF !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
 }
 
+.board-header button:hover {
+  background: rgba(255, 255, 255, 0.32) !important;
+}
+
+#user-role-badge {
+  padding: 4px 12px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  border-radius: 12px !important;
+  background: #F2D600 !important;
+  color: #172B4D !important;
+}
+
+/* Canvas del Tablero - CRÍTICO */
+.board-canvas {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: row !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  align-items: flex-start !important;
+  height: 100% !important;
+}
+
+.board-canvas::-webkit-scrollbar {
+  height: 12px !important;
+}
+
+.board-canvas::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.15) !important;
+}
+
+.board-canvas::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.4) !important;
+  border-radius: 6px !important;
+}
+
+/* Contenedor de Listas */
+#lists-container {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  padding: 12px !important;
+  gap: 12px !important;
+  height: 100% !important;
+  min-width: fit-content !important;
+}
+
+/* ==========================================
+   LISTAS - CORREGIDO
+   ========================================== */
 .list {
   background: var(--color-bg-list) !important;
   border-radius: 12px !important;
-  width: var(--list-width) !important;
+  width: 272px !important;
+  min-width: 272px !important;
+  max-width: 272px !important;
   display: flex !important;
   flex-direction: column !important;
-  max-height: calc(100vh - 100px) !important;
+  max-height: calc(100vh - 80px) !important;
   box-shadow: 0 1px 0 rgba(9, 30, 66, 0.13) !important;
+  flex-shrink: 0 !important;
 }
 
 .list-header {
-  padding: var(--space-100) var(--space-150) !important;
+  padding: 10px 12px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
+  flex-shrink: 0 !important;
 }
 
 .list-header h3 {
-  color: var(--color-text-primary) !important;
   font-size: 14px !important;
   font-weight: 600 !important;
+  color: var(--color-text-primary) !important;
   margin: 0 !important;
   flex: 1 !important;
 }
 
+.list-header button {
+  background: transparent !important;
+  border: none !important;
+  color: var(--color-text-secondary) !important;
+  padding: 4px !important;
+  cursor: pointer !important;
+  border-radius: 3px !important;
+}
+
+.list-header button:hover {
+  background: var(--color-bg-hover) !important;
+  color: var(--color-text-primary) !important;
+}
+
+.cards-container,
 .list-cards {
   flex: 1 1 auto !important;
   overflow-y: auto !important;
-  padding: var(--space-100) !important;
-  min-height: 0 !important;
+  overflow-x: hidden !important;
+  padding: 4px 8px !important;
+  min-height: 20px !important;
   display: flex !important;
   flex-direction: column !important;
-  gap: var(--space-100) !important;
+  gap: 8px !important;
+}
+
+.cards-container::-webkit-scrollbar,
+.list-cards::-webkit-scrollbar {
+  width: 8px !important;
+}
+
+.cards-container::-webkit-scrollbar-thumb,
+.list-cards::-webkit-scrollbar-thumb {
+  background: #bfc4ce !important;
+  border-radius: 4px !important;
+}
+
+.list-footer {
+  padding: 8px !important;
+  flex-shrink: 0 !important;
+}
+
+.list-footer button,
+.add-card-btn {
+  width: 100% !important;
+  padding: 6px 12px !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 8px !important;
+  color: var(--color-text-secondary) !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  justify-content: flex-start !important;
+}
+
+.list-footer button:hover,
+.add-card-btn:hover {
+  background: rgba(9, 30, 66, 0.08) !important;
+  color: var(--color-text-primary) !important;
 }
 
 /* ==========================================
@@ -271,17 +355,21 @@ header {
 .card {
   background: var(--color-bg-card) !important;
   border-radius: 8px !important;
-  padding: var(--space-100) var(--space-150) !important;
-  cursor: pointer !important;
+  padding: 8px 12px !important;
+  cursor: grab !important;
   box-shadow: var(--shadow-card) !important;
-  transition: all 0.1s ease !important;
+  border: 1px solid var(--color-border-subtle) !important;
   min-height: 40px !important;
-  border: none !important;
+  width: 100% !important;
 }
 
 .card:hover {
   background: var(--color-bg-hover) !important;
   box-shadow: var(--shadow-card-hover) !important;
+}
+
+.card:active {
+  cursor: grabbing !important;
 }
 
 .card h4 {
@@ -290,6 +378,44 @@ header {
   font-weight: 400 !important;
   margin: 0 !important;
   line-height: 20px !important;
+  word-wrap: break-word !important;
+}
+
+.card-cover {
+  width: calc(100% + 24px) !important;
+  height: 32px !important;
+  margin: -8px -12px 8px !important;
+  border-radius: 8px 8px 0 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.card-cover.bg-blue-500 { background: #0079BF !important; }
+.card-cover.bg-red-500 { background: #EB5A46 !important; }
+.card-cover.bg-green-500 { background: #61BD4F !important; }
+.card-cover.bg-yellow-500 { background: #F2D600 !important; }
+.card-cover.bg-orange-500 { background: #FF9F1A !important; }
+.card-cover.bg-purple-500 { background: #C377E0 !important; }
+
+/* Drag & Drop */
+.cards-container.drag-over {
+  background: rgba(9, 30, 66, 0.08) !important;
+  border-radius: 8px !important;
+}
+
+/* ==========================================
+   PANELES LATERALES
+   ========================================== */
+#members-panel,
+#activity-panel {
+  width: 340px !important;
+  background: var(--color-bg-elevated) !important;
+  border-left: 1px solid var(--color-border) !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  flex-shrink: 0 !important;
+  box-shadow: -4px 0 12px rgba(0,0,0,0.1) !important;
 }
 
 /* ==========================================
@@ -301,12 +427,12 @@ button {
   font-weight: 500 !important;
   border: none !important;
   border-radius: 3px !important;
-  padding: var(--space-100) var(--space-150) !important;
+  padding: 8px 12px !important;
   cursor: pointer !important;
   transition: background 0.1s ease !important;
   display: inline-flex !important;
   align-items: center !important;
-  gap: var(--space-100) !important;
+  gap: 8px !important;
 }
 
 #create-board-btn,
@@ -340,7 +466,7 @@ button {
   align-items: center !important;
   justify-content: center !important;
   z-index: 1000 !important;
-  padding: var(--space-200) !important;
+  padding: 16px !important;
 }
 
 .modal.hidden {
@@ -350,7 +476,7 @@ button {
 .modal-content {
   background: var(--color-bg-elevated) !important;
   border-radius: 16px !important;
-  padding: var(--space-300) !important;
+  padding: 24px !important;
   max-width: 600px !important;
   width: 100% !important;
   max-height: 90vh !important;
@@ -366,7 +492,7 @@ input[type="email"],
 input[type="password"],
 textarea {
   width: 100% !important;
-  padding: var(--space-100) var(--space-150) !important;
+  padding: 8px 12px !important;
   border: 2px solid var(--color-border) !important;
   border-radius: 8px !important;
   background: var(--color-bg-card) !important;
@@ -388,215 +514,3 @@ textarea:focus {
 .hidden {
   display: none !important;
 }
-
-/* ==========================================
-   FIX: VISTA DE TABLERO
-   ========================================== */
-
-/* Contenedor del tablero con listas */
-#board-view > div:first-child {
-  flex: 1 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  overflow: hidden !important;
-}
-
-/* Board header fix */
-#board-view .board-header {
-  height: 52px !important;
-  background: rgba(0, 0, 0, 0.24) !important;
-  backdrop-filter: blur(8px) !important;
-  padding: 0 16px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  flex-shrink: 0 !important;
-  border: none !important;
-}
-
-#board-view .board-header * {
-  color: #FFFFFF !important;
-}
-
-#board-view .board-header h2 {
-  font-size: 20px !important;
-  font-weight: 700 !important;
-  margin: 0 !important;
-}
-
-#board-view .board-header button {
-  background: rgba(255, 255, 255, 0.24) !important;
-  border: none !important;
-  padding: 8px 12px !important;
-  border-radius: 3px !important;
-  color: #FFFFFF !important;
-  font-size: 14px !important;
-  font-weight: 600 !important;
-  cursor: pointer !important;
-}
-
-#board-view .board-header button:hover {
-  background: rgba(255, 255, 255, 0.32) !important;
-}
-
-/* Badge de rol */
-#user-role-badge {
-  padding: 4px 12px !important;
-  font-size: 12px !important;
-  font-weight: 700 !important;
-  border-radius: 12px !important;
-  display: inline-block !important;
-}
-
-/* Listas - FIX CRÍTICO */
-.list {
-  background: var(--color-bg-list) !important;
-  border-radius: 12px !important;
-  width: 272px !important;
-  min-width: 272px !important;
-  max-width: 272px !important;
-  display: flex !important;
-  flex-direction: column !important;
-  max-height: calc(100vh - 120px) !important;
-  box-shadow: 0 1px 0 rgba(9, 30, 66, 0.13) !important;
-  overflow: hidden !important;
-}
-
-/* Header de lista */
-.list-header {
-  padding: 10px 12px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  flex-shrink: 0 !important;
-  background: transparent !important;
-  border: none !important;
-}
-
-.list-header h3 {
-  color: var(--color-text-primary) !important;
-  font-size: 14px !important;
-  font-weight: 600 !important;
-  margin: 0 !important;
-  flex: 1 !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  white-space: nowrap !important;
-}
-
-.list-header button {
-  background: transparent !important;
-  border: none !important;
-  color: var(--color-text-secondary) !important;
-  padding: 4px !important;
-  cursor: pointer !important;
-  border-radius: 3px !important;
-  min-width: auto !important;
-  width: auto !important;
-}
-
-.list-header button:hover {
-  background: var(--color-bg-hover) !important;
-  color: var(--color-text-primary) !important;
-}
-
-/* Contenedor de tarjetas dentro de la lista */
-.list-cards {
-  flex: 1 1 auto !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  padding: 4px 8px 8px !important;
-  min-height: 0 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 8px !important;
-  background: transparent !important;
-}
-
-.list-cards::-webkit-scrollbar {
-  width: 8px !important;
-}
-
-.list-cards::-webkit-scrollbar-track {
-  background: transparent !important;
-}
-
-.list-cards::-webkit-scrollbar-thumb {
-  background: var(--color-border) !important;
-  border-radius: 4px !important;
-}
-
-/* Footer de lista (botón añadir tarjeta) */
-.list-footer {
-  padding: 8px !important;
-  flex-shrink: 0 !important;
-  background: transparent !important;
-}
-
-.list-footer button {
-  width: 100% !important;
-  padding: 8px !important;
-  background: transparent !important;
-  border: none !important;
-  border-radius: 8px !important;
-  color: var(--color-text-secondary) !important;
-  font-size: 14px !important;
-  font-weight: 500 !important;
-  cursor: pointer !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 4px !important;
-  text-align: left !important;
-  justify-content: flex-start !important;
-}
-
-.list-footer button:hover {
-  background: var(--color-bg-hover) !important;
-  color: var(--color-text-primary) !important;
-}
-
-/* Tarjetas dentro de listas */
-.list .card {
-  background: var(--color-bg-card) !important;
-  border-radius: 8px !important;
-  padding: 8px 12px !important;
-  cursor: pointer !important;
-  box-shadow: var(--shadow-card) !important;
-  transition: all 0.1s ease !important;
-  min-height: 40px !important;
-  border: none !important;
-  margin: 0 !important;
-  width: 100% !important;
-}
-
-.list .card:hover {
-  background: var(--color-bg-hover) !important;
-  box-shadow: var(--shadow-card-hover) !important;
-}
-
-.list .card h4 {
-  color: var(--color-text-primary) !important;
-  font-size: 14px !important;
-  font-weight: 400 !important;
-  margin: 0 !important;
-  line-height: 20px !important;
-  word-wrap: break-word !important;
-}
-
-/* Portada de tarjeta con color */
-.card-cover {
-  width: calc(100% + 24px) !important;
-  height: 32px !important;
-  margin: -8px -12px 8px !important;
-  border-radius: 8px 8px 0 0 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-
-.card-cover.bg-blue-500 { background: #0079BF !important; }
-.card-cover.bg-red-500 { background: #EB5A46 !important; }
-.card-cover.bg-green-500 { background: #61BD4F !important; }
-.card-cover.bg-yellow-500 { background: #F2D600 !important; }
-.card-cover.bg-orange-500 { background: #FF9F1A !important; }
-.card-cover.bg-purple-500 { background: #C377E0 !important; }
