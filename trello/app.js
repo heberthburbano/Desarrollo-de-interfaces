@@ -185,8 +185,14 @@ function initializeApp() {
     }
 
     // ========================================
-    // BÚSQUEDA GLOBAL
+    // BÚSQUEDA GLOBAL AVANZADA
     // ========================================
+    let allBoardsCache = [];
+    let allListsCache = [];
+    let currentSearchFilter = 'all';
+    let selectedResultIndex = -1;
+    let filteredResults = [];
+
     function initGlobalSearch() {
         let searchTimeout;
 
@@ -196,34 +202,176 @@ function initializeApp() {
 
             if (searchTerm.length < 2) {
                 searchResults.classList.add('hidden');
+                selectedResultIndex = -1;
                 return;
             }
 
-            searchTimeout = setTimeout(() => {
-                performSearch(searchTerm);
-            }, 300);
+            // Búsqueda en tiempo real (sin delay)
+            performAdvancedSearch(searchTerm);
+        });
+
+        // Navegación con teclado
+        globalSearch?.addEventListener('keydown', (e) => {
+            if (!searchResults.classList.contains('hidden')) {
+                handleSearchKeyNavigation(e);
+            }
+        });
+
+        // Filtros
+        document.querySelectorAll('.search-filter').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.search-filter').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentSearchFilter = btn.dataset.filter;
+                
+                const searchTerm = globalSearch.value.trim().toLowerCase();
+                if (searchTerm.length >= 2) {
+                    performAdvancedSearch(searchTerm);
+                }
+            });
         });
 
         document.getElementById('close-search')?.addEventListener('click', () => {
             searchResults.classList.add('hidden');
             globalSearch.value = '';
+            selectedResultIndex = -1;
+            currentSearchFilter = 'all';
+            document.querySelectorAll('.search-filter').forEach(b => b.classList.remove('active'));
+            document.querySelector('.search-filter[data-filter="all"]')?.classList.add('active');
         });
+
+        // Cargar todos los datos para búsqueda global
+        loadAllDataForSearch();
     }
 
     initGlobalSearch();
 
-    function performSearch(searchTerm) {
-        const results = allCardsCache.filter(card => {
-            return card.title.toLowerCase().includes(searchTerm) ||
-                   (card.description && card.description.toLowerCase().includes(searchTerm)) ||
-                   (card.assignedTo && card.assignedTo.toLowerCase().includes(searchTerm));
-        });
+    function loadAllDataForSearch() {
+        // Cargar todos los tableros del usuario
+        if (!currentUser) return;
 
-        displaySearchResults(results, searchTerm);
+        const boardsQuery = query(
+            collection(db, 'boards'),
+            where('memberEmails', 'array-contains', currentUser.email)
+        );
+
+        onSnapshot(boardsQuery, async (snapshot) => {
+            allBoardsCache = [];
+            allListsCache = [];
+
+            for (const boardDoc of snapshot.docs) {
+                const boardData = boardDoc.data();
+                allBoardsCache.push({
+                    id: boardDoc.id,
+                    type: 'board',
+                    title: boardData.title,
+                    ...boardData
+                });
+
+                // Cargar listas de cada tablero
+                const listsQuery = query(collection(db, 'boards', boardDoc.id, 'lists'));
+                const listsSnapshot = await getDocs(listsQuery);
+                
+                for (const listDoc of listsSnapshot.docs) {
+                    const listData = listDoc.data();
+                    allListsCache.push({
+                        id: listDoc.id,
+                        type: 'list',
+                        boardId: boardDoc.id,
+                        boardTitle: boardData.title,
+                        name: listData.name,
+                        ...listData
+                    });
+
+                    // Cargar tarjetas de cada lista
+                    const cardsQuery = query(collection(db, 'boards', boardDoc.id, 'lists', listDoc.id, 'cards'));
+                    const cardsSnapshot = await getDocs(cardsQuery);
+                    
+                    cardsSnapshot.forEach(cardDoc => {
+                        const cardData = cardDoc.data();
+                        const cardIndex = allCardsCache.findIndex(c => c.cardId === cardDoc.id);
+                        const cardForSearch = {
+                            ...cardData,
+                            cardId: cardDoc.id,
+                            type: 'card',
+                            listId: listDoc.id,
+                            listName: listData.name,
+                            boardId: boardDoc.id,
+                            boardTitle: boardData.title
+                        };
+                        
+                        if (cardIndex >= 0) {
+                            allCardsCache[cardIndex] = cardForSearch;
+                        } else {
+                            allCardsCache.push(cardForSearch);
+                        }
+                    });
+                }
+            }
+        });
     }
 
-    function displaySearchResults(results, searchTerm) {
+    function performAdvancedSearch(searchTerm) {
+        let results = [];
+
+        // Buscar en tableros
+        if (currentSearchFilter === 'all' || currentSearchFilter === 'boards') {
+            const boardResults = allBoardsCache.filter(board => 
+                board.title.toLowerCase().includes(searchTerm)
+            ).map(board => ({ ...board, score: calculateScore(board.title, searchTerm) }));
+            results = results.concat(boardResults);
+        }
+
+        // Buscar en listas
+        if (currentSearchFilter === 'all' || currentSearchFilter === 'lists') {
+            const listResults = allListsCache.filter(list => 
+                list.name.toLowerCase().includes(searchTerm)
+            ).map(list => ({ ...list, score: calculateScore(list.name, searchTerm) }));
+            results = results.concat(listResults);
+        }
+
+        // Buscar en tarjetas
+        if (currentSearchFilter === 'all' || currentSearchFilter === 'cards') {
+            const cardResults = allCardsCache.filter(card => {
+                return card.title.toLowerCase().includes(searchTerm) ||
+                       (card.description && card.description.toLowerCase().includes(searchTerm)) ||
+                       (card.assignedTo && card.assignedTo.toLowerCase().includes(searchTerm));
+            }).map(card => ({ ...card, score: calculateScore(card.title, searchTerm) }));
+            results = results.concat(cardResults);
+        }
+
+        // Ordenar por score (prioridad) y luego alfabéticamente
+        results.sort((a, b) => b.score - a.score || a.title?.localeCompare(b.title) || a.name?.localeCompare(b.name));
+
+        filteredResults = results;
+        displayAdvancedSearchResults(results, searchTerm);
+    }
+
+    function calculateScore(text, searchTerm) {
+        const lowerText = text.toLowerCase();
+        const lowerTerm = searchTerm.toLowerCase();
+        
+        // Coincidencia exacta
+        if (lowerText === lowerTerm) return 100;
+        
+        // Comienza con el término
+        if (lowerText.startsWith(lowerTerm)) return 80;
+        
+        // Contiene el término al inicio de una palabra
+        if (lowerText.includes(' ' + lowerTerm)) return 60;
+        
+        // Contiene el término en cualquier lugar
+        if (lowerText.includes(lowerTerm)) return 40;
+        
+        return 0;
+    }
+
+    function displayAdvancedSearchResults(results, searchTerm) {
         searchResultsList.innerHTML = '';
+        selectedResultIndex = -1;
+
+        const resultsCount = document.getElementById('search-results-count');
+        resultsCount.textContent = `${results.length} resultado${results.length !== 1 ? 's' : ''}`;
 
         if (results.length === 0) {
             searchResultsList.innerHTML = '<p class="text-center text-slate-500 dark:text-slate-400 py-4">No se encontraron resultados</p>';
@@ -231,28 +379,8 @@ function initializeApp() {
             return;
         }
 
-        results.forEach(card => {
-            const resultDiv = document.createElement('div');
-            resultDiv.className = 'search-result-item bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600 p-3 rounded-lg cursor-pointer transition';
-            
-            const highlightedTitle = highlightText(card.title, searchTerm);
-            const highlightedDesc = card.description ? highlightText(card.description.substring(0, 100), searchTerm) : '';
-            
-            resultDiv.innerHTML = `
-                <div class="flex justify-between items-start mb-1">
-                    <h4 class="font-semibold text-slate-800 dark:text-slate-200 text-sm">${highlightedTitle}</h4>
-                    <span class="text-xs text-slate-500 dark:text-slate-400">${card.listName}</span>
-                </div>
-                ${highlightedDesc ? `<p class="text-xs text-slate-600 dark:text-slate-300">${highlightedDesc}...</p>` : ''}
-                ${card.assignedTo ? `<span class="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full inline-block mt-2">👤 ${card.assignedTo}</span>` : ''}
-            `;
-
-            resultDiv.addEventListener('click', () => {
-                openCardFromSearch(card);
-                searchResults.classList.add('hidden');
-                globalSearch.value = '';
-            });
-
+        results.forEach((result, index) => {
+            const resultDiv = createSearchResultElement(result, searchTerm, index);
             searchResultsList.appendChild(resultDiv);
         });
 
@@ -260,26 +388,161 @@ function initializeApp() {
         lucide.createIcons();
     }
 
+    function createSearchResultElement(result, searchTerm, index) {
+        const resultDiv = document.createElement('div');
+        resultDiv.className = 'search-result-item bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600 p-3 rounded-lg cursor-pointer transition border border-slate-200 dark:border-slate-600';
+        resultDiv.dataset.index = index;
+        
+        let content = '';
+        
+        if (result.type === 'board') {
+            const highlightedTitle = highlightText(result.title, searchTerm);
+            const membersCount = Object.keys(result.members || {}).length;
+            
+            content = `
+                <div class="flex items-start justify-between mb-2">
+                    <div class="flex items-center gap-2 flex-1">
+                        <span class="result-type-badge result-type-board">📋 Tablero</span>
+                        <h4 class="font-semibold text-slate-800 dark:text-slate-200 text-sm">${highlightedTitle}</h4>
+                    </div>
+                    <span class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                        <i data-lucide="users" class="w-3 h-3"></i> ${membersCount}
+                    </span>
+                </div>
+            `;
+        } else if (result.type === 'list') {
+            const highlightedName = highlightText(result.name, searchTerm);
+            
+            content = `
+                <div class="flex items-start justify-between mb-2">
+                    <div class="flex items-center gap-2 flex-1">
+                        <span class="result-type-badge result-type-list">📑 Lista</span>
+                        <h4 class="font-semibold text-slate-800 dark:text-slate-200 text-sm">${highlightedName}</h4>
+                    </div>
+                </div>
+                <div class="text-xs text-slate-500 dark:text-slate-400">
+                    En tablero: <span class="font-medium">${result.boardTitle}</span>
+                </div>
+            `;
+        } else if (result.type === 'card') {
+            const highlightedTitle = highlightText(result.title, searchTerm);
+            const highlightedDesc = result.description ? highlightText(result.description.substring(0, 100), searchTerm) : '';
+            
+            content = `
+                <div class="flex items-start justify-between mb-2">
+                    <div class="flex items-center gap-2 flex-1">
+                        <span class="result-type-badge result-type-card">📄 Tarjeta</span>
+                        <h4 class="font-semibold text-slate-800 dark:text-slate-200 text-sm">${highlightedTitle}</h4>
+                    </div>
+                </div>
+                ${highlightedDesc ? `<p class="text-xs text-slate-600 dark:text-slate-300 mb-2">${highlightedDesc}...</p>` : ''}
+                <div class="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                    <span>📋 ${result.boardTitle}</span>
+                    <span>→</span>
+                    <span>📑 ${result.listName}</span>
+                </div>
+                ${result.assignedTo ? `<span class="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full inline-block mt-2">👤 ${result.assignedTo}</span>` : ''}
+            `;
+        }
+        
+        resultDiv.innerHTML = content;
+        
+        resultDiv.addEventListener('click', () => {
+            openSearchResult(result);
+        });
+        
+        return resultDiv;
+    }
+
+    function handleSearchKeyNavigation(e) {
+        const results = document.querySelectorAll('.search-result-item');
+        if (results.length === 0) return;
+
+        switch(e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                selectedResultIndex = Math.min(selectedResultIndex + 1, results.length - 1);
+                updateSelectedResult(results);
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                selectedResultIndex = Math.max(selectedResultIndex - 1, -1);
+                updateSelectedResult(results);
+                break;
+            case 'Enter':
+                e.preventDefault();
+                if (selectedResultIndex >= 0 && filteredResults[selectedResultIndex]) {
+                    openSearchResult(filteredResults[selectedResultIndex]);
+                }
+                break;
+            case 'Escape':
+                e.preventDefault();
+                searchResults.classList.add('hidden');
+                globalSearch.value = '';
+                selectedResultIndex = -1;
+                break;
+        }
+    }
+
+    function updateSelectedResult(results) {
+        results.forEach((result, index) => {
+            if (index === selectedResultIndex) {
+                result.classList.add('keyboard-selected');
+                result.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            } else {
+                result.classList.remove('keyboard-selected');
+            }
+        });
+    }
+
+    async function openSearchResult(result) {
+        searchResults.classList.add('hidden');
+        globalSearch.value = '';
+        selectedResultIndex = -1;
+
+        if (result.type === 'board') {
+            // Abrir el tablero
+            const boardDoc = await getDoc(doc(db, 'boards', result.id));
+            if (boardDoc.exists()) {
+                openBoard(result.id, boardDoc.data());
+            }
+        } else if (result.type === 'list') {
+            // Abrir el tablero y hacer scroll a la lista
+            const boardDoc = await getDoc(doc(db, 'boards', result.boardId));
+            if (boardDoc.exists()) {
+                openBoard(result.boardId, boardDoc.data());
+                setTimeout(() => {
+                    const listElement = document.querySelector(`[data-list-id="${result.id}"]`);
+                    if (listElement) {
+                        listElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        listElement.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.5)';
+                        setTimeout(() => {
+                            listElement.style.boxShadow = '';
+                        }, 2000);
+                    }
+                }, 500);
+            }
+        } else if (result.type === 'card') {
+            // Abrir el tablero y luego la tarjeta
+            if (currentBoardId !== result.boardId) {
+                const boardDoc = await getDoc(doc(db, 'boards', result.boardId));
+                if (boardDoc.exists()) {
+                    openBoard(result.boardId, boardDoc.data());
+                    setTimeout(() => {
+                        openCardModal(result.listId, result.cardId, result);
+                    }, 500);
+                }
+            } else {
+                openCardModal(result.listId, result.cardId, result);
+            }
+        }
+    }
+
     function highlightText(text, term) {
         const regex = new RegExp(`(${term})`, 'gi');
         return text.replace(regex, '<span class="search-result-highlight">$1</span>');
     }
 
-    async function openCardFromSearch(cardData) {
-        // Abrir el tablero si no está abierto
-        if (currentBoardId !== cardData.boardId) {
-            const boardDoc = await getDoc(doc(db, 'boards', cardData.boardId));
-            if (boardDoc.exists()) {
-                openBoard(cardData.boardId, boardDoc.data());
-                // Esperar a que se carguen las listas
-                setTimeout(() => {
-                    openCardModal(cardData.listId, cardData.cardId, cardData);
-                }, 500);
-            }
-        } else {
-            openCardModal(cardData.listId, cardData.cardId, cardData);
-        }
-    }
 
     // ========================================
     // PORTADAS DE TARJETAS
