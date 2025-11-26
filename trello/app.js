@@ -1157,35 +1157,88 @@ function loadBoards() {
         return card;
     }
 
-    function openBoard(boardId, boardData) {
-        currentBoardId = boardId;
-        currentBoardData = boardData;
+async function openBoard(boardId, boardName) {
+    console.log('🔵 Abriendo tablero:', boardName, boardId);
+    
+    currentBoardId = boardId;
+    currentBoardName = boardName;
+    
+    try {
+        // Cargar datos del tablero desde Firestore
+        const boardRef = doc(db, 'boards', boardId);
+        const boardSnap = await getDoc(boardRef);
         
+        if (!boardSnap.exists()) {
+            showError('El tablero no existe');
+            return;
+        }
+        
+        const boardData = boardSnap.data();
+        console.log('✅ Datos del tablero cargados:', boardData);
+        
+        // Verificar permisos del usuario
         const userMember = boardData.members?.[currentUser.uid];
-        currentUserRole = userMember?.role || 'viewer';
+        if (!userMember) {
+            showError('No tienes acceso a este tablero');
+            return;
+        }
         
-        boardTitle.textContent = boardData.title;
+        currentUserRole = userMember.role;
+        console.log('👤 Tu rol en este tablero:', currentUserRole);
         
-        const roleColors = {
-            owner: 'bg-yellow-500 text-white',
-            editor: 'bg-blue-500 text-white',
-            viewer: 'bg-gray-500 text-white'
-        };
-        const roleLabels = {
-            owner: '👑 Propietario',
-            editor: '✏️ Editor',
-            viewer: '👁️ Observador'
-        };
+        // Actualizar UI
+        document.getElementById('board-title').textContent = boardName;
         
-        userRoleBadge.className = `px-3 py-1 text-xs font-bold rounded-full ${roleColors[currentUserRole]}`;
-        userRoleBadge.textContent = roleLabels[currentUserRole];
+        // Mostrar badge de rol
+        const roleBadge = document.getElementById('user-role-badge');
+        if (roleBadge) {
+            roleBadge.textContent = getRoleDisplayName(currentUserRole);
+            roleBadge.className = 'px-3 py-1 text-xs font-bold rounded-full';
+            
+            if (currentUserRole === 'owner') {
+                roleBadge.classList.add('bg-yellow-500', 'text-yellow-900');
+            } else if (currentUserRole === 'editor') {
+                roleBadge.classList.add('bg-blue-500', 'text-white');
+            } else {
+                roleBadge.classList.add('bg-gray-500', 'text-white');
+            }
+        }
         
+        // Mostrar botón de admin solo para owners
+        const adminBtn = document.getElementById('toggle-admin-btn');
+        if (adminBtn) {
+            if (currentUserRole === 'owner') {
+                adminBtn.classList.remove('hidden');
+            } else {
+                adminBtn.classList.add('hidden');
+            }
+        }
+        
+        // Cambiar vistas
         document.querySelector('.boards-section').style.display = 'none';
-        boardView.style.display = 'flex';
+        document.getElementById('board-view').classList.remove('hidden');
+        document.getElementById('board-view').style.display = 'flex';
         
+        // Cargar listas del tablero
         loadLists(boardId);
-        lucide.createIcons();
+        loadBoardMembers(boardId);
+        
+    } catch (error) {
+        console.error('❌ Error al abrir tablero:', error);
+        showError('Error al cargar el tablero');
     }
+}
+
+// Función helper para mostrar nombres de roles
+function getRoleDisplayName(role) {
+    const roles = {
+        'owner': '👑 Propietario',
+        'editor': '✏️ Editor',
+        'viewer': '👁️ Observador'
+    };
+    return roles[role] || role;
+}
+
 
     // ========================================
     // GESTIÓN DE LISTAS
