@@ -1048,6 +1048,11 @@ window.addEventListener('user-authenticated', (e) => {
     }
 
     function loadBoards() {
+        boardCard.addEventListener('click', () => {
+            console.log('🔵 Click en tablero:', board.name, boardId);
+            openBoard(boardId, board.name);
+        });
+
         // VERIFICAR QUE EL USUARIO ESTÉ AUTENTICADO
         if (!currentUser || !currentUser.email) {
             console.log('⚠️ Usuario no autenticado todavía, esperando...');
