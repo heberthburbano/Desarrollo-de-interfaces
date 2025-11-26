@@ -743,12 +743,17 @@ function initializeApp() {
         }
     });
 
-    window.addEventListener('user-authenticated', (e) => {
-        currentUser = e.detail.user;
-        console.log('👤 Usuario autenticado:', currentUser.email);
-        loadBoards();
-        //loadNotifications();
-    });
+window.addEventListener('user-authenticated', (e) => {
+    currentUser = e.detail.user;
+    console.log('👤 Usuario autenticado:', currentUser.email);
+    console.log('🔵 Llamando a loadBoards()...');
+    loadBoards();
+    console.log('🔵 Llamando a loadAllDataForSearch()...');
+    loadAllDataForSearch();
+    console.log('🔵 Llamando a loadNotifications()...');
+    loadNotifications();
+});
+
 
     // ========================================
     // GESTIÓN DE TABLEROS
