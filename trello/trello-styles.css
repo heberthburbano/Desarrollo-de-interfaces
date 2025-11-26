@@ -390,18 +390,213 @@ textarea:focus {
 }
 
 /* ==========================================
-   FIX: Asegurar interactividad
+   FIX: VISTA DE TABLERO
    ========================================== */
-.board-card {
-  pointer-events: auto !important;
-  position: relative !important;
-  z-index: 1 !important;
+
+/* Contenedor del tablero con listas */
+#board-view > div:first-child {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
 }
 
-.board-card * {
-  pointer-events: none !important;
+/* Board header fix */
+#board-view .board-header {
+  height: 52px !important;
+  background: rgba(0, 0, 0, 0.24) !important;
+  backdrop-filter: blur(8px) !important;
+  padding: 0 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-shrink: 0 !important;
+  border: none !important;
 }
 
-.board-card:active {
-  transform: scale(0.98) !important;
+#board-view .board-header * {
+  color: #FFFFFF !important;
 }
+
+#board-view .board-header h2 {
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  margin: 0 !important;
+}
+
+#board-view .board-header button {
+  background: rgba(255, 255, 255, 0.24) !important;
+  border: none !important;
+  padding: 8px 12px !important;
+  border-radius: 3px !important;
+  color: #FFFFFF !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+}
+
+#board-view .board-header button:hover {
+  background: rgba(255, 255, 255, 0.32) !important;
+}
+
+/* Badge de rol */
+#user-role-badge {
+  padding: 4px 12px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  border-radius: 12px !important;
+  display: inline-block !important;
+}
+
+/* Listas - FIX CRÍTICO */
+.list {
+  background: var(--color-bg-list) !important;
+  border-radius: 12px !important;
+  width: 272px !important;
+  min-width: 272px !important;
+  max-width: 272px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  max-height: calc(100vh - 120px) !important;
+  box-shadow: 0 1px 0 rgba(9, 30, 66, 0.13) !important;
+  overflow: hidden !important;
+}
+
+/* Header de lista */
+.list-header {
+  padding: 10px 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-shrink: 0 !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.list-header h3 {
+  color: var(--color-text-primary) !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  margin: 0 !important;
+  flex: 1 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.list-header button {
+  background: transparent !important;
+  border: none !important;
+  color: var(--color-text-secondary) !important;
+  padding: 4px !important;
+  cursor: pointer !important;
+  border-radius: 3px !important;
+  min-width: auto !important;
+  width: auto !important;
+}
+
+.list-header button:hover {
+  background: var(--color-bg-hover) !important;
+  color: var(--color-text-primary) !important;
+}
+
+/* Contenedor de tarjetas dentro de la lista */
+.list-cards {
+  flex: 1 1 auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 4px 8px 8px !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  background: transparent !important;
+}
+
+.list-cards::-webkit-scrollbar {
+  width: 8px !important;
+}
+
+.list-cards::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.list-cards::-webkit-scrollbar-thumb {
+  background: var(--color-border) !important;
+  border-radius: 4px !important;
+}
+
+/* Footer de lista (botón añadir tarjeta) */
+.list-footer {
+  padding: 8px !important;
+  flex-shrink: 0 !important;
+  background: transparent !important;
+}
+
+.list-footer button {
+  width: 100% !important;
+  padding: 8px !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 8px !important;
+  color: var(--color-text-secondary) !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  text-align: left !important;
+  justify-content: flex-start !important;
+}
+
+.list-footer button:hover {
+  background: var(--color-bg-hover) !important;
+  color: var(--color-text-primary) !important;
+}
+
+/* Tarjetas dentro de listas */
+.list .card {
+  background: var(--color-bg-card) !important;
+  border-radius: 8px !important;
+  padding: 8px 12px !important;
+  cursor: pointer !important;
+  box-shadow: var(--shadow-card) !important;
+  transition: all 0.1s ease !important;
+  min-height: 40px !important;
+  border: none !important;
+  margin: 0 !important;
+  width: 100% !important;
+}
+
+.list .card:hover {
+  background: var(--color-bg-hover) !important;
+  box-shadow: var(--shadow-card-hover) !important;
+}
+
+.list .card h4 {
+  color: var(--color-text-primary) !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  margin: 0 !important;
+  line-height: 20px !important;
+  word-wrap: break-word !important;
+}
+
+/* Portada de tarjeta con color */
+.card-cover {
+  width: calc(100% + 24px) !important;
+  height: 32px !important;
+  margin: -8px -12px 8px !important;
+  border-radius: 8px 8px 0 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.card-cover.bg-blue-500 { background: #0079BF !important; }
+.card-cover.bg-red-500 { background: #EB5A46 !important; }
+.card-cover.bg-green-500 { background: #61BD4F !important; }
+.card-cover.bg-yellow-500 { background: #F2D600 !important; }
+.card-cover.bg-orange-500 { background: #FF9F1A !important; }
+.card-cover.bg-purple-500 { background: #C377E0 !important; }
