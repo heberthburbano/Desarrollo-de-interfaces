@@ -1291,57 +1291,60 @@ function getRoleDisplayName(role) {
         });
     }
 
-    function createListElement(listId, list) {
-        const listDiv = document.createElement('div');
-        listDiv.className = 'list bg-slate-200/70 dark:bg-slate-700/70 rounded-xl p-4 min-w-[300px] max-w-[300px] flex flex-col border border-slate-300 dark:border-slate-600 shadow-sm';
-        listDiv.dataset.listId = listId;
-        
-        const canDelete = hasPermission('deleteList');
-        
-        listDiv.innerHTML = `
-            <div class="list-header flex justify-between items-center mb-3 pb-2 border-b border-slate-300 dark:border-slate-600">
-                <h3 class="font-semibold text-slate-700 dark:text-slate-200 truncate flex-1">${list.name}</h3>
-                ${canDelete ? `
-                    <button class="delete-list text-slate-400 hover:text-red-500 transition p-1">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                    </button>
-                ` : ''}
-            </div>
-            <div class="cards-container flex-1 overflow-y-auto space-y-2 mb-3 min-h-[100px]" data-list-id="${listId}"></div>
-            ${hasPermission('createCard') ? `
-                <button class="add-card-btn w-full text-left text-slate-600 dark:text-slate-300 hover:bg-slate-300/50 dark:hover:bg-slate-600/50 p-2 rounded-lg text-sm font-medium flex items-center gap-2 transition">
-                    <i data-lucide="plus" class="w-4 h-4"></i> Añadir tarjeta
+function createListElement(listId, list) {
+    const listDiv = document.createElement('div');
+    listDiv.className = 'list';
+    listDiv.dataset.listId = listId;
+    
+    const canDelete = hasPermission('deleteList');
+    
+    listDiv.innerHTML = `
+        <div class="list-header">
+            <h3>${list.name}</h3>
+            ${canDelete ? `
+                <button class="delete-list">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
                 </button>
             ` : ''}
-        `;
-        
-        const cardsContainer = listDiv.querySelector('.cards-container');
-        setupDropZone(cardsContainer, listId);
-        
-        const addCardBtn = listDiv.querySelector('.add-card-btn');
-        if (addCardBtn) {
-            addCardBtn.addEventListener('click', () => {
-                openCardModal(listId);
-            });
-        }
-
-        const deleteListBtn = listDiv.querySelector('.delete-list');
-        if (deleteListBtn) {
-            deleteListBtn.addEventListener('click', async () => {
-                if (confirm('¿Eliminar esta lista y todas sus tarjetas?')) {
-                    try {
-                        await deleteDoc(doc(db, 'boards', currentBoardId, 'lists', listId));
-                        await logActivity('deleted_list', 'list', listId, { listName: list.name });
-                        showSuccess('Lista eliminada');
-                    } catch (error) {
-                        showError('Error al eliminar la lista');
-                    }
-                }
-            });
-        }
-
-        return listDiv;
+        </div>
+        <div class="cards-container" data-list-id="${listId}"></div>
+        ${hasPermission('createCard') ? `
+            <div class="list-footer">
+                <button class="add-card-btn">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Añadir tarjeta
+                </button>
+            </div>
+        ` : ''}
+    `;
+    
+    const cardsContainer = listDiv.querySelector('.cards-container');
+    setupDropZone(cardsContainer, listId);
+    
+    const addCardBtn = listDiv.querySelector('.add-card-btn');
+    if (addCardBtn) {
+        addCardBtn.addEventListener('click', () => {
+            openCardModal(listId);
+        });
     }
+    
+    const deleteListBtn = listDiv.querySelector('.delete-list');
+    if (deleteListBtn) {
+        deleteListBtn.addEventListener('click', async () => {
+            if (confirm('¿Eliminar esta lista y todas sus tarjetas?')) {
+                try {
+                    await deleteDoc(doc(db, 'boards', currentBoardId, 'lists', listId));
+                    await logActivity('deleted_list', 'list', listId, { listName: list.name });
+                    showSuccess('Lista eliminada');
+                } catch (error) {
+                    showError('Error al eliminar la lista');
+                }
+            }
+        });
+    }
+    
+    return listDiv;
+}
+
 
     // ========================================
     // GESTIÓN DE TARJETAS
