@@ -4,18 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trello Colaborativo</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Tailwind Dark Mode Config -->
     <script>
         tailwind.config = {
             darkMode: 'class'
         }
     </script>
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link rel="stylesheet" href="design-tokens.css">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="trello-styles.css">
 </head>
 <body class="bg-slate-100 dark:bg-slate-900 min-h-screen flex flex-col overflow-hidden transition-colors">
 
@@ -60,14 +56,13 @@
     </div>
 
     <!-- Aplicación principal -->
-    <div id="app-container" class="hidden flex-1 flex flex-col">
-        <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm z-10 shrink-0 transition-colors">
-            <div class="header-content max-w-screen-2xl mx-auto px-5 py-4 flex justify-between items-center">
+    <div id="app-container" class="hidden">
+        <header>
+            <div class="header-content">
                 <div class="flex items-center gap-4">
                     <i data-lucide="trello" class="text-blue-600 dark:text-blue-400 w-7 h-7"></i>
-                    <h1 class="text-blue-600 dark:text-blue-400 text-2xl font-bold tracking-tight">📋 Trello Colaborativo</h1>
+                    <h1>📋 Trello Colaborativo</h1>
                     
-                    <!-- BÚSQUEDA GLOBAL MEJORADA -->
                     <div class="relative hidden md:block ml-4">
                         <input 
                             type="text" 
@@ -79,25 +74,20 @@
                     </div>
                 </div>
                 
-                <div class="user-info flex items-center gap-4">
-                    <!-- Toggle Modo Oscuro -->
+                <div class="user-info">
                     <button id="dark-mode-toggle" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition" title="Cambiar tema">
-                        <i data-lucide="moon" class="w-5 h-5 text-slate-600 dark:text-slate-300 dark-mode-icon-moon"></i>
-                        <i data-lucide="sun" class="w-5 h-5 text-slate-600 dark:text-slate-300 dark-mode-icon-sun hidden"></i>
+                        <i data-lucide="moon" class="w-5 h-5 text-slate-600 dark:text-slate-300"></i>
                     </button>
                     
-                    <!-- Atajos de Teclado -->
                     <button id="shortcuts-btn" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition" title="Atajos de teclado (?)">
                         <i data-lucide="keyboard" class="w-5 h-5 text-slate-600 dark:text-slate-300"></i>
                     </button>
                     
-                    <!-- Botón de Notificaciones -->
                     <div class="relative">
                         <button id="notifications-btn" class="relative p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition">
                             <i data-lucide="bell" class="w-5 h-5 text-slate-600 dark:text-slate-300"></i>
                             <span id="notifications-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">0</span>
                         </button>
-                        <!-- Dropdown de Notificaciones -->
                         <div id="notifications-dropdown" class="hidden absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 max-h-96 overflow-y-auto z-50">
                             <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
                                 <h3 class="font-bold text-slate-800 dark:text-slate-200">Notificaciones</h3>
@@ -110,13 +100,11 @@
                     </div>
                     
                     <span id="user-name" class="text-slate-700 dark:text-slate-300 font-medium hidden md:block"></span>
-                    <button id="logout-btn" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white border-none rounded-lg cursor-pointer transition text-sm font-medium">
-                        Cerrar Sesión
-                    </button>
+                    <button id="logout-btn">Cerrar Sesión</button>
                 </div>
             </div>
             
-            <!-- Resultados de Búsqueda Mejorados -->
+            <!-- Resultados de Búsqueda -->
             <div id="search-results" class="hidden max-w-screen-2xl mx-auto px-5 pb-4">
                 <div class="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-lg p-4">
                     <div class="flex justify-between items-center mb-3">
@@ -124,462 +112,160 @@
                             <h3 class="font-bold text-slate-800 dark:text-slate-200">Resultados de búsqueda</h3>
                             <span id="search-results-count" class="text-xs text-slate-500 dark:text-slate-400"></span>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <!-- Filtros Rápidos -->
-                            <div id="search-filters" class="flex gap-2">
-                                <button class="search-filter active" data-filter="all">
-                                    <span class="text-xs px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium hover:bg-blue-200 dark:hover:bg-blue-800 transition cursor-pointer">
-                                        Todos
-                                    </span>
-                                </button>
-                                <button class="search-filter" data-filter="boards">
-                                    <span class="text-xs px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition cursor-pointer">
-                                        📋 Tableros
-                                    </span>
-                                </button>
-                                <button class="search-filter" data-filter="lists">
-                                    <span class="text-xs px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition cursor-pointer">
-                                        📑 Listas
-                                    </span>
-                                </button>
-                                <button class="search-filter" data-filter="cards">
-                                    <span class="text-xs px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition cursor-pointer">
-                                        📄 Tarjetas
-                                    </span>
-                                </button>
-                            </div>
-                            <button id="close-search" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
-                                <i data-lucide="x" class="w-5 h-5"></i>
-                            </button>
-                        </div>
+                        <button id="close-search" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
                     </div>
-                    
-                    <!-- Hint de navegación con teclado -->
-                    <div class="text-xs text-slate-400 dark:text-slate-500 mb-3 flex items-center gap-2">
-                        <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded text-xs">↑↓</kbd>
-                        <span>para navegar</span>
-                        <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded text-xs">Enter</kbd>
-                        <span>para abrir</span>
-                        <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded text-xs">Esc</kbd>
-                        <span>para cerrar</span>
-                    </div>
-                    
-                    <div id="search-results-list" class="space-y-3 max-h-96 overflow-y-auto">
-                        <!-- Los resultados se cargan aquí -->
-                    </div>
+                    <div id="search-results-list" class="space-y-3 max-h-96 overflow-y-auto"></div>
                 </div>
             </div>
         </header>
 
-        <div class="boards-section flex-1 max-w-screen-2xl mx-auto px-5 py-8 overflow-y-auto">
-            <div class="boards-header flex justify-between items-center mb-6">
-                <h2 class="text-slate-800 dark:text-slate-200 text-3xl font-bold">Mis Tableros</h2>
-                <button id="create-board-btn" class="btn-primary px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white border-none rounded-lg cursor-pointer text-base font-bold transition shadow-sm flex items-center gap-2">
+        <!-- Vista de Tableros -->
+        <div class="boards-section">
+            <div class="boards-header">
+                <h2>Mis Tableros</h2>
+                <button id="create-board-btn" class="btn-primary">
                     <i data-lucide="plus" class="w-4 h-4"></i> Nuevo Tablero
                 </button>
             </div>
-            <div id="boards-container" class="boards-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5"></div>
+            <div id="boards-container"></div>
         </div>
 
-        <div id="board-view" class="hidden flex-1 flex bg-blue-50 dark:bg-slate-900 overflow-hidden transition-colors">
-            <!-- Contenedor principal con sidebar -->
-            <div class="flex-1 flex flex-col overflow-hidden">
-                <div class="board-header flex justify-between items-center mb-0 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm px-5 py-4 border-b border-slate-200 dark:border-slate-700 shadow-sm">
-                    <div class="flex items-center gap-3">
-                        <button id="back-to-boards-btn" class="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300 transition">
-                            <i data-lucide="arrow-left" class="w-5 h-5"></i>
-                        </button>
-                        <h2 id="board-title" class="text-slate-800 dark:text-slate-200 text-2xl font-bold"></h2>
-                        <!-- Badge de Rol del Usuario -->
-                        <span id="user-role-badge" class="px-3 py-1 text-xs font-bold rounded-full"></span>
-                    </div>
-                    <div class="board-actions flex gap-3">
-                        <button id="toggle-members-btn" class="px-4 py-2 bg-slate-500 hover:bg-slate-600 text-white border-none rounded-lg cursor-pointer text-sm font-bold transition flex items-center gap-2">
-                            <i data-lucide="users" class="w-4 h-4"></i> Miembros
-                        </button>
-                        <button id="toggle-activity-btn" class="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white border-none rounded-lg cursor-pointer text-sm font-bold transition flex items-center gap-2">
-                            <i data-lucide="activity" class="w-4 h-4"></i> Actividad
-                        </button>
-                        <button id="add-list-btn" class="btn-primary px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white border-none rounded-lg cursor-pointer text-sm font-bold transition flex items-center gap-2">
-                            <i data-lucide="plus" class="w-4 h-4"></i> Añadir Lista
-                        </button>
-                    </div>
-                </div>
-                <div id="lists-container" class="lists-container flex gap-5 overflow-x-auto p-5 flex-1"></div>
-            </div>
-            
-            <!-- Panel Lateral de Miembros -->
-            <div id="members-panel" class="hidden w-80 bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 overflow-y-auto flex-shrink-0 transition-colors">
-                <div class="p-5">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-bold text-lg text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                            <i data-lucide="users" class="w-5 h-5"></i> Miembros
-                        </h3>
-                        <button id="close-members-btn" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
-                            <i data-lucide="x" class="w-5 h-5"></i>
-                        </button>
-                    </div>
-                    
-                    <button id="invite-member-btn" class="w-full mb-4 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition flex items-center justify-center gap-2">
-                        <i data-lucide="user-plus" class="w-4 h-4"></i> Invitar Miembro
+        <!-- ✅ VISTA DE TABLERO CORREGIDA -->
+        <div id="board-view" class="hidden">
+            <!-- Board Header -->
+            <div class="board-header">
+                <div class="flex items-center gap-3">
+                    <button id="back-to-boards-btn" class="text-white hover:bg-white/20 p-2 rounded">
+                        <i data-lucide="arrow-left" class="w-5 h-5"></i>
                     </button>
-                    
-                    <div id="members-list" class="space-y-3">
-                        <!-- Lista de miembros se carga dinámicamente -->
-                    </div>
+                    <h2 id="board-title">Tablero</h2>
+                    <span id="user-role-badge" class="text-xs px-2 py-1 rounded-full bg-yellow-500 text-yellow-900">👑 Propietario</span>
+                </div>
+                <div class="board-actions">
+                    <button id="toggle-members-btn">
+                        <i data-lucide="users" class="w-4 h-4"></i> Miembros
+                    </button>
+                    <button id="toggle-activity-btn">
+                        <i data-lucide="activity" class="w-4 h-4"></i> Actividad
+                    </button>
+                    <button id="add-list-btn">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Añadir Lista
+                    </button>
                 </div>
             </div>
-            
-            <!-- Panel Lateral de Actividad -->
-            <div id="activity-panel" class="hidden w-80 bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 overflow-y-auto flex-shrink-0 transition-colors">
-                <div class="p-5">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-bold text-lg text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                            <i data-lucide="activity" class="w-5 h-5"></i> Actividad
-                        </h3>
-                        <button id="close-activity-btn" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
-                            <i data-lucide="x" class="w-5 h-5"></i>
-                        </button>
-                    </div>
-                    
-                    <div id="activity-list" class="space-y-3">
-                        <!-- Actividad se carga dinámicamente -->
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Modal para crear tablero -->
-    <div id="board-modal" class="modal hidden fixed inset-0 bg-black/50 z-[1000] flex justify-center items-center">
-        <div class="modal-content bg-white dark:bg-slate-800 p-8 rounded-xl shadow-2xl w-11/12 max-w-md">
-            <h3 class="text-slate-800 dark:text-slate-200 mb-5 text-xl font-bold">Crear Nuevo Tablero</h3>
-            <input type="text" id="board-name-input" placeholder="Nombre del tablero" 
-                   class="w-full p-3 mb-4 border-2 border-slate-300 dark:border-slate-600 rounded-lg text-base bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 transition">
-            <div class="modal-actions flex gap-3 justify-end mt-5">
-                <button id="cancel-board-btn" class="btn-secondary px-5 py-2.5 bg-slate-400 hover:bg-slate-500 text-white border-none rounded-lg cursor-pointer text-base font-bold transition">
-                    Cancelar
-                </button>
-                <button id="save-board-btn" class="btn-primary px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white border-none rounded-lg cursor-pointer text-base font-bold transition">
-                    Crear
-                </button>
-            </div>
-        </div>
-    </div>
+            <!-- Board Content Container -->
+            <div style="flex: 1; display: flex; overflow: hidden;">
+                <!-- Lists Container -->
+                <div id="lists-container"></div>
 
-    <!-- Modal para invitar miembro -->
-    <div id="invite-modal" class="modal hidden fixed inset-0 bg-black/50 z-[1000] flex justify-center items-center">
-        <div class="modal-content bg-white dark:bg-slate-800 p-8 rounded-xl shadow-2xl w-11/12 max-w-md">
-            <h3 class="text-slate-800 dark:text-slate-200 mb-5 text-xl font-bold">Invitar Colaborador</h3>
-            <input type="email" id="invite-email-input" placeholder="correo@ejemplo.com" 
-                   class="w-full p-3 mb-4 border-2 border-slate-300 dark:border-slate-600 rounded-lg text-base bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 transition">
-            
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Rol:</label>
-                <div class="space-y-2">
-                    <label class="flex items-center p-3 border-2 border-slate-200 dark:border-slate-600 rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition">
-                        <input type="radio" name="invite-role" value="editor" checked class="mr-3">
-                        <div>
-                            <div class="font-medium text-slate-800 dark:text-slate-200">Editor</div>
-                            <div class="text-xs text-slate-500 dark:text-slate-400">Puede crear y editar tarjetas</div>
+                <!-- Members Panel -->
+                <div id="members-panel" class="hidden">
+                    <div class="p-5">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-lg">Miembros</h3>
+                            <button id="close-members-btn">
+                                <i data-lucide="x" class="w-5 h-5"></i>
+                            </button>
                         </div>
-                    </label>
-                    <label class="flex items-center p-3 border-2 border-slate-200 dark:border-slate-600 rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition">
-                        <input type="radio" name="invite-role" value="viewer" class="mr-3">
-                        <div>
-                            <div class="font-medium text-slate-800 dark:text-slate-200">Observador</div>
-                            <div class="text-xs text-slate-500 dark:text-slate-400">Solo puede ver y comentar</div>
-                        </div>
-                    </label>
-                </div>
-            </div>
-            
-            <div class="modal-actions flex gap-3 justify-end mt-5">
-                <button id="cancel-invite-btn" class="btn-secondary px-5 py-2.5 bg-slate-400 hover:bg-slate-500 text-white border-none rounded-lg cursor-pointer text-base font-bold transition">
-                    Cancelar
-                </button>
-                <button id="send-invite-btn" class="btn-primary px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white border-none rounded-lg cursor-pointer text-base font-bold transition">
-                    Enviar Invitación
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal para crear lista -->
-    <div id="list-modal" class="modal hidden fixed inset-0 bg-black/50 z-[1000] flex justify-between items-center">
-        <div class="modal-content bg-white dark:bg-slate-800 p-8 rounded-xl shadow-2xl w-11/12 max-w-md">
-            <h3 class="text-slate-800 dark:text-slate-200 mb-5 text-xl font-bold">Crear Nueva Lista</h3>
-            <input type="text" id="list-name-input" placeholder="Nombre de la lista" 
-                   class="w-full p-3 mb-4 border-2 border-slate-300 dark:border-slate-600 rounded-lg text-base bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 transition">
-            <div class="modal-actions flex gap-3 justify-end mt-5">
-                <button id="cancel-list-btn" class="btn-secondary px-5 py-2.5 bg-slate-400 hover:bg-slate-500 text-white border-none rounded-lg cursor-pointer text-base font-bold transition">
-                    Cancelar
-                </button>
-                <button id="save-list-btn" class="btn-primary px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white border-none rounded-lg cursor-pointer text-base font-bold transition">
-                    Crear
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal para crear/editar tarjeta (ACTUALIZADO) -->
-    <div id="card-modal" class="modal hidden fixed inset-0 bg-black/50 z-[1000] flex justify-center items-center overflow-y-auto">
-        <div class="modal-content card-modal-content bg-white dark:bg-slate-800 p-8 rounded-xl shadow-2xl w-11/12 max-w-3xl max-h-[90vh] overflow-y-auto my-8">
-            <div class="flex justify-between items-center mb-5">
-                <h3 id="card-modal-title" class="text-slate-800 dark:text-slate-200 text-xl font-bold">Nueva Tarjeta</h3>
-                <div class="flex gap-2">
-                    <button id="card-cover-btn" class="px-3 py-1.5 bg-slate-500 hover:bg-slate-600 text-white text-sm rounded-lg transition flex items-center gap-2">
-                        <i data-lucide="image" class="w-4 h-4"></i> Portada
-                    </button>
-                    <button id="card-labels-btn" class="px-3 py-1.5 bg-purple-500 hover:bg-purple-600 text-white text-sm rounded-lg transition flex items-center gap-2">
-                        <i data-lucide="tag" class="w-4 h-4"></i> Etiquetas
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Título -->
-            <input type="text" id="card-title-input" placeholder="Título de la tarjeta" 
-                   class="w-full p-3 mb-4 border-2 border-slate-300 dark:border-slate-600 rounded-lg text-base bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 transition">
-            
-            <!-- Descripción -->
-            <textarea id="card-description-input" placeholder="Descripción (opcional)" 
-                      class="w-full p-3 mb-4 border-2 border-slate-300 dark:border-slate-600 rounded-lg text-base min-h-[100px] resize-y bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 transition"></textarea>
-            
-            <!-- Etiquetas Seleccionadas -->
-            <div id="card-labels-display" class="mb-4 flex flex-wrap gap-2 hidden">
-                <!-- Las etiquetas seleccionadas aparecen aquí -->
-            </div>
-            
-            <!-- Fila: Asignado y Fecha -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Asignar a:</label>
-                    <input type="text" id="card-assigned-input" placeholder="Nombre o email" 
-                           class="w-full p-3 border-2 border-slate-300 dark:border-slate-600 rounded-lg text-base bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 transition">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Fecha de vencimiento:</label>
-                    <input type="date" id="card-due-date-input" 
-                           class="w-full p-3 border-2 border-slate-300 dark:border-slate-600 rounded-lg text-base bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 transition">
-                </div>
-            </div>
-            
-            <!-- Checklist Section -->
-            <div id="card-checklist-section" class="mb-4 p-4 border-2 border-slate-200 dark:border-slate-700 rounded-lg">
-                <div class="flex justify-between items-center mb-3">
-                    <h4 class="text-slate-800 dark:text-slate-200 font-semibold flex items-center gap-2">
-                        <i data-lucide="check-square" class="w-5 h-5"></i>
-                        Checklist
-                        <span id="checklist-progress" class="text-xs text-slate-500 dark:text-slate-400 ml-2"></span>
-                    </h4>
-                    <button id="hide-checklist-btn" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-xs">
-                        Ocultar
-                    </button>
-                </div>
-                <div id="checklist-items" class="space-y-2 mb-3">
-                    <!-- Items de checklist aparecen aquí -->
-                </div>
-                <div class="flex gap-2">
-                    <input type="text" id="new-checklist-item-input" placeholder="Agregar item..." 
-                           class="flex-1 p-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 transition">
-                    <button id="add-checklist-item-btn" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition">
-                        <i data-lucide="plus" class="w-4 h-4"></i>
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Archivos Adjuntos -->
-            <div id="card-attachments-section" class="mb-4 p-4 border-2 border-slate-200 dark:border-slate-700 rounded-lg">
-                <h4 class="text-slate-800 dark:text-slate-200 font-semibold mb-3 flex items-center gap-2">
-                    <i data-lucide="paperclip" class="w-5 h-5"></i>
-                    Archivos adjuntos
-                </h4>
-                <div id="attachments-list" class="space-y-2 mb-3">
-                    <!-- Archivos aparecen aquí -->
-                </div>
-                <div class="flex gap-2">
-                    <button id="attach-file-btn" class="px-4 py-2 bg-slate-500 hover:bg-slate-600 text-white rounded-lg text-sm font-medium transition flex items-center gap-2">
-                        <i data-lucide="link" class="w-4 h-4"></i>
-                        Adjuntar enlace
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Comentarios -->
-            <div id="card-comments-section" style="display: none;" class="mt-5 pt-5 border-t-2 border-slate-200 dark:border-slate-700">
-                <h4 class="text-slate-800 dark:text-slate-200 mb-4 font-semibold flex items-center gap-2">
-                    <i data-lucide="message-circle" class="w-5 h-5"></i>
-                    Comentarios
-                </h4>
-                <div id="comments-list" class="max-h-[200px] overflow-y-auto mb-4"></div>
-                <textarea id="comment-input" placeholder="Añadir comentario..." 
-                          class="w-full p-3 mb-3 border-2 border-slate-300 dark:border-slate-600 rounded-lg text-sm resize-none bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 transition"></textarea>
-                <button id="add-comment-btn" class="btn-secondary px-4 py-2 bg-slate-500 hover:bg-slate-600 text-white border-none rounded-lg cursor-pointer text-sm font-medium transition">
-                    Comentar
-                </button>
-            </div>
-            
-            <!-- Botones de Acción -->
-            <div class="modal-actions flex gap-3 justify-end mt-5">
-                <button id="delete-card-btn" class="btn-danger px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white border-none rounded-lg cursor-pointer text-base font-bold transition" style="display: none;">
-                    Eliminar
-                </button>
-                <button id="cancel-card-btn" class="btn-secondary px-5 py-2.5 bg-slate-400 hover:bg-slate-500 text-white border-none rounded-lg cursor-pointer text-base font-bold transition">
-                    Cancelar
-                </button>
-                <button id="save-card-btn" class="btn-primary px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white border-none rounded-lg cursor-pointer text-base font-bold transition">
-                    Guardar
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal de Etiquetas (NUEVO) -->
-    <div id="labels-modal" class="modal hidden fixed inset-0 bg-black/50 z-[1001] flex justify-center items-center">
-        <div class="modal-content bg-white dark:bg-slate-800 p-6 rounded-xl shadow-2xl w-11/12 max-w-md">
-            <h3 class="text-slate-800 dark:text-slate-200 mb-4 text-lg font-bold">🏷️ Etiquetas</h3>
-            
-            <div class="space-y-2 mb-4">
-                <label class="flex items-center p-3 border border-slate-200 dark:border-slate-600 rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition">
-                    <input type="checkbox" class="label-checkbox mr-3" data-label="urgent" data-color="bg-red-500">
-                    <span class="w-4 h-4 rounded-full bg-red-500 mr-2"></span>
-                    <span class="text-slate-700 dark:text-slate-300">Urgente</span>
-                </label>
-                <label class="flex items-center p-3 border border-slate-200 dark:border-slate-600 rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition">
-                    <input type="checkbox" class="label-checkbox mr-3" data-label="important" data-color="bg-orange-500">
-                    <span class="w-4 h-4 rounded-full bg-orange-500 mr-2"></span>
-                    <span class="text-slate-700 dark:text-slate-300">Importante</span>
-                </label>
-                <label class="flex items-center p-3 border border-slate-200 dark:border-slate-600 rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition">
-                    <input type="checkbox" class="label-checkbox mr-3" data-label="feature" data-color="bg-blue-500">
-                    <span class="w-4 h-4 rounded-full bg-blue-500 mr-2"></span>
-                    <span class="text-slate-700 dark:text-slate-300">Feature</span>
-                </label>
-                <label class="flex items-center p-3 border border-slate-200 dark:border-slate-600 rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition">
-                    <input type="checkbox" class="label-checkbox mr-3" data-label="bug" data-color="bg-yellow-500">
-                    <span class="w-4 h-4 rounded-full bg-yellow-500 mr-2"></span>
-                    <span class="text-slate-700 dark:text-slate-300">Bug</span>
-                </label>
-                <label class="flex items-center p-3 border border-slate-200 dark:border-slate-600 rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition">
-                    <input type="checkbox" class="label-checkbox mr-3" data-label="completed" data-color="bg-green-500">
-                    <span class="w-4 h-4 rounded-full bg-green-500 mr-2"></span>
-                    <span class="text-slate-700 dark:text-slate-300">Completado</span>
-                </label>
-                <label class="flex items-center p-3 border border-slate-200 dark:border-slate-600 rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition">
-                    <input type="checkbox" class="label-checkbox mr-3" data-label="design" data-color="bg-purple-500">
-                    <span class="w-4 h-4 rounded-full bg-purple-500 mr-2"></span>
-                    <span class="text-slate-700 dark:text-slate-300">Diseño</span>
-                </label>
-            </div>
-            
-            <div class="flex gap-3 justify-end">
-                <button id="cancel-labels-btn" class="px-4 py-2 bg-slate-400 hover:bg-slate-500 text-white rounded-lg transition">Cerrar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal de Atajos de Teclado -->
-    <div id="shortcuts-modal" class="modal hidden fixed inset-0 bg-black/50 z-[1000] flex justify-center items-center">
-        <div class="modal-content bg-white dark:bg-slate-800 p-8 rounded-xl shadow-2xl w-11/12 max-w-2xl">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-slate-800 dark:text-slate-200 text-2xl font-bold">⌨️ Atajos de Teclado</h3>
-                <button id="close-shortcuts" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
-                    <i data-lucide="x" class="w-6 h-6"></i>
-                </button>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="space-y-3">
-                    <h4 class="font-semibold text-slate-700 dark:text-slate-300 mb-2">General</h4>
-                    <div class="flex justify-between items-center p-2 bg-slate-50 dark:bg-slate-700 rounded">
-                        <span class="text-slate-700 dark:text-slate-300">Buscar</span>
-                        <kbd class="px-2 py-1 bg-slate-200 dark:bg-slate-600 rounded text-sm font-mono">/</kbd>
-                    </div>
-                    <div class="flex justify-between items-center p-2 bg-slate-50 dark:bg-slate-700 rounded">
-                        <span class="text-slate-700 dark:text-slate-300">Cerrar modal</span>
-                        <kbd class="px-2 py-1 bg-slate-200 dark:bg-slate-600 rounded text-sm font-mono">Esc</kbd>
-                    </div>
-                    <div class="flex justify-between items-center p-2 bg-slate-50 dark:bg-slate-700 rounded">
-                        <span class="text-slate-700 dark:text-slate-300">Ver atajos</span>
-                        <kbd class="px-2 py-1 bg-slate-200 dark:bg-slate-600 rounded text-sm font-mono">?</kbd>
-                    </div>
-                </div>
-                
-                <div class="space-y-3">
-                    <h4 class="font-semibold text-slate-700 dark:text-slate-300 mb-2">Acciones</h4>
-                    <div class="flex justify-between items-center p-2 bg-slate-50 dark:bg-slate-700 rounded">
-                        <span class="text-slate-700 dark:text-slate-300">Nuevo tablero</span>
-                        <kbd class="px-2 py-1 bg-slate-200 dark:bg-slate-600 rounded text-sm font-mono">B</kbd>
-                    </div>
-                    <div class="flex justify-between items-center p-2 bg-slate-50 dark:bg-slate-700 rounded">
-                        <span class="text-slate-700 dark:text-slate-300">Nueva lista</span>
-                        <kbd class="px-2 py-1 bg-slate-200 dark:bg-slate-600 rounded text-sm font-mono">L</kbd>
-                    </div>
-                    <div class="flex justify-between items-center p-2 bg-slate-50 dark:bg-slate-700 rounded">
-                        <span class="text-slate-700 dark:text-slate-300">Nueva tarjeta</span>
-                        <kbd class="px-2 py-1 bg-slate-200 dark:bg-slate-600 rounded text-sm font-mono">N</kbd>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal de Portada de Tarjeta -->
-    <div id="card-cover-modal" class="modal hidden fixed inset-0 bg-black/50 z-[1001] flex justify-center items-center">
-        <div class="modal-content bg-white dark:bg-slate-800 p-6 rounded-xl shadow-2xl w-11/12 max-w-md">
-            <h3 class="text-slate-800 dark:text-slate-200 mb-4 text-lg font-bold">🎨 Portada de Tarjeta</h3>
-            
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Colores</label>
-                    <div class="grid grid-cols-6 gap-2">
-                        <button class="cover-color w-10 h-10 rounded bg-red-500 hover:ring-2 ring-blue-500 transition" data-color="bg-red-500"></button>
-                        <button class="cover-color w-10 h-10 rounded bg-orange-500 hover:ring-2 ring-blue-500 transition" data-color="bg-orange-500"></button>
-                        <button class="cover-color w-10 h-10 rounded bg-yellow-500 hover:ring-2 ring-blue-500 transition" data-color="bg-yellow-500"></button>
-                        <button class="cover-color w-10 h-10 rounded bg-green-500 hover:ring-2 ring-blue-500 transition" data-color="bg-green-500"></button>
-                        <button class="cover-color w-10 h-10 rounded bg-blue-500 hover:ring-2 ring-blue-500 transition" data-color="bg-blue-500"></button>
-                        <button class="cover-color w-10 h-10 rounded bg-purple-500 hover:ring-2 ring-blue-500 transition" data-color="bg-purple-500"></button>
-                        <button class="cover-color w-10 h-10 rounded bg-pink-500 hover:ring-2 ring-blue-500 transition" data-color="bg-pink-500"></button>
-                        <button class="cover-color w-10 h-10 rounded bg-indigo-500 hover:ring-2 ring-blue-500 transition" data-color="bg-indigo-500"></button>
-                        <button class="cover-color w-10 h-10 rounded bg-teal-500 hover:ring-2 ring-blue-500 transition" data-color="bg-teal-500"></button>
-                        <button class="cover-color w-10 h-10 rounded bg-gray-500 hover:ring-2 ring-blue-500 transition" data-color="bg-gray-500"></button>
-                        <button class="cover-color w-10 h-10 rounded bg-slate-700 hover:ring-2 ring-blue-500 transition" data-color="bg-slate-700"></button>
-                        <button class="cover-color w-10 h-10 rounded bg-white border-2 border-slate-300 dark:border-slate-600 hover:ring-2 ring-blue-500 transition flex items-center justify-center" data-color="none">
-                            <i data-lucide="x" class="w-4 h-4 text-slate-400"></i>
+                        <button id="invite-member-btn" class="w-full mb-4 btn-primary">
+                            <i data-lucide="user-plus" class="w-4 h-4"></i> Invitar Miembro
                         </button>
+                        <div id="members-list"></div>
                     </div>
                 </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Emoji</label>
-                    <div class="grid grid-cols-6 gap-2">
-                        <button class="cover-emoji text-2xl p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition" data-emoji="🚀">🚀</button>
-                        <button class="cover-emoji text-2xl p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition" data-emoji="⭐">⭐</button>
-                        <button class="cover-emoji text-2xl p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition" data-emoji="🎯">🎯</button>
-                        <button class="cover-emoji text-2xl p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition" data-emoji="💡">💡</button>
-                        <button class="cover-emoji text-2xl p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition" data-emoji="🔥">🔥</button>
-                        <button class="cover-emoji text-2xl p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition" data-emoji="✅">✅</button>
-                        <button class="cover-emoji text-2xl p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition" data-emoji="📌">📌</button>
-                        <button class="cover-emoji text-2xl p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition" data-emoji="🎨">🎨</button>
-                        <button class="cover-emoji text-2xl p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition" data-emoji="🏆">🏆</button>
-                        <button class="cover-emoji text-2xl p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition" data-emoji="❤️">❤️</button>
+
+                <!-- Activity Panel -->
+                <div id="activity-panel" class="hidden">
+                    <div class="p-5">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-lg">Actividad</h3>
+                            <button id="close-activity-btn">
+                                <i data-lucide="x" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                        <div id="activity-list"></div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="flex gap-3 justify-end mt-6">
-                <button id="cancel-cover-btn" class="px-4 py-2 bg-slate-400 hover:bg-slate-500 text-white rounded-lg transition">Cancelar</button>
-                <button id="remove-cover-btn" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition">Quitar portada</button>
             </div>
         </div>
     </div>
 
-    <!-- Scripts de Firebase v9 Modular SDK -->
+    <!-- Modales (sin cambios, ya están bien) -->
+    <div id="board-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Crear Nuevo Tablero</h3>
+            <input type="text" id="board-name-input" placeholder="Nombre del tablero">
+            <div class="flex gap-3 justify-end mt-5">
+                <button id="cancel-board-btn" class="btn-secondary">Cancelar</button>
+                <button id="save-board-btn" class="btn-primary">Crear</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="list-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Crear Nueva Lista</h3>
+            <input type="text" id="list-name-input" placeholder="Nombre de la lista">
+            <div class="flex gap-3 justify-end mt-5">
+                <button id="cancel-list-btn" class="btn-secondary">Cancelar</button>
+                <button id="save-list-btn" class="btn-primary">Crear</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="card-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="card-modal-title">Nueva Tarjeta</h3>
+            <input type="text" id="card-title-input" placeholder="Título de la tarjeta">
+            <textarea id="card-description-input" placeholder="Descripción (opcional)"></textarea>
+            <input type="text" id="card-assigned-input" placeholder="Asignar a">
+            <input type="date" id="card-due-date-input">
+            <div id="card-comments-section" style="display: none;">
+                <h4>Comentarios</h4>
+                <div id="comments-list"></div>
+                <textarea id="comment-input" placeholder="Añadir comentario..."></textarea>
+                <button id="add-comment-btn">Comentar</button>
+            </div>
+            <div class="flex gap-3 justify-end mt-5">
+                <button id="delete-card-btn" class="btn-danger" style="display: none;">Eliminar</button>
+                <button id="cancel-card-btn" class="btn-secondary">Cancelar</button>
+                <button id="save-card-btn" class="btn-primary">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="invite-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Invitar Colaborador</h3>
+            <input type="email" id="invite-email-input" placeholder="correo@ejemplo.com">
+            <div class="flex gap-3 justify-end mt-5">
+                <button id="cancel-invite-btn" class="btn-secondary">Cancelar</button>
+                <button id="send-invite-btn" class="btn-primary">Enviar Invitación</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="shortcuts-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>⌨️ Atajos de Teclado</h3>
+            <div>
+                <p><kbd>/</kbd> Buscar</p>
+                <p><kbd>Esc</kbd> Cerrar modal</p>
+                <p><kbd>B</kbd> Nuevo tablero</p>
+                <p><kbd>L</kbd> Nueva lista</p>
+                <p><kbd>N</kbd> Nueva tarjeta</p>
+            </div>
+            <button id="close-shortcuts">Cerrar</button>
+        </div>
+    </div>
+
     <script type="module" src="firebase-config.js"></script>
     <script type="module" src="auth.js"></script>
     <script type="module" src="app.js"></script>
     
-    <!-- Inicializar iconos Lucide -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
