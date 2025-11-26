@@ -1047,48 +1047,52 @@ window.addEventListener('user-authenticated', (e) => {
         }
     }
 
-    function loadBoards() {
-        boardCard.addEventListener('click', () => {
-            console.log('🔵 Click en tablero:', board.name, boardId);
-            openBoard(boardId, board.name);
-        });
+function loadBoards() {
+    // VERIFICAR QUE EL USUARIO ESTÉ AUTENTICADO
+    if (!currentUser || !currentUser.email) {
+        console.log('⚠️ Usuario no autenticado todavía, esperando...');
+        return;
+    }
+    
+    console.log('🔵 Cargando tableros para:', currentUser.email);
+    
+    if (unsubscribeBoards) unsubscribeBoards();
 
-        // VERIFICAR QUE EL USUARIO ESTÉ AUTENTICADO
-        if (!currentUser || !currentUser.email) {
-            console.log('⚠️ Usuario no autenticado todavía, esperando...');
+    const q = query(
+        collection(db, 'boards'),
+        where('memberEmails', 'array-contains', currentUser.email)
+    );
+
+    unsubscribeBoards = onSnapshot(q, (snapshot) => {
+        console.log('✅ Tableros cargados:', snapshot.size);
+        boardsContainer.innerHTML = '';
+        
+        if (snapshot.empty) {
+            boardsContainer.innerHTML = '<p class="col-span-full text-center text-slate-500 dark:text-slate-400 py-10">No hay tableros aún. ¡Crea uno!</p>';
             return;
         }
-        
-        console.log('🔵 Cargando tableros para:', currentUser.email);
-        
-        if (unsubscribeBoards) unsubscribeBoards();
 
-        const q = query(
-            collection(db, 'boards'),
-            where('memberEmails', 'array-contains', currentUser.email)
-        );
-
-        unsubscribeBoards = onSnapshot(q, (snapshot) => {
-            console.log('✅ Tableros cargados:', snapshot.size);
-            boardsContainer.innerHTML = '';
+        snapshot.forEach((docSnap) => {
+            const boardId = docSnap.id;
+            const board = docSnap.data();
+            const boardCard = createBoardCard(boardId, board);
             
-            if (snapshot.empty) {
-                boardsContainer.innerHTML = '<p class="col-span-full text-center text-slate-500 dark:text-slate-400 py-10">No hay tableros aún. ¡Crea uno!</p>';
-                return;
-            }
-
-            snapshot.forEach((docSnap) => {
-                const board = docSnap.data();
-                const boardCard = createBoardCard(docSnap.id, board);
-                boardsContainer.appendChild(boardCard);
+            // ✅ AHORA SÍ: Agregar el listener DESPUÉS de crear la tarjeta
+            boardCard.addEventListener('click', () => {
+                console.log('🔵 Click en tablero:', board.name, boardId);
+                openBoard(boardId, board.name);
             });
             
-            lucide.createIcons();
-        }, (error) => {
-            console.error('❌ Error al cargar tableros:', error);
-            console.error('❌ Usuario:', currentUser);
+            boardsContainer.appendChild(boardCard);
         });
-    }
+        
+        lucide.createIcons();
+    }, (error) => {
+        console.error('❌ Error al cargar tableros:', error);
+        console.error('❌ Usuario:', currentUser);
+    });
+}
+
 
 
     function createBoardCard(id, board) {
