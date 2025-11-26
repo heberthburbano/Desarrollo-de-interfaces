@@ -1,6 +1,6 @@
 /* ============================================
    TRELLO COLABORATIVO - ESTILOS PRINCIPALES
-   Adaptado a la estructura HTML existente
+   Basado en Atlassian Design System
    ============================================ */
 
 /* ==========================================
@@ -24,32 +24,13 @@ body {
   line-height: var(--line-height-normal);
   color: var(--color-text-primary);
   background-color: var(--color-bg-page);
-  overflow: hidden;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
+  overflow: hidden; /* Crítico: sin scroll en el body */
 }
 
 /* ==========================================
-   PANTALLA DE AUTENTICACIÓN
+   ARQUITECTURA 100VH (Layout Principal)
    ========================================== */
-#auth-container {
-  background-color: var(--color-bg-page);
-}
-
-.auth-box {
-  background: var(--color-bg-elevated);
-  box-shadow: var(--shadow-modal);
-}
-
-#auth-error {
-  color: var(--color-r400);
-}
-
-/* ==========================================
-   CONTENEDOR PRINCIPAL DE LA APP
-   ========================================== */
-#app-container {
+.trello-app-shell {
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -84,33 +65,6 @@ header {
   margin: 0;
 }
 
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: var(--space-150);
-}
-
-/* ==========================================
-   BÚSQUEDA GLOBAL
-   ========================================== */
-#global-search {
-  width: 320px;
-  padding: var(--space-100) var(--space-150);
-  padding-left: var(--space-400);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-medium);
-  background: var(--color-bg-card);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-small);
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
-}
-
-#global-search:focus {
-  outline: none;
-  border-color: var(--color-b400);
-  box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.1);
-}
-
 /* ==========================================
    VISTA DE TABLEROS (Grid de Tarjetas)
    ========================================== */
@@ -118,22 +72,6 @@ header {
   flex: 1;
   overflow-y: auto;
   padding: var(--space-400) var(--space-200);
-  background: var(--color-bg-page);
-}
-
-.boards-header {
-  max-width: 1400px;
-  margin: 0 auto var(--space-300);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.boards-header h2 {
-  font-size: var(--font-size-xlarge);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
-  margin: 0;
 }
 
 .boards-grid {
@@ -147,7 +85,7 @@ header {
 .board-card {
   background: var(--color-bg-card);
   border-radius: var(--radius-medium);
-  padding: var(--space-200);
+  padding: var(--space-150);
   cursor: pointer;
   transition: background var(--transition-normal), 
               box-shadow var(--transition-normal);
@@ -171,19 +109,18 @@ header {
 }
 
 /* ==========================================
-   VISTA DE TABLERO (Board View)
+   VISTA DE TABLERO (Board Canvas)
    ========================================== */
 #board-view {
   flex: 1;
   display: flex;
-  flex-direction: column;
   overflow: hidden;
-  background: var(--color-trello-blue);
+  background: var(--color-trello-blue); /* Fondo azul clásico */
 }
 
 .board-header {
-  height: 52px;
-  background: rgba(0, 0, 0, 0.24);
+  height: 52px; /* Ligeramente mayor que 48px para el tablero */
+  background: rgba(0, 0, 0, 0.24); /* Semi-transparente sobre el azul */
   backdrop-filter: blur(8px);
   border-bottom: none;
   padding: 0 var(--space-150);
@@ -205,31 +142,15 @@ header {
   gap: var(--space-100);
 }
 
-.board-actions button {
-  background: rgba(255, 255, 255, 0.24);
-  color: #FFFFFF;
-  border: none;
-  padding: var(--space-100) var(--space-150);
-  border-radius: var(--radius-small);
-  font-size: var(--font-size-small);
-  font-weight: var(--font-weight-semibold);
-  cursor: pointer;
-  transition: background var(--transition-fast);
-}
-
-.board-actions button:hover {
-  background: rgba(255, 255, 255, 0.32);
-}
-
 /* ==========================================
    LIENZO DE LISTAS (Grid Horizontal)
    ========================================== */
-#lists-container,
-.lists-container {
+.board-canvas,
+#lists-container {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: var(--list-width);
-  gap: var(--list-gap);
+  grid-auto-columns: var(--list-width); /* 272px exactos */
+  gap: var(--list-gap); /* 8px entre listas */
   padding: var(--board-padding);
   overflow-x: auto;
   overflow-y: hidden;
@@ -238,25 +159,25 @@ header {
 }
 
 /* Scrollbar personalizado */
-#lists-container::-webkit-scrollbar,
-.lists-container::-webkit-scrollbar {
+.board-canvas::-webkit-scrollbar,
+#lists-container::-webkit-scrollbar {
   height: 12px;
 }
 
-#lists-container::-webkit-scrollbar-track,
-.lists-container::-webkit-scrollbar-track {
+.board-canvas::-webkit-scrollbar-track,
+#lists-container::-webkit-scrollbar-track {
   background: rgba(0, 0, 0, 0.1);
   border-radius: 6px;
 }
 
-#lists-container::-webkit-scrollbar-thumb,
-.lists-container::-webkit-scrollbar-thumb {
+.board-canvas::-webkit-scrollbar-thumb,
+#lists-container::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.3);
   border-radius: 6px;
 }
 
-#lists-container::-webkit-scrollbar-thumb:hover,
-.lists-container::-webkit-scrollbar-thumb:hover {
+.board-canvas::-webkit-scrollbar-thumb:hover,
+#lists-container::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.4);
 }
 
@@ -264,9 +185,9 @@ header {
    COMPONENTE LISTA
    ========================================== */
 .list {
-  background-color: var(--color-bg-list);
-  border-radius: var(--radius-large);
-  width: var(--list-width);
+  background-color: var(--color-bg-list); /* #EBECF0 claro / #282E33 oscuro */
+  border-radius: var(--radius-large); /* 12px */
+  width: var(--list-width); /* 272px */
   display: flex;
   flex-direction: column;
   max-height: calc(100vh - var(--header-height) - 52px - (var(--board-padding) * 2));
@@ -279,6 +200,7 @@ header {
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 
 .list-header h3 {
@@ -292,30 +214,15 @@ header {
   white-space: nowrap;
 }
 
-.list-header button {
-  background: transparent;
-  border: none;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  padding: var(--space-050);
-  border-radius: 4px;
-  transition: background var(--transition-fast);
-}
-
-.list-header button:hover {
-  background: var(--color-bg-hover);
-  color: var(--color-text-primary);
-}
-
 .list-cards {
   flex: 1 1 auto;
   overflow-y: auto;
   overflow-x: hidden;
   padding: var(--space-100);
-  min-height: 0;
+  min-height: 0; /* Crítico para Firefox Flexbox scroll */
   display: flex;
   flex-direction: column;
-  gap: var(--card-gap);
+  gap: var(--card-gap); /* 8px entre tarjetas */
 }
 
 .list-cards::-webkit-scrollbar {
@@ -350,7 +257,6 @@ header {
   display: flex;
   align-items: center;
   gap: var(--space-050);
-  text-align: left;
 }
 
 .list-footer button:hover {
@@ -363,11 +269,11 @@ header {
    ========================================== */
 .card {
   background: var(--color-bg-card);
-  border-radius: var(--radius-medium);
+  border-radius: var(--radius-medium); /* 8px */
   padding: var(--space-100) var(--space-150);
   cursor: pointer;
   position: relative;
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-card); /* Sombra sutil de 1px */
   transition: background var(--transition-fast),
               box-shadow var(--transition-fast);
   min-height: 40px;
@@ -392,11 +298,12 @@ header {
   font-size: 40px;
 }
 
+/* Título de tarjeta */
 .card h4 {
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-normal);
   color: var(--color-text-primary);
-  margin: 0 0 var(--space-100) 0;
+  margin: 0;
   line-height: var(--line-height-normal);
   word-wrap: break-word;
 }
@@ -406,6 +313,7 @@ header {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-050);
+  margin-top: var(--space-100);
   align-items: center;
 }
 
@@ -415,7 +323,7 @@ header {
 }
 
 /* ==========================================
-   ETIQUETAS
+   ETIQUETAS (Labels)
    ========================================== */
 .card-label {
   display: inline-block;
@@ -424,7 +332,8 @@ header {
   border-radius: 4px;
   margin-right: var(--space-050);
   margin-bottom: var(--space-050);
-  transition: all var(--transition-normal);
+  transition: height var(--transition-normal),
+              min-width var(--transition-normal);
 }
 
 .card-label.expanded {
@@ -446,10 +355,6 @@ header {
 .bg-blue-500 { background-color: var(--label-blue); }
 .bg-purple-500 { background-color: var(--label-purple); }
 .bg-pink-500 { background-color: var(--label-pink); }
-.bg-indigo-500 { background-color: #5E6AD2; }
-.bg-teal-500 { background-color: #00C7B7; }
-.bg-gray-500 { background-color: #8C9BAB; }
-.bg-slate-700 { background-color: #42526E; }
 
 /* ==========================================
    BADGES (Fechas, Checklist, etc.)
@@ -495,21 +400,12 @@ header {
   background: var(--color-bg-hover);
 }
 
-.checklist-item:hover .delete-checklist-item {
-  opacity: 1;
-}
-
 .checklist-item.completed {
   opacity: 0.6;
 }
 
 .checklist-item.completed span {
   text-decoration: line-through;
-}
-
-.delete-checklist-item {
-  opacity: 0;
-  transition: opacity var(--transition-fast);
 }
 
 .progress-bar {
@@ -526,27 +422,6 @@ header {
 }
 
 /* ==========================================
-   ARCHIVOS ADJUNTOS
-   ========================================== */
-.attachment-link {
-  display: flex;
-  align-items: center;
-  gap: var(--space-100);
-  padding: var(--space-100) var(--space-150);
-  background: var(--color-bg-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-medium);
-  color: var(--color-text-primary);
-  text-decoration: none;
-  transition: all var(--transition-fast);
-}
-
-.attachment-link:hover {
-  background: var(--color-bg-hover);
-  border-color: var(--color-b400);
-}
-
-/* ==========================================
    BOTONES
    ========================================== */
 button {
@@ -557,65 +432,37 @@ button {
   border-radius: var(--radius-small);
   padding: var(--space-100) var(--space-150);
   cursor: pointer;
-  transition: background var(--transition-fast);
+  transition: background var(--transition-fast),
+              box-shadow var(--transition-fast);
   display: inline-flex;
   align-items: center;
   gap: var(--space-100);
 }
 
-.btn-primary,
-#save-board-btn,
-#save-list-btn,
-#save-card-btn,
-#send-invite-btn {
+.btn-primary {
   background: var(--color-b400);
   color: #FFFFFF;
 }
 
-.btn-primary:hover,
-#save-board-btn:hover,
-#save-list-btn:hover,
-#save-card-btn:hover,
-#send-invite-btn:hover {
+.btn-primary:hover {
   background: var(--color-b500);
 }
 
-.btn-secondary,
-#cancel-board-btn,
-#cancel-list-btn,
-#cancel-card-btn,
-#cancel-invite-btn {
+.btn-secondary {
   background: var(--color-bg-hover);
   color: var(--color-text-primary);
 }
 
-.btn-secondary:hover,
-#cancel-board-btn:hover,
-#cancel-list-btn:hover,
-#cancel-card-btn:hover,
-#cancel-invite-btn:hover {
+.btn-secondary:hover {
   background: var(--color-border);
 }
 
-.btn-danger,
-#delete-card-btn,
-#delete-board-btn {
+.btn-danger {
   background: var(--color-r400);
   color: #FFFFFF;
 }
 
-.btn-danger:hover,
-#delete-card-btn:hover,
-#delete-board-btn:hover {
-  background: var(--color-r500);
-}
-
-#logout-btn {
-  background: var(--color-r400);
-  color: #FFFFFF;
-}
-
-#logout-btn:hover {
+.btn-danger:hover {
   background: var(--color-r500);
 }
 
@@ -649,10 +496,6 @@ button {
   overflow-y: auto;
 }
 
-.card-modal-content {
-  max-width: 768px;
-}
-
 /* ==========================================
    INPUTS
    ========================================== */
@@ -676,7 +519,6 @@ input:focus,
 textarea:focus {
   outline: none;
   border-color: var(--color-b400);
-  box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.1);
 }
 
 /* ==========================================
@@ -699,7 +541,19 @@ textarea:focus {
 }
 
 /* ==========================================
-   DRAG & DROP
+   MODO OSCURO - AJUSTES ESPECÍFICOS
+   ========================================== */
+.dark .board-canvas,
+.dark #lists-container {
+  background: #1d2125;
+}
+
+.dark .card-cover {
+  opacity: 0.9;
+}
+
+/* ==========================================
+   ESTADOS DE DRAG & DROP
    ========================================== */
 .card.dragging {
   opacity: 0.5;
@@ -719,12 +573,44 @@ textarea:focus {
   display: none !important;
 }
 
+.text-center {
+  text-align: center;
+}
+
+.flex {
+  display: flex;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.gap-2 {
+  gap: var(--space-100);
+}
+
+.p-2 {
+  padding: var(--space-100);
+}
+
+.mt-2 {
+  margin-top: var(--space-100);
+}
+
+.mb-2 {
+  margin-bottom: var(--space-100);
+}
+
 /* ==========================================
-   RESPONSIVE
+   RESPONSIVE (Mobile)
    ========================================== */
 @media (max-width: 768px) {
-  #lists-container,
-  .lists-container {
+  .board-canvas,
+  #lists-container {
     grid-auto-columns: 85vw;
     scroll-snap-type: x mandatory;
     padding-right: 15vw;
@@ -735,8 +621,111 @@ textarea:focus {
   }
 
   #members-panel,
-  #activity-panel,
-  #admin-panel {
+  #activity-panel {
     width: 100%;
   }
+}
+
+/* ==========================================
+   FIX DE EMERGENCIA - VISIBILIDAD
+   ========================================== */
+#app-container {
+  display: flex !important;
+  flex-direction: column;
+  height: 100vh;
+  background: #FAFBFC;
+}
+
+.dark #app-container {
+  background: #1D2125;
+}
+
+.boards-section {
+  display: block !important;
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px 16px;
+  background: #FAFBFC;
+}
+
+.dark .boards-section {
+  background: #1D2125;
+}
+
+.boards-header {
+  display: flex !important;
+  margin-bottom: 24px;
+}
+
+.boards-header h2 {
+  color: #172B4D;
+}
+
+.dark .boards-header h2 {
+  color: #B6C2CF;
+}
+
+#boards-container {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.board-card {
+  display: flex !important;
+  background: #FFFFFF;
+  border-radius: 8px;
+  padding: 16px;
+  min-height: 96px;
+  cursor: pointer;
+  box-shadow: 0 1px 0 rgba(9, 30, 66, 0.25);
+}
+
+.dark .board-card {
+  background: #282E33;
+}
+
+.board-card h3 {
+  color: #172B4D;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.dark .board-card h3 {
+  color: #B6C2CF;
+}
+
+/* Asegurar que el header sea visible */
+header {
+  display: block !important;
+  background: #FFFFFF;
+  border-bottom: 1px solid #EBECF0;
+}
+
+.dark header {
+  background: #22272B;
+  border-bottom: 1px solid #38414A;
+}
+
+.header-content {
+  display: flex !important;
+}
+
+.header-content h1 {
+  color: #0079BF !important;
+}
+
+/* Botones visibles */
+#create-board-btn,
+#logout-btn,
+.btn-primary {
+  background: #0052CC !important;
+  color: #FFFFFF !important;
+  display: inline-flex !important;
+}
+
+#logout-btn {
+  background: #FF5630 !important;
 }
