@@ -247,8 +247,13 @@ function initializeApp() {
     initGlobalSearch();
 
     function loadAllDataForSearch() {
-        // Cargar todos los tableros del usuario
-        if (!currentUser) return;
+        // VERIFICAR QUE EL USUARIO ESTÉ AUTENTICADO
+        if (!currentUser || !currentUser.email) {
+            console.log('⚠️ Usuario no autenticado, no se puede cargar datos de búsqueda');
+            return;
+        }
+
+        console.log('🔵 Cargando datos para búsqueda...');
 
         const boardsQuery = query(
             collection(db, 'boards'),
@@ -268,48 +273,61 @@ function initializeApp() {
                     ...boardData
                 });
 
-                // Cargar listas de cada tablero
-                const listsQuery = query(collection(db, 'boards', boardDoc.id, 'lists'));
-                const listsSnapshot = await getDocs(listsQuery);
-                
-                for (const listDoc of listsSnapshot.docs) {
-                    const listData = listDoc.data();
-                    allListsCache.push({
-                        id: listDoc.id,
-                        type: 'list',
-                        boardId: boardDoc.id,
-                        boardTitle: boardData.title,
-                        name: listData.name,
-                        ...listData
-                    });
-
-                    // Cargar tarjetas de cada lista
-                    const cardsQuery = query(collection(db, 'boards', boardDoc.id, 'lists', listDoc.id, 'cards'));
-                    const cardsSnapshot = await getDocs(cardsQuery);
+                try {
+                    // Cargar listas de cada tablero
+                    const listsQuery = query(collection(db, 'boards', boardDoc.id, 'lists'));
+                    const listsSnapshot = await getDocs(listsQuery);
                     
-                    cardsSnapshot.forEach(cardDoc => {
-                        const cardData = cardDoc.data();
-                        const cardIndex = allCardsCache.findIndex(c => c.cardId === cardDoc.id);
-                        const cardForSearch = {
-                            ...cardData,
-                            cardId: cardDoc.id,
-                            type: 'card',
-                            listId: listDoc.id,
-                            listName: listData.name,
+                    for (const listDoc of listsSnapshot.docs) {
+                        const listData = listDoc.data();
+                        allListsCache.push({
+                            id: listDoc.id,
+                            type: 'list',
                             boardId: boardDoc.id,
-                            boardTitle: boardData.title
-                        };
+                            boardTitle: boardData.title,
+                            name: listData.name,
+                            ...listData
+                        });
+
+                        // Cargar tarjetas de cada lista
+                        const cardsQuery = query(collection(db, 'boards', boardDoc.id, 'lists', listDoc.id, 'cards'));
+                        const cardsSnapshot = await getDocs(cardsQuery);
                         
-                        if (cardIndex >= 0) {
-                            allCardsCache[cardIndex] = cardForSearch;
-                        } else {
-                            allCardsCache.push(cardForSearch);
-                        }
-                    });
+                        cardsSnapshot.forEach(cardDoc => {
+                            const cardData = cardDoc.data();
+                            const cardIndex = allCardsCache.findIndex(c => c.cardId === cardDoc.id);
+                            const cardForSearch = {
+                                ...cardData,
+                                cardId: cardDoc.id,
+                                type: 'card',
+                                listId: listDoc.id,
+                                listName: listData.name,
+                                boardId: boardDoc.id,
+                                boardTitle: boardData.title
+                            };
+                            
+                            if (cardIndex >= 0) {
+                                allCardsCache[cardIndex] = cardForSearch;
+                            } else {
+                                allCardsCache.push(cardForSearch);
+                            }
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error cargando datos del tablero:', boardDoc.id, error);
                 }
             }
+            
+            console.log('✅ Datos de búsqueda cargados:', {
+                tableros: allBoardsCache.length,
+                listas: allListsCache.length,
+                tarjetas: allCardsCache.length
+            });
+        }, (error) => {
+            console.error('❌ Error en snapshot de búsqueda:', error);
         });
     }
+
 
     function performAdvancedSearch(searchTerm) {
         let results = [];
@@ -729,7 +747,7 @@ function initializeApp() {
         currentUser = e.detail.user;
         console.log('👤 Usuario autenticado:', currentUser.email);
         loadBoards();
-        loadNotifications();
+        //loadNotifications();
     });
 
     // ========================================
@@ -771,6 +789,14 @@ function initializeApp() {
     }
 
     function loadBoards() {
+        // VERIFICAR QUE EL USUARIO ESTÉ AUTENTICADO
+        if (!currentUser || !currentUser.email) {
+            console.log('⚠️ Usuario no autenticado todavía, esperando...');
+            return;
+        }
+        
+        console.log('🔵 Cargando tableros para:', currentUser.email);
+        
         if (unsubscribeBoards) unsubscribeBoards();
 
         const q = query(
@@ -779,6 +805,7 @@ function initializeApp() {
         );
 
         unsubscribeBoards = onSnapshot(q, (snapshot) => {
+            console.log('✅ Tableros cargados:', snapshot.size);
             boardsContainer.innerHTML = '';
             
             if (snapshot.empty) {
@@ -793,8 +820,12 @@ function initializeApp() {
             });
             
             lucide.createIcons();
+        }, (error) => {
+            console.error('❌ Error al cargar tableros:', error);
+            console.error('❌ Usuario:', currentUser);
         });
     }
+
 
     function createBoardCard(id, board) {
         const card = document.createElement('div');
