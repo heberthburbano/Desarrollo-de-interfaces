@@ -25,6 +25,11 @@ function initializeApp() {
     let unsubscribeNotifications = null;
     let unsubscribeActivity = null;
     let allCardsCache = [];
+    let currentCardLabels = [];
+    let currentChecklist = [];
+    let currentAttachments = [];
+    let currentDueDate = null;
+
 
     // ========================================
     // MATRIZ DE PERMISOS
@@ -605,6 +610,216 @@ function initializeApp() {
             });
         });
     }
+    // ========================================
+    // ETIQUETAS, CHECKLIST, FECHAS Y ARCHIVOS
+    // ========================================
+    
+    function initCardExtensions() {
+        const labelsModal = document.getElementById('labels-modal');
+        const labelsBtn = document.getElementById('card-labels-btn');
+        const cancelLabelsBtn = document.getElementById('cancel-labels-btn');
+        const attachFileBtn = document.getElementById('attach-file-btn');
+        const fileInput = document.getElementById('file-input');
+        const addChecklistItemBtn = document.getElementById('add-checklist-item-btn');
+        const newChecklistItemInput = document.getElementById('new-checklist-item-input');
+        const hideChecklistBtn = document.getElementById('hide-checklist-btn');
+        
+        // Abrir modal de etiquetas
+        labelsBtn?.addEventListener('click', () => {
+            labelsModal.style.display = 'flex';
+            labelsModal.classList.remove('hidden');
+            updateLabelsModal();
+            lucide.createIcons();
+        });
+        
+        // Cerrar modal de etiquetas
+        cancelLabelsBtn?.addEventListener('click', () => {
+            labelsModal.style.display = 'none';
+            labelsModal.classList.add('hidden');
+        });
+        
+        // Seleccionar etiquetas
+        document.querySelectorAll('.label-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                const label = e.target.dataset.label;
+                const color = e.target.dataset.color;
+                
+                if (e.target.checked) {
+                    if (!currentCardLabels.find(l => l.name === label)) {
+                        currentCardLabels.push({ name: label, color: color });
+                    }
+                } else {
+                    currentCardLabels = currentCardLabels.filter(l => l.name !== label);
+                }
+                
+                displayCardLabels();
+            });
+        });
+        
+        // Agregar item a checklist
+        addChecklistItemBtn?.addEventListener('click', addChecklistItem);
+        newChecklistItemInput?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addChecklistItem();
+            }
+        });
+        
+        // Ocultar checklist
+        hideChecklistBtn?.addEventListener('click', () => {
+            const section = document.getElementById('card-checklist-section');
+            section.style.display = section.style.display === 'none' ? 'block' : 'none';
+        });
+        
+        // Adjuntar archivo (URL)
+        attachFileBtn?.addEventListener('click', () => {
+            const url = prompt('Pega la URL del archivo (Google Drive, Dropbox, etc.):');
+            if (url && url.trim()) {
+                const name = prompt('Nombre del archivo:', 'Archivo adjunto') || 'Archivo adjunto';
+                addAttachment(name, url.trim());
+            }
+        });
+    }
+    
+    initCardExtensions();
+    
+    function updateLabelsModal() {
+        document.querySelectorAll('.label-checkbox').forEach(checkbox => {
+            const label = checkbox.dataset.label;
+            checkbox.checked = currentCardLabels.some(l => l.name === label);
+        });
+    }
+    
+    function displayCardLabels() {
+        const display = document.getElementById('card-labels-display');
+        
+        if (currentCardLabels.length === 0) {
+            display.classList.add('hidden');
+            return;
+        }
+        
+        display.classList.remove('hidden');
+        display.innerHTML = currentCardLabels.map(label => `
+            <span class="card-label ${label.color}">${capitalizeFirst(label.name)}</span>
+        `).join('');
+    }
+    
+    function addChecklistItem() {
+        const input = document.getElementById('new-checklist-item-input');
+        const text = input.value.trim();
+        
+        if (!text) return;
+        
+        currentChecklist.push({
+            id: Date.now().toString(),
+            text: text,
+            completed: false
+        });
+        
+        input.value = '';
+        displayChecklist();
+    }
+    
+    function displayChecklist() {
+        const container = document.getElementById('checklist-items');
+        const progress = document.getElementById('checklist-progress');
+        
+        if (currentChecklist.length === 0) {
+            container.innerHTML = '<p class="text-sm text-slate-400 dark:text-slate-500">No hay items en el checklist</p>';
+            progress.textContent = '';
+            return;
+        }
+        
+        const completed = currentChecklist.filter(item => item.completed).length;
+        const total = currentChecklist.length;
+        const percentage = Math.round((completed / total) * 100);
+        
+        progress.innerHTML = `
+            <span>${completed}/${total}</span>
+            <div class="progress-bar w-20 inline-block ml-2">
+                <div class="progress-fill" style="width: ${percentage}%"></div>
+            </div>
+        `;
+        
+        container.innerHTML = currentChecklist.map(item => `
+            <div class="checklist-item ${item.completed ? 'completed' : ''}" data-item-id="${item.id}">
+                <input type="checkbox" ${item.completed ? 'checked' : ''} 
+                       class="checklist-checkbox w-4 h-4 cursor-pointer" data-item-id="${item.id}">
+                <span class="flex-1 text-sm text-slate-700 dark:text-slate-300">${item.text}</span>
+                <button class="delete-checklist-item text-slate-400 hover:text-red-500 transition" data-item-id="${item.id}">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+        `).join('');
+        
+        // Event listeners para checklist
+        document.querySelectorAll('.checklist-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                const itemId = e.target.dataset.itemId;
+                const item = currentChecklist.find(i => i.id === itemId);
+                if (item) {
+                    item.completed = e.target.checked;
+                    displayChecklist();
+                }
+            });
+        });
+        
+        document.querySelectorAll('.delete-checklist-item').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const itemId = e.target.closest('button').dataset.itemId;
+                currentChecklist = currentChecklist.filter(i => i.id !== itemId);
+                displayChecklist();
+            });
+        });
+        
+        lucide.createIcons();
+    }
+    
+    function addAttachment(name, url) {
+        currentAttachments.push({
+            id: Date.now().toString(),
+            name: name,
+            url: url,
+            addedAt: new Date().toISOString()
+        });
+        
+        displayAttachments();
+    }
+    
+    function displayAttachments() {
+        const container = document.getElementById('attachments-list');
+        
+        if (currentAttachments.length === 0) {
+            container.innerHTML = '<p class="text-sm text-slate-400 dark:text-slate-500">No hay archivos adjuntos</p>';
+            return;
+        }
+        
+        container.innerHTML = currentAttachments.map(file => `
+            <a href="${file.url}" target="_blank" class="attachment-link">
+                <i data-lucide="link" class="w-4 h-4"></i>
+                <span class="flex-1 text-sm truncate">${file.name}</span>
+                <button class="delete-attachment text-slate-400 hover:text-red-500 transition" data-file-id="${file.id}" onclick="event.preventDefault();">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+            </a>
+        `).join('');
+        
+        // Event listeners para eliminar archivos
+        document.querySelectorAll('.delete-attachment').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const fileId = btn.dataset.fileId;
+                currentAttachments = currentAttachments.filter(f => f.id !== fileId);
+                displayAttachments();
+            });
+        });
+        
+        lucide.createIcons();
+    }
+    
+    function capitalizeFirst(str) {
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
 
     initCardCover();
 
@@ -1092,9 +1307,84 @@ window.addEventListener('user-authenticated', (e) => {
             }
         }
         
+        // Etiquetas
+        let labelsHTML = '';
+        if (card.labels && card.labels.length > 0) {
+            labelsHTML = `
+                <div class="flex flex-wrap gap-1 mb-2">
+                    ${card.labels.map(label => `
+                        <span class="card-label ${label.color}">${capitalizeFirst(label.name)}</span>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        // Fecha de vencimiento
+        let dueDateHTML = '';
+        if (card.dueDate) {
+            const dueDate = new Date(card.dueDate);
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            
+            let badgeClass = 'due-date-ok';
+            let icon = 'calendar';
+            
+            if (dueDate < today) {
+                badgeClass = 'due-date-overdue';
+                icon = 'alert-circle';
+            } else if (dueDate < tomorrow) {
+                badgeClass = 'due-date-soon';
+                icon = 'clock';
+            }
+            
+            const formattedDate = dueDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+            
+            dueDateHTML = `
+                <div class="due-date-badge ${badgeClass} mb-2">
+                    <i data-lucide="${icon}" class="w-3 h-3"></i>
+                    <span>${formattedDate}</span>
+                </div>
+            `;
+        }
+        
+        // Checklist progress
+        let checklistHTML = '';
+        if (card.checklist && card.checklist.length > 0) {
+            const completed = card.checklist.filter(item => item.completed).length;
+            const total = card.checklist.length;
+            const percentage = Math.round((completed / total) * 100);
+            const allDone = completed === total;
+            
+            checklistHTML = `
+                <div class="flex items-center gap-2 mb-2">
+                    <i data-lucide="check-square" class="w-3 h-3 ${allDone ? 'text-green-500' : 'text-slate-400'}"></i>
+                    <span class="text-xs ${allDone ? 'text-green-600 dark:text-green-400 font-semibold' : 'text-slate-500 dark:text-slate-400'}">${completed}/${total}</span>
+                    <div class="progress-bar flex-1">
+                        <div class="progress-fill ${allDone ? 'bg-green-500' : ''}" style="width: ${percentage}%"></div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Attachments indicator
+        let attachmentsHTML = '';
+        if (card.attachments && card.attachments.length > 0) {
+            attachmentsHTML = `
+                <div class="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 mb-2">
+                    <i data-lucide="paperclip" class="w-3 h-3"></i>
+                    <span>${card.attachments.length}</span>
+                </div>
+            `;
+        }
+        
         cardDiv.innerHTML = `
             ${coverHTML}
+            ${labelsHTML}
             <h4 class="font-semibold text-slate-800 dark:text-slate-200 mb-2 text-sm">${card.title}</h4>
+            ${dueDateHTML}
+            ${checklistHTML}
+            ${attachmentsHTML}
             ${card.description ? `<p class="text-xs text-slate-600 dark:text-slate-400 mb-2">${card.description}</p>` : ''}
             ${card.assignedTo ? `<span class="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full inline-block">👤 ${card.assignedTo}</span>` : ''}
         `;
@@ -1111,6 +1401,7 @@ window.addEventListener('user-authenticated', (e) => {
         return cardDiv;
     }
 
+
     function openCardModal(listId, cardId = null, cardData = null) {
         currentCardData = { listId, cardId, data: cardData };
         
@@ -1118,6 +1409,7 @@ window.addEventListener('user-authenticated', (e) => {
         const titleInput = document.getElementById('card-title-input');
         const descInput = document.getElementById('card-description-input');
         const assignedInput = document.getElementById('card-assigned-input');
+        const dueDateInput = document.getElementById('card-due-date-input');
         const deleteBtn = document.getElementById('delete-card-btn');
         const commentsSection = document.getElementById('card-comments-section');
         const saveBtn = document.getElementById('save-card-btn');
@@ -1129,11 +1421,13 @@ window.addEventListener('user-authenticated', (e) => {
             titleInput.disabled = true;
             descInput.disabled = true;
             assignedInput.disabled = true;
+            dueDateInput.disabled = true;
             saveBtn.style.display = 'none';
         } else {
             titleInput.disabled = false;
             descInput.disabled = false;
             assignedInput.disabled = false;
+            dueDateInput.disabled = false;
             saveBtn.style.display = 'block';
         }
         
@@ -1142,28 +1436,51 @@ window.addEventListener('user-authenticated', (e) => {
             titleInput.value = cardData.title || '';
             descInput.value = cardData.description || '';
             assignedInput.value = cardData.assignedTo || '';
+            dueDateInput.value = cardData.dueDate || '';
             deleteBtn.style.display = canDelete ? 'block' : 'none';
             commentsSection.style.display = 'block';
+            
             currentCardCover = cardData.cover || { color: null, emoji: null };
+            currentCardLabels = cardData.labels || [];
+            currentChecklist = cardData.checklist || [];
+            currentAttachments = cardData.attachments || [];
+            currentDueDate = cardData.dueDate || null;
+            
+            displayCardLabels();
+            displayChecklist();
+            displayAttachments();
             loadComments(listId, cardId);
         } else {
             modalTitle.textContent = 'Nueva Tarjeta';
             titleInput.value = '';
             descInput.value = '';
             assignedInput.value = '';
+            dueDateInput.value = '';
             deleteBtn.style.display = 'none';
             commentsSection.style.display = 'none';
+            
             currentCardCover = { color: null, emoji: null };
+            currentCardLabels = [];
+            currentChecklist = [];
+            currentAttachments = [];
+            currentDueDate = null;
+            
+            displayCardLabels();
+            displayChecklist();
+            displayAttachments();
         }
         
         cardModal.style.display = 'flex';
         cardModal.classList.remove('hidden');
+        lucide.createIcons();
     }
+
 
     async function saveCard() {
         const title = document.getElementById('card-title-input').value.trim();
         const description = document.getElementById('card-description-input').value.trim();
         const assignedTo = document.getElementById('card-assigned-input').value.trim();
+        const dueDate = document.getElementById('card-due-date-input').value;
         
         if (!title) {
             showError('Por favor ingresa un título para la tarjeta');
@@ -1174,7 +1491,11 @@ window.addEventListener('user-authenticated', (e) => {
             title,
             description,
             assignedTo,
+            dueDate: dueDate || null,
             cover: currentCardCover,
+            labels: currentCardLabels,
+            checklist: currentChecklist,
+            attachments: currentAttachments,
             updatedAt: serverTimestamp()
         };
 
@@ -1198,12 +1519,17 @@ window.addEventListener('user-authenticated', (e) => {
             cardModal.classList.add('hidden');
             currentCardData = null;
             currentCardCover = { color: null, emoji: null };
+            currentCardLabels = [];
+            currentChecklist = [];
+            currentAttachments = [];
+            currentDueDate = null;
             showSuccess('Tarjeta guardada');
         } catch (error) {
             console.error('Error al guardar tarjeta:', error);
             showError('Error al guardar la tarjeta');
         }
     }
+
 
     async function deleteCard() {
         if (!confirm('¿Estás seguro de eliminar esta tarjeta?')) return;
@@ -1855,6 +2181,11 @@ window.addEventListener('user-authenticated', (e) => {
         } catch (error) {
             console.error('Error al marcar notificaciones:', error);
         }
+    }
+
+    function capitalizeFirst(str) {
+        if (!str) return '';
+        return str.charAt(0).toUpperCase() + str.slice(1);
     }
 
 } // FIN de initializeApp
