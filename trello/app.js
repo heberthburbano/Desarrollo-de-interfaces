@@ -1345,11 +1345,12 @@ function initializeApp() {
         }
         
         try {
+            // Verificar si el usuario existe en la base de datos
             const usersQuery = query(collection(db, 'users'), where('email', '==', email));
             const userSnapshot = await getDocs(usersQuery);
             
             if (userSnapshot.empty) {
-                showError('No se encontró un usuario con ese correo');
+                showError('No se encontró un usuario con ese correo. Debe registrarse primero.');
                 return;
             }
             
@@ -1357,51 +1358,73 @@ function initializeApp() {
             const invitedUserId = invitedUserDoc.id;
             const invitedUserData = invitedUserDoc.data();
             
+            // Verificar si ya es miembro
             if (currentBoardData.members?.[invitedUserId]) {
                 showError('Este usuario ya es miembro del tablero');
                 return;
             }
             
-            const boardRef = doc(db, 'boards', currentBoardId);
-            await updateDoc(boardRef, {
-                [`members.${invitedUserId}`]: {
-                    email: email,
-                    name: invitedUserData.name || email,
-                    role: selectedRole,
-                    addedAt: serverTimestamp()
-                },
-                memberEmails: arrayUnion(email)
-            });
+            // Verificar si ya tiene una invitación pendiente
+            const pendingInvitesQuery = query(
+                collection(db, 'board_invitations'),
+                where('boardId', '==', currentBoardId),
+                where('invitedUserId', '==', invitedUserId),
+                where('status', '==', 'pending')
+            );
+            const pendingInvites = await getDocs(pendingInvitesQuery);
             
-            await addDoc(collection(db, 'notifications'), {
-                userId: invitedUserId,
-                type: 'invite',
+            if (!pendingInvites.empty) {
+                showError('Este usuario ya tiene una invitación pendiente');
+                return;
+            }
+            
+            // Crear invitación pendiente
+            const invitationData = {
                 boardId: currentBoardId,
                 boardTitle: currentBoardData.title,
+                invitedBy: currentUser.uid,
+                invitedByName: currentUser.displayName || currentUser.email,
+                invitedByEmail: currentUser.email,
+                invitedUserId: invitedUserId,
+                invitedUserEmail: email,
+                invitedUserName: invitedUserData.name || email,
+                role: selectedRole,
+                status: 'pending', // pending, accepted, rejected
+                createdAt: serverTimestamp(),
+                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 días
+            };
+            
+            const invitationRef = await addDoc(collection(db, 'board_invitations'), invitationData);
+            
+            // Crear notificación para el usuario invitado
+            await addDoc(collection(db, 'notifications'), {
+                userId: invitedUserId,
+                type: 'board_invitation',
+                boardId: currentBoardId,
+                boardTitle: currentBoardData.title,
+                invitationId: invitationRef.id,
                 invitedBy: currentUser.displayName || currentUser.email,
                 role: selectedRole,
-                message: `${currentUser.displayName || currentUser.email} te invitó a "${currentBoardData.title}"`,
+                message: `${currentUser.displayName || currentUser.email} te invitó a unirte al tablero "${currentBoardData.title}"`,
                 read: false,
                 createdAt: serverTimestamp()
             });
             
-            await logActivity('invited_member', 'board', currentBoardId, { 
+            await logActivity('sent_invitation', 'board', currentBoardId, { 
                 memberEmail: email, 
                 role: selectedRole 
             });
             
             inviteModal.style.display = 'none';
             inviteModal.classList.add('hidden');
-            showSuccess('Invitación enviada exitosamente');
+            showSuccess('Invitación enviada. El usuario debe aceptarla para unirse.');
             
-            if (!membersPanel.classList.contains('hidden')) {
-                loadMembers();
-            }
         } catch (error) {
             console.error('Error al enviar invitación:', error);
             showError('Error al enviar la invitación');
         }
     }
+
 
     function loadMembers() {
         membersList.innerHTML = '';
@@ -1601,33 +1624,180 @@ function initializeApp() {
         const div = document.createElement('div');
         div.className = `notification-item p-3 hover:bg-slate-50 dark:hover:bg-slate-700 transition cursor-pointer ${!notif.read ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`;
         
-        div.innerHTML = `
-            <div class="flex items-start gap-2">
-                <i data-lucide="${notif.type === 'invite' ? 'user-plus' : 'bell'}" class="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5"></i>
-                <div class="flex-1">
-                    <p class="text-sm text-slate-700 dark:text-slate-300">${notif.message}</p>
-                    <p class="text-xs text-slate-400 mt-1">${getTimeAgo(notif.createdAt)}</p>
-                </div>
-                ${!notif.read ? '<div class="w-2 h-2 bg-blue-600 rounded-full"></div>' : ''}
-            </div>
-        `;
+        let content = '';
         
-        div.addEventListener('click', async () => {
-            if (!notif.read) {
-                await updateDoc(doc(db, 'notifications', id), { read: true });
-            }
-            
-            if (notif.type === 'invite' && notif.boardId) {
-                const boardDoc = await getDoc(doc(db, 'boards', notif.boardId));
-                if (boardDoc.exists()) {
-                    notificationsDropdown.classList.add('hidden');
-                    openBoard(notif.boardId, boardDoc.data());
+        // Notificación de INVITACIÓN A TABLERO (con botones)
+        if (notif.type === 'board_invitation') {
+            content = `
+                <div class="flex items-start gap-2">
+                    <i data-lucide="user-plus" class="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5"></i>
+                    <div class="flex-1">
+                        <p class="text-sm text-slate-700 dark:text-slate-300 mb-2">${notif.message}</p>
+                        <p class="text-xs text-slate-400 mb-3">${getTimeAgo(notif.createdAt)}</p>
+                        <div class="flex gap-2">
+                            <button class="accept-invitation px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-xs rounded-lg transition font-medium" data-invitation-id="${notif.invitationId}" data-board-id="${notif.boardId}">
+                                ✓ Aceptar
+                            </button>
+                            <button class="reject-invitation px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs rounded-lg transition font-medium" data-invitation-id="${notif.invitationId}" data-notif-id="${id}">
+                                ✗ Rechazar
+                            </button>
+                        </div>
+                    </div>
+                    ${!notif.read ? '<div class="w-2 h-2 bg-blue-600 rounded-full"></div>' : ''}
+                </div>
+            `;
+        } 
+        // Notificación NORMAL (otras)
+        else {
+            content = `
+                <div class="flex items-start gap-2">
+                    <i data-lucide="${notif.type === 'invite' ? 'user-plus' : 'bell'}" class="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5"></i>
+                    <div class="flex-1">
+                        <p class="text-sm text-slate-700 dark:text-slate-300">${notif.message}</p>
+                        <p class="text-xs text-slate-400 mt-1">${getTimeAgo(notif.createdAt)}</p>
+                    </div>
+                    ${!notif.read ? '<div class="w-2 h-2 bg-blue-600 rounded-full"></div>' : ''}
+                </div>
+            `;
+        }
+        
+        div.innerHTML = content;
+        
+        // Event listeners para botones de invitación
+        const acceptBtn = div.querySelector('.accept-invitation');
+        const rejectBtn = div.querySelector('.reject-invitation');
+        
+        if (acceptBtn) {
+            acceptBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                await acceptInvitation(notif.invitationId, notif.boardId, id);
+            });
+        }
+        
+        if (rejectBtn) {
+            rejectBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                await rejectInvitation(notif.invitationId, id);
+            });
+        }
+        
+        // Clic normal en la notificación
+        if (notif.type !== 'board_invitation') {
+            div.addEventListener('click', async () => {
+                if (!notif.read) {
+                    await updateDoc(doc(db, 'notifications', id), { read: true });
                 }
-            }
-        });
+                
+                if (notif.boardId) {
+                    const boardDoc = await getDoc(doc(db, 'boards', notif.boardId));
+                    if (boardDoc.exists()) {
+                        notificationsDropdown.classList.add('hidden');
+                        openBoard(notif.boardId, boardDoc.data());
+                    }
+                }
+            });
+        }
         
         return div;
     }
+
+        // Aceptar invitación
+    async function acceptInvitation(invitationId, boardId, notificationId) {
+        try {
+            // Obtener datos de la invitación
+            const invitationDoc = await getDoc(doc(db, 'board_invitations', invitationId));
+            
+            if (!invitationDoc.exists()) {
+                showError('La invitación ya no existe');
+                return;
+            }
+            
+            const invitation = invitationDoc.data();
+            
+            if (invitation.status !== 'pending') {
+                showError('Esta invitación ya fue procesada');
+                return;
+            }
+            
+            // Agregar usuario al tablero
+            const boardRef = doc(db, 'boards', boardId);
+            await updateDoc(boardRef, {
+                [`members.${currentUser.uid}`]: {
+                    email: currentUser.email,
+                    name: currentUser.displayName || currentUser.email,
+                    role: invitation.role,
+                    addedAt: serverTimestamp()
+                },
+                memberEmails: arrayUnion(currentUser.email)
+            });
+            
+            // Actualizar estado de la invitación
+            await updateDoc(doc(db, 'board_invitations', invitationId), {
+                status: 'accepted',
+                acceptedAt: serverTimestamp()
+            });
+            
+            // Marcar notificación como leída y eliminarla
+            await updateDoc(doc(db, 'notifications', notificationId), { 
+                read: true 
+            });
+            
+            // Eliminar la notificación después de 1 segundo
+            setTimeout(async () => {
+                await deleteDoc(doc(db, 'notifications', notificationId));
+            }, 1000);
+            
+            // Registrar actividad
+            await addDoc(collection(db, 'activity_logs'), {
+                boardId: boardId,
+                userId: currentUser.uid,
+                userName: currentUser.displayName || currentUser.email,
+                action: 'accepted_invitation',
+                targetType: 'board',
+                targetId: boardId,
+                details: { 
+                    invitedBy: invitation.invitedByName,
+                    role: invitation.role
+                },
+                timestamp: serverTimestamp()
+            });
+            
+            showSuccess('¡Te has unido al tablero exitosamente!');
+            
+            // Recargar tableros para mostrar el nuevo
+            setTimeout(() => {
+                loadBoards();
+            }, 500);
+            
+        } catch (error) {
+            console.error('Error al aceptar invitación:', error);
+            showError('Error al aceptar la invitación');
+        }
+    }
+
+    // Rechazar invitación
+    async function rejectInvitation(invitationId, notificationId) {
+        if (!confirm('¿Estás seguro de rechazar esta invitación?')) return;
+        
+        try {
+            // Actualizar estado de la invitación
+            await updateDoc(doc(db, 'board_invitations', invitationId), {
+                status: 'rejected',
+                rejectedAt: serverTimestamp()
+            });
+            
+            // Eliminar la notificación
+            await deleteDoc(doc(db, 'notifications', notificationId));
+            
+            showSuccess('Invitación rechazada');
+            
+        } catch (error) {
+            console.error('Error al rechazar invitación:', error);
+            showError('Error al rechazar la invitación');
+        }
+    }
+
+
 
     async function markAllNotificationsRead() {
         try {
