@@ -16,6 +16,7 @@ function initializeApp() {
     let currentUser = null;
     let currentBoardId = null;
     let currentBoardData = null;
+    let currentBoardName = null;
     let currentUserRole = null;
     let currentCardData = null;
     let currentCardCover = { color: null, emoji: null };
@@ -29,7 +30,6 @@ function initializeApp() {
     let currentChecklist = [];
     let currentAttachments = [];
     let currentDueDate = null;
-
 
     // ========================================
     // MATRIZ DE PERMISOS
