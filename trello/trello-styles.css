@@ -388,3 +388,20 @@ textarea:focus {
 .hidden {
   display: none !important;
 }
+
+/* ==========================================
+   FIX: Asegurar interactividad
+   ========================================== */
+.board-card {
+  pointer-events: auto !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.board-card * {
+  pointer-events: none !important;
+}
+
+.board-card:active {
+  transform: scale(0.98) !important;
+}
