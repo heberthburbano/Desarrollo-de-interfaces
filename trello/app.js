@@ -1225,7 +1225,10 @@ async function openBoard(boardId, boardName) {
         
     } catch (error) {
         console.error('❌ Error al abrir tablero:', error);
-        showError('Error al cargar el tablero');
+        console.error('❌ Código de error:', error.code);
+        console.error('❌ Mensaje:', error.message);
+        console.error('❌ Stack:', error.stack);
+        showError('Error al cargar el tablero: ' + error.message);
     }
 }
 
