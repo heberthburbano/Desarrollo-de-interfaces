@@ -1,0 +1,210 @@
+/* ============================================
+   ATLASSIAN DESIGN SYSTEM - DESIGN TOKENS
+   Basado en el informe técnico de Trello 2024/2025
+   ============================================ */
+
+:root {
+  /* ==========================================
+     SISTEMA DE ESPACIADO (Grid de 8px)
+     ========================================== */
+  --space-025: 2px;    /* 0.125rem */
+  --space-050: 4px;    /* 0.25rem */
+  --space-100: 8px;    /* 0.5rem - UNIDAD MAESTRA */
+  --space-150: 12px;   /* 0.75rem */
+  --space-200: 16px;   /* 1rem */
+  --space-250: 20px;   /* 1.25rem */
+  --space-300: 24px;   /* 1.5rem */
+  --space-400: 32px;   /* 2rem */
+  --space-500: 40px;   /* 2.5rem */
+  --space-600: 48px;   /* 3rem */
+
+  /* ==========================================
+     COLORES NEUTRALES (Light Mode)
+     ========================================== */
+  --color-n0: #FFFFFF;           /* Fondo tarjetas */
+  --color-n10: #FAFBFC;          /* Fondo hover suave */
+  --color-n20: #F4F5F7;          /* Fondo hover tarjetas */
+  --color-n30: #EBECF0;          /* Fondo listas CRÍTICO */
+  --color-n40: #DFE1E6;          /* Bordes suaves */
+  --color-n50: #C1C7D0;          /* Bordes */
+  --color-n60: #B3BAC5;          /* Iconos inactivos */
+  --color-n70: #A5ADBA;          
+  --color-n80: #97A0AF;          
+  --color-n90: #8993A4;          
+  --color-n100: #7A869A;         
+  --color-n200: #6B778C;         
+  --color-n300: #5E6C84;         /* Texto secundario */
+  --color-n400: #505F79;         
+  --color-n500: #42526E;         /* Metadatos, iconos */
+  --color-n600: #344563;         
+  --color-n700: #253858;         
+  --color-n800: #172B4D;         /* Texto principal CRÍTICO */
+  --color-n900: #091E42;         /* Usado en sombras */
+
+  /* ==========================================
+     COLORES NEUTRALES (Dark Mode)
+     ========================================== */
+  --color-dn0: #1D2125;          /* Fondo principal oscuro */
+  --color-dn10: #22272B;         /* Fondo elevado */
+  --color-dn20: #282E33;         /* Fondo listas oscuro CRÍTICO */
+  --color-dn30: #2C333A;         /* Fondo tarjetas oscuro */
+  --color-dn40: #38414A;         /* Hover estado */
+  --color-dn50: #454F59;         
+  --color-dn60: #596773;         
+  --color-dn70: #738496;         
+  --color-dn80: #8C9BAB;         
+  --color-dn90: #9FADBC;         
+  --color-dn100: #B6C2CF;        /* Texto principal claro */
+  --color-dn200: #C7D1DB;        
+  --color-dn300: #DEE4EA;        /* Texto sobre oscuro */
+
+  /* ==========================================
+     COLORES DE MARCA Y ACCIÓN
+     ========================================== */
+  --color-b50: #DEEBFF;          /* Azul muy claro */
+  --color-b100: #B3D4FF;         
+  --color-b200: #4C9AFF;         
+  --color-b300: #2684FF;         
+  --color-b400: #0052CC;         /* Azul acción primaria CRÍTICO */
+  --color-b500: #0747A6;         
+  --color-b600: #0C66E4;         /* Azul Trello clásico */
+
+  --color-trello-blue: #0079BF;  /* Azul histórico de Trello */
+
+  /* ==========================================
+     COLORES SEMÁNTICOS
+     ========================================== */
+  /* Éxito/Completado */
+  --color-g400: #36B37E;         /* Verde éxito */
+  --color-g500: #00875A;         
+
+  /* Advertencia */
+  --color-y400: #FFAB00;         /* Amarillo advertencia */
+  --color-y500: #FF991F;         
+
+  /* Error/Urgente */
+  --color-r400: #FF5630;         /* Rojo error */
+  --color-r500: #DE350B;         
+
+  /* Información */
+  --color-b-info: #2684FF;       
+
+  /* ==========================================
+     ETIQUETAS DE COLORES (Labels)
+     ========================================== */
+  --label-green: #61BD4F;
+  --label-yellow: #F2D600;
+  --label-orange: #FF9F1A;
+  --label-red: #EB5A46;
+  --label-purple: #C377E0;
+  --label-blue: #0079BF;
+  --label-sky: #00C2E0;
+  --label-lime: #51E898;
+  --label-pink: #FF78CB;
+  --label-black: #344563;
+
+  /* ==========================================
+     DIMENSIONES ESPECÍFICAS DE TRELLO
+     ========================================== */
+  --list-width: 272px;           /* Ancho EXACTO de listas */
+  --list-gap: var(--space-100);  /* 8px entre listas */
+  --card-gap: var(--space-100);  /* 8px entre tarjetas */
+  --header-height: 48px;         /* Altura del header */
+  --board-padding: var(--space-150); /* 12px padding del tablero */
+
+  /* ==========================================
+     BORDER RADIUS
+     ========================================== */
+  --radius-small: 3px;           /* Clásico */
+  --radius-medium: 8px;          /* Tarjetas */
+  --radius-large: 12px;          /* Listas modernas */
+  --radius-xlarge: 16px;         /* Modales */
+
+  /* ==========================================
+     SOMBRAS (Box Shadows)
+     ========================================== */
+  --shadow-card: 0 1px 0 rgba(9, 30, 66, 0.25);
+  --shadow-card-hover: 0 2px 8px -4px rgba(9, 30, 66, 0.25);
+  --shadow-card-dragging: 0 12px 24px -6px rgba(9, 30, 66, 0.25), 
+                          0 0 0 1px rgba(9, 30, 66, 0.08);
+  --shadow-list: 0 1px 0 rgba(9, 30, 66, 0.13);
+  --shadow-modal: 0 8px 16px -4px rgba(9, 30, 66, 0.25),
+                  0 0 0 1px rgba(9, 30, 66, 0.08);
+
+  /* ==========================================
+     TIPOGRAFÍA
+     ========================================== */
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", 
+                 "Noto Sans", "Ubuntu", "Droid Sans", "Helvetica Neue", sans-serif;
+  
+  --font-size-small: 12px;       /* 0.75rem */
+  --font-size-body: 14px;        /* 0.875rem */
+  --font-size-medium: 16px;      /* 1rem */
+  --font-size-large: 20px;       /* 1.25rem */
+  --font-size-xlarge: 24px;      /* 1.5rem */
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.4286; /* 20px para 14px font */
+  --line-height-relaxed: 1.6;
+
+  /* ==========================================
+     TRANSICIONES
+     ========================================== */
+  --transition-fast: 0.1s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
+
+  /* ==========================================
+     Z-INDEX
+     ========================================== */
+  --z-base: 1;
+  --z-dropdown: 100;
+  --z-sticky: 500;
+  --z-modal-backdrop: 1000;
+  --z-modal: 1001;
+  --z-dragging: 9999;
+}
+
+/* ==========================================
+   MODO OSCURO - OVERRIDE DE VARIABLES
+   ========================================== */
+.dark,
+[data-theme="dark"] {
+  /* Sobrescribir colores para modo oscuro */
+  --color-text-primary: var(--color-dn100);
+  --color-text-secondary: var(--color-dn90);
+  --color-text-tertiary: var(--color-dn80);
+  
+  --color-bg-page: var(--color-dn0);
+  --color-bg-elevated: var(--color-dn10);
+  --color-bg-list: var(--color-dn20);
+  --color-bg-card: var(--color-dn30);
+  --color-bg-hover: var(--color-dn40);
+
+  --color-border: var(--color-dn50);
+  --color-border-subtle: var(--color-dn40);
+}
+
+/* ==========================================
+   MODO CLARO - VALORES POR DEFECTO
+   ========================================== */
+:root,
+[data-theme="light"] {
+  --color-text-primary: var(--color-n800);
+  --color-text-secondary: var(--color-n500);
+  --color-text-tertiary: var(--color-n300);
+  
+  --color-bg-page: #FAFBFC;
+  --color-bg-elevated: var(--color-n0);
+  --color-bg-list: var(--color-n30);
+  --color-bg-card: var(--color-n0);
+  --color-bg-hover: var(--color-n20);
+
+  --color-border: var(--color-n40);
+  --color-border-subtle: var(--color-n30);
+}
