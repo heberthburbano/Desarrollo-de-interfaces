@@ -614,12 +614,15 @@ function initializeApp() {
     // ETIQUETAS, CHECKLIST, FECHAS Y ARCHIVOS
     // ========================================
     
+    // ========================================
+    // ETIQUETAS, CHECKLIST, FECHAS Y ARCHIVOS
+    // ========================================
+    
     function initCardExtensions() {
         const labelsModal = document.getElementById('labels-modal');
         const labelsBtn = document.getElementById('card-labels-btn');
         const cancelLabelsBtn = document.getElementById('cancel-labels-btn');
         const attachFileBtn = document.getElementById('attach-file-btn');
-        const fileInput = document.getElementById('file-input');
         const addChecklistItemBtn = document.getElementById('add-checklist-item-btn');
         const newChecklistItemInput = document.getElementById('new-checklist-item-input');
         const hideChecklistBtn = document.getElementById('hide-checklist-btn');
@@ -665,10 +668,29 @@ function initializeApp() {
             }
         });
         
-        // Ocultar checklist
+        // Mostrar/Ocultar checklist (MEJORADO)
         hideChecklistBtn?.addEventListener('click', () => {
             const section = document.getElementById('card-checklist-section');
-            section.style.display = section.style.display === 'none' ? 'block' : 'none';
+            const itemsContainer = document.getElementById('checklist-items');
+            const inputContainer = section.querySelector('.flex.gap-2');
+            const progress = document.getElementById('checklist-progress');
+            
+            if (itemsContainer.style.display === 'none') {
+                // Mostrar
+                itemsContainer.style.display = 'block';
+                inputContainer.style.display = 'flex';
+                progress.style.display = 'inline-flex';
+                hideChecklistBtn.innerHTML = '<i data-lucide="eye-off" class="w-4 h-4"></i>';
+                hideChecklistBtn.title = 'Ocultar';
+            } else {
+                // Ocultar
+                itemsContainer.style.display = 'none';
+                inputContainer.style.display = 'none';
+                progress.style.display = 'none';
+                hideChecklistBtn.innerHTML = '<i data-lucide="eye" class="w-4 h-4"></i>';
+                hideChecklistBtn.title = 'Mostrar';
+            }
+            lucide.createIcons();
         });
         
         // Adjuntar archivo (URL)
@@ -745,14 +767,14 @@ function initializeApp() {
             <div class="checklist-item ${item.completed ? 'completed' : ''}" data-item-id="${item.id}">
                 <input type="checkbox" ${item.completed ? 'checked' : ''} 
                        class="checklist-checkbox w-4 h-4 cursor-pointer" data-item-id="${item.id}">
-                <span class="flex-1 text-sm text-slate-700 dark:text-slate-300">${item.text}</span>
-                <button class="delete-checklist-item text-slate-400 hover:text-red-500 transition" data-item-id="${item.id}">
+                <span class="flex-1 text-sm text-slate-700 dark:text-slate-300 cursor-pointer checklist-text" data-item-id="${item.id}">${item.text}</span>
+                <button class="delete-checklist-item text-slate-400 hover:text-red-500 transition opacity-0 group-hover:opacity-100" data-item-id="${item.id}" title="Eliminar">
                     <i data-lucide="x" class="w-4 h-4"></i>
                 </button>
             </div>
         `).join('');
         
-        // Event listeners para checklist
+        // Event listeners para checkboxes
         document.querySelectorAll('.checklist-checkbox').forEach(checkbox => {
             checkbox.addEventListener('change', (e) => {
                 const itemId = e.target.dataset.itemId;
@@ -764,16 +786,33 @@ function initializeApp() {
             });
         });
         
+        // Event listeners para texto (también permite marcar/desmarcar)
+        document.querySelectorAll('.checklist-text').forEach(text => {
+            text.addEventListener('click', (e) => {
+                const itemId = e.target.dataset.itemId;
+                const item = currentChecklist.find(i => i.id === itemId);
+                if (item) {
+                    item.completed = !item.completed;
+                    displayChecklist();
+                }
+            });
+        });
+        
+        // Event listeners para eliminar items
         document.querySelectorAll('.delete-checklist-item').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const itemId = e.target.closest('button').dataset.itemId;
-                currentChecklist = currentChecklist.filter(i => i.id !== itemId);
-                displayChecklist();
+                e.stopPropagation();
+                const itemId = btn.dataset.itemId;
+                if (confirm('¿Eliminar este item del checklist?')) {
+                    currentChecklist = currentChecklist.filter(i => i.id !== itemId);
+                    displayChecklist();
+                }
             });
         });
         
         lucide.createIcons();
     }
+
     
     function addAttachment(name, url) {
         currentAttachments.push({
@@ -1450,6 +1489,20 @@ window.addEventListener('user-authenticated', (e) => {
             displayChecklist();
             displayAttachments();
             loadComments(listId, cardId);
+            
+            // ===== RESETEAR ESTADO DEL CHECKLIST (VISIBLE) =====
+            const checklistSection = document.getElementById('card-checklist-section');
+            const itemsContainer = document.getElementById('checklist-items');
+            const inputContainer = checklistSection.querySelector('.flex.gap-2');
+            const progress = document.getElementById('checklist-progress');
+            const hideBtn = document.getElementById('hide-checklist-btn');
+            
+            itemsContainer.style.display = 'block';
+            inputContainer.style.display = 'flex';
+            progress.style.display = 'inline-flex';
+            hideBtn.innerHTML = '<i data-lucide="eye-off" class="w-4 h-4"></i>';
+            hideBtn.title = 'Ocultar';
+            
         } else {
             modalTitle.textContent = 'Nueva Tarjeta';
             titleInput.value = '';
@@ -1468,12 +1521,26 @@ window.addEventListener('user-authenticated', (e) => {
             displayCardLabels();
             displayChecklist();
             displayAttachments();
+            
+            // ===== RESETEAR ESTADO DEL CHECKLIST (VISIBLE) =====
+            const checklistSection = document.getElementById('card-checklist-section');
+            const itemsContainer = document.getElementById('checklist-items');
+            const inputContainer = checklistSection.querySelector('.flex.gap-2');
+            const progress = document.getElementById('checklist-progress');
+            const hideBtn = document.getElementById('hide-checklist-btn');
+            
+            itemsContainer.style.display = 'block';
+            inputContainer.style.display = 'flex';
+            progress.style.display = 'inline-flex';
+            hideBtn.innerHTML = '<i data-lucide="eye-off" class="w-4 h-4"></i>';
+            hideBtn.title = 'Ocultar';
         }
         
         cardModal.style.display = 'flex';
         cardModal.classList.remove('hidden');
         lucide.createIcons();
     }
+
 
 
     async function saveCard() {
