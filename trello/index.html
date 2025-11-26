@@ -15,7 +15,6 @@
 </head>
 <body class="bg-slate-100 dark:bg-slate-900 min-h-screen flex flex-col overflow-hidden transition-colors">
 
-    <!-- Pantalla de autenticación -->
     <div id="auth-container" class="flex justify-center items-center min-h-screen p-5 bg-slate-50 dark:bg-slate-900 absolute inset-0 z-50 transition-colors">
         <div class="auth-box bg-white dark:bg-slate-800 p-10 rounded-2xl shadow-2xl w-full max-w-md">
             <div class="flex justify-center mb-6">
@@ -55,7 +54,6 @@
         </div>
     </div>
 
-    <!-- Aplicación principal -->
     <div id="app-container" class="hidden">
         <header>
             <div class="header-content">
@@ -120,7 +118,6 @@
             </div>
         </header>
 
-        <!-- Vista de Tableros -->
         <div class="boards-section">
             <div class="boards-header">
                 <h2>Mis Tableros</h2>
@@ -131,9 +128,7 @@
             <div id="boards-container"></div>
         </div>
 
-        <!-- ✅ VISTA DE TABLERO CORREGIDA -->
         <div id="board-view" class="hidden">
-            <!-- Board Header -->
             <div class="board-header">
                 <div class="flex items-center gap-3">
                     <button id="back-to-boards-btn" class="text-white hover:bg-white/20 p-2 rounded">
@@ -155,7 +150,6 @@
                 </div>
             </div>
 
-            <!-- ⚡ CAMBIO CRÍTICO: style → class="board-canvas" -->
             <div class="board-canvas">
                 <div id="lists-container"></div>
 
@@ -189,7 +183,6 @@
         </div>
     </div>
 
-    <!-- Modales -->
     <div id="board-modal" class="modal hidden">
         <div class="modal-content">
             <h3>Crear Nuevo Tablero</h3>
