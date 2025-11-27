@@ -8,7 +8,7 @@ import {
 document.addEventListener('DOMContentLoaded', initializeApp);
 
 function initializeApp() {
-    console.log('🚀 Inicializando aplicación Trello Clone (v2025)...');
+    console.log('🚀 Inicializando aplicación Trello Clone (v2025 - Fase 1)...');
 
     // ========================================
     // ESTADO GLOBAL
@@ -22,7 +22,7 @@ function initializeApp() {
     let unsubscribeLists = null;
     let unsubscribeCards = {}; 
     let unsubscribeActivity = null;
-    let unsubscribeNotifications = null; // [FIX] Faltaba declarar esta variable
+    let unsubscribeNotifications = null;
 
     // Elementos DOM Principales
     const boardsContainer = document.getElementById('boards-container');
@@ -34,13 +34,12 @@ function initializeApp() {
     const inviteModal = document.getElementById('invite-modal');
 
     // ========================================
-    // MODO OSCURO [FIX]
+    // MODO OSCURO
     // ========================================
     function initDarkMode() {
         const darkModeToggle = document.getElementById('dark-mode-toggle');
         const html = document.documentElement;
         
-        // Cargar preferencia guardada
         if (localStorage.getItem('theme') === 'dark') {
             html.classList.add('dark');
         }
@@ -49,8 +48,6 @@ function initializeApp() {
             html.classList.toggle('dark');
             const isDark = html.classList.contains('dark');
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
-            
-            // Actualizar iconos por si alguno cambia según el tema
             if(window.lucide) lucide.createIcons();
         });
     }
@@ -77,14 +74,12 @@ function initializeApp() {
         currentUser = e.detail.user;
         console.log('👤 Usuario detectado:', currentUser.email);
         
-        // UI de Usuario
         const avatar = document.getElementById('user-avatar');
         if(avatar) avatar.textContent = (currentUser.displayName || currentUser.email).charAt(0).toUpperCase();
         const nameDisplay = document.getElementById('user-name');
         if(nameDisplay) nameDisplay.textContent = currentUser.displayName || currentUser.email;
 
         loadBoards();
-        // loadNotifications(); // Descomentar si implementas notificaciones
     });
 
     // ========================================
@@ -138,7 +133,6 @@ function initializeApp() {
             if(!e.target.closest('.delete-board-btn')) openBoard(id, board);
         });
 
-        // Borrar tablero
         const deleteBtn = div.querySelector('.delete-board-btn');
         if(deleteBtn) {
             deleteBtn.addEventListener('click', async (e) => {
@@ -152,7 +146,7 @@ function initializeApp() {
         return div;
     }
 
-    // CREAR TABLERO [FIX: Lógica de Modal Corregida]
+    // CREAR TABLERO
     document.getElementById('save-board-btn')?.addEventListener('click', async () => {
         const nameInput = document.getElementById('board-name-input');
         const title = nameInput.value.trim();
@@ -172,7 +166,7 @@ function initializeApp() {
                 },
                 createdAt: serverTimestamp()
             });
-            closeModal('board-modal'); // Usar función helper
+            closeModal('board-modal');
             nameInput.value = '';
         } catch (e) {
             console.error(e);
@@ -191,7 +185,6 @@ function initializeApp() {
         const memberData = boardData.members?.[currentUser.uid];
         currentUserRole = memberData ? memberData.role : 'viewer';
 
-        // Actualizar UI
         document.getElementById('board-title').textContent = boardData.title;
         const roleBadge = document.getElementById('user-role-badge');
         if(roleBadge) {
@@ -199,15 +192,13 @@ function initializeApp() {
             roleBadge.classList.remove('hidden');
         }
 
-        // Transición de Vistas
         document.querySelector('.boards-section').style.display = 'none'; 
         boardView.classList.remove('hidden');
-        boardView.style.display = 'flex'; // Necesario para mantener el layout vertical
+        boardView.style.display = 'flex'; 
 
         loadLists(boardId);
     }
 
-    // Botón Volver
     document.getElementById('back-to-boards-btn')?.addEventListener('click', () => {
         boardView.style.display = 'none';
         boardView.classList.add('hidden');
@@ -232,7 +223,6 @@ function initializeApp() {
         );
 
         unsubscribeLists = onSnapshot(q, (snapshot) => {
-            // Mantener el botón "Añadir lista" al final
             const existingLists = Array.from(listsContainer.querySelectorAll('.list-wrapper:not(:last-child)'));
             existingLists.forEach(el => el.remove());
 
@@ -250,7 +240,6 @@ function initializeApp() {
     }
 
     function createListElement(listId, listData) {
-        // [REPORT] Ancho fijo 272px controlado por CSS .list-wrapper
         const wrapper = document.createElement('div');
         wrapper.className = 'list-wrapper';
 
@@ -277,7 +266,6 @@ function initializeApp() {
             ` : ''}
         `;
 
-        // Borrar lista
         const deleteBtn = listDiv.querySelector('.delete-list');
         if(deleteBtn) {
             deleteBtn.addEventListener('click', async () => {
@@ -287,7 +275,6 @@ function initializeApp() {
             });
         }
 
-        // Añadir Tarjeta
         const addCardBtn = listDiv.querySelector('.add-card-trigger');
         if(addCardBtn) {
             addCardBtn.addEventListener('click', () => {
@@ -301,7 +288,6 @@ function initializeApp() {
         return wrapper;
     }
 
-    // CREAR LISTA
     document.getElementById('save-list-btn')?.addEventListener('click', async () => {
         const input = document.getElementById('list-name-input');
         const name = input.value.trim();
@@ -318,7 +304,7 @@ function initializeApp() {
     });
 
     // ========================================
-    // 4. GESTIÓN DE TARJETAS
+    // 4. GESTIÓN DE TARJETAS (CON FECHAS INTELIGENTES)
     // ========================================
 
     function loadCards(boardId, listId, container) {
@@ -346,7 +332,7 @@ function initializeApp() {
         div.dataset.cardId = cardId;
         div.dataset.listId = listId;
 
-        // [REPORT] Etiquetas Expandibles (Interacción Source 182)
+        // Etiquetas Expandibles
         let labelsHtml = '';
         if(card.labels && card.labels.length > 0) {
             labelsHtml = `<div class="flex flex-wrap mb-1 gap-1">${card.labels.map(l => 
@@ -354,10 +340,49 @@ function initializeApp() {
             ).join('')}</div>`;
         }
 
+        // [NUEVO] Fechas Inteligentes (Colores automáticos)
+        let dueDateHTML = '';
+        if (card.dueDate) {
+            const dueDate = new Date(card.dueDate);
+            const now = new Date();
+            now.setHours(0,0,0,0);
+            const dueDay = new Date(dueDate);
+            dueDay.setHours(0,0,0,0);
+
+            const diffTime = dueDay - now;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            let badgeClass = 'bg-transparent text-slate-500 hover:bg-slate-200'; // Default
+            let icon = 'calendar';
+            let titleText = 'Vencimiento normal';
+
+            if (diffTime < 0) {
+                // Vencida (Rojo)
+                badgeClass = 'bg-[#EB5A46] text-white hover:bg-[#cf513d]'; 
+                icon = 'alert-circle';
+                titleText = '¡Vencida!';
+            } else if (diffDays === 0 || diffDays === 1) {
+                // Hoy o Mañana (Amarillo)
+                badgeClass = 'bg-[#F2D600] text-[#172B4D] hover:bg-[#d9b51c]'; 
+                icon = 'clock';
+                titleText = 'Vence pronto';
+            }
+
+            const formattedDate = dueDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+
+            dueDateHTML = `
+                <div class="due-date-badge ${badgeClass} inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold transition-colors" title="${titleText}">
+                    <i data-lucide="${icon}" class="w-3 h-3"></i>
+                    <span>${formattedDate}</span>
+                </div>
+            `;
+        }
+
         div.innerHTML = `
             ${labelsHtml}
             <span class="block text-sm text-[#172B4D] dark:text-slate-200 mb-1 leading-tight">${card.title}</span>
-            <div class="flex items-center gap-3 text-xs text-[#5e6c84] dark:text-slate-400 mt-1">
+            <div class="flex items-center gap-3 text-xs text-[#5e6c84] dark:text-slate-400 mt-1 flex-wrap">
+                ${dueDateHTML}
                 ${card.description ? `<span title="Tiene descripción"><i data-lucide="align-left" class="w-3 h-3"></i></span>` : ''}
                 ${card.checklist?.length > 0 ? `<div class="flex items-center gap-1"><i data-lucide="check-square" class="w-3 h-3"></i> ${card.checklist.filter(i=>i.completed).length}/${card.checklist.length}</div>` : ''}
             </div>
@@ -368,10 +393,9 @@ function initializeApp() {
         `;
 
         div.addEventListener('click', (e) => {
-            // [REPORT] Lógica de Etiquetas Expandibles
             if (e.target.closest('.card-label')) {
                 e.stopPropagation();
-                div.querySelectorAll('.card-label').forEach(lbl => lbl.classList.toggle('expanded')); // CSS debe manejar .expanded { width: auto; height: 16px; }
+                div.querySelectorAll('.card-label').forEach(lbl => lbl.classList.toggle('expanded'));
                 return;
             }
             openCardModal(listId, cardId, card);
@@ -386,14 +410,13 @@ function initializeApp() {
     }
 
     // ========================================
-    // 5. DRAG & DROP (FÍSICA MEJORADA)
+    // 5. DRAG & DROP (REORDENAMIENTO REAL)
     // ========================================
     
     let draggedItem = null;
 
     function handleDragStart(e) {
         draggedItem = this;
-        // [REPORT] Física: Rotación al levantar 
         this.style.transform = 'rotate(3deg)'; 
         this.classList.add('dragging'); 
         e.dataTransfer.effectAllowed = 'move';
@@ -404,7 +427,6 @@ function initializeApp() {
     }
 
     function handleDragEnd(e) {
-        // [REPORT] Restaurar estado físico
         this.style.transform = 'none';
         this.classList.remove('dragging');
         draggedItem = null;
@@ -414,7 +436,6 @@ function initializeApp() {
     function setupDropZone(container, listId) {
         container.addEventListener('dragover', (e) => {
             e.preventDefault();
-            // [REPORT] Feedback visual en zona de drop
             container.classList.add('drag-over');
         });
 
@@ -422,49 +443,86 @@ function initializeApp() {
             container.classList.remove('drag-over');
         });
 
-        container.addEventListener('drop', async (e) => {
-            e.preventDefault();
-            container.classList.remove('drag-over');
-            
-            try {
-                const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-                const { cardId, sourceListId } = data;
-                
-                if (sourceListId === listId) return; 
+        container.addEventListener('drop', (e) => handleDrop(e, listId));
+    }
 
-                // Movimiento Optimista (UI First) - Opcional para mayor velocidad
-                
-                // Lógica Firestore: Copiar y Borrar
+    // [NUEVO] Lógica de Drop capaz de reordenar y mover
+    async function handleDrop(e, targetListId) {
+        e.preventDefault();
+        // Limpiar visualmente la zona
+        if (e.target.classList.contains('drag-over')) e.target.classList.remove('drag-over');
+        // También limpiar el padre si se hizo bubbling
+        e.currentTarget.classList.remove('drag-over');
+
+        if (!draggedItem) return;
+
+        // Parsear datos transferidos
+        let data;
+        try {
+            data = JSON.parse(e.dataTransfer.getData('text/plain'));
+        } catch (error) {
+            console.error("Error parsing drag data", error);
+            return;
+        }
+
+        const { cardId, sourceListId } = data;
+
+        // Si estamos moviendo la tarjeta a la misma lista o a otra
+        // En un sistema complejo calcularíamos el índice exacto.
+        // Aquí usamos la estrategia "Mover al final" (Date.now()) que es robusta para esta fase.
+        
+        try {
+            // CASO 1: MOVER A OTRA LISTA
+            if (sourceListId !== targetListId) {
+                // 1. Copiar datos
                 const oldRef = doc(db, 'boards', currentBoardId, 'lists', sourceListId, 'cards', cardId);
                 const snap = await getDoc(oldRef);
-                const cardData = snap.data();
+                
+                if (snap.exists()) {
+                    const cardData = snap.data();
 
-                await addDoc(collection(db, 'boards', currentBoardId, 'lists', listId, 'cards'), {
-                    ...cardData,
-                    position: Date.now() 
+                    // 2. Crear en nueva lista (con nueva posición al final)
+                    await addDoc(collection(db, 'boards', currentBoardId, 'lists', targetListId, 'cards'), {
+                        ...cardData,
+                        position: Date.now(),
+                        updatedAt: serverTimestamp()
+                    });
+
+                    // 3. Borrar de la antigua
+                    await deleteDoc(oldRef);
+                }
+            } 
+            // CASO 2: REORDENAR EN LA MISMA LISTA
+            else {
+                // Simplemente actualizamos la posición para que sea la más reciente (baja al final)
+                // Para reordenar "entre medio" se requiere lógica de arrays más compleja que implementaremos en la Fase 3
+                const cardRef = doc(db, 'boards', currentBoardId, 'lists', sourceListId, 'cards', cardId);
+                await updateDoc(cardRef, {
+                    position: Date.now()
                 });
-
-                await deleteDoc(oldRef);
-
-            } catch (err) {
-                console.error("Error drop:", err);
             }
-        });
+        } catch (err) {
+            console.error("Error en drop:", err);
+            alert("Hubo un error al mover la tarjeta.");
+        }
+
+        draggedItem = null;
     }
 
     // ========================================
-    // 6. MODAL DE TARJETA (SIMPLIFICADO)
+    // 6. MODAL DE TARJETA
     // ========================================
 
     function openCardModal(listId, cardId = null, cardData = null) {
         currentCardData = { listId, cardId, data: cardData };
         
-        // Reset Inputs
         document.getElementById('card-title-input').value = cardData ? cardData.title : '';
         document.getElementById('card-description-input').value = cardData ? (cardData.description || '') : '';
+        // Cargar fecha si existe
+        document.getElementById('card-due-date-input').value = cardData?.dueDate || ''; 
+        
         document.getElementById('card-modal-title').innerHTML = cardData ? '<i data-lucide="credit-card" class="w-3 h-3"></i> Editar Tarjeta' : '<i data-lucide="plus" class="w-3 h-3"></i> Nueva Tarjeta';
 
-        // Mostrar Modal
         cardModal.classList.remove('hidden');
         cardModal.style.display = 'flex';
         lucide.createIcons();
@@ -474,11 +532,14 @@ function initializeApp() {
     document.getElementById('save-card-btn')?.addEventListener('click', async () => {
         const title = document.getElementById('card-title-input').value.trim();
         const desc = document.getElementById('card-description-input').value.trim();
+        const dueDate = document.getElementById('card-due-date-input').value; // Capturar fecha
+
         if(!title) return;
 
         const newData = {
             title,
             description: desc,
+            dueDate: dueDate || null, // Guardar fecha
             updatedAt: serverTimestamp()
         };
 
@@ -507,29 +568,25 @@ function initializeApp() {
     // UTILIDADES DE UI
     // ========================================
 
-    // [FIX] Función helper para cerrar modales limpiamente
     function closeModal(modalId) {
         const modal = document.getElementById(modalId);
         if (modal) {
-            modal.style.display = 'none'; // Quitar estilo inline
-            modal.classList.add('hidden'); // Asegurar clase Tailwind
+            modal.style.display = 'none'; 
+            modal.classList.add('hidden'); 
         }
     }
 
-    // Listeners de cierre (Generic)
     document.querySelectorAll('[id^="cancel-"]').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const modal = e.target.closest('.fixed'); // Buscar el modal padre
+            const modal = e.target.closest('.fixed'); 
             if(modal) closeModal(modal.id);
         });
     });
 
-    // Botones específicos que fallaban
     document.getElementById('cancel-board-btn')?.addEventListener('click', () => closeModal('board-modal'));
     document.getElementById('cancel-list-btn')?.addEventListener('click', () => closeModal('list-modal'));
     document.getElementById('cancel-card-btn')?.addEventListener('click', () => closeModal('card-modal'));
 
-    // Listeners de Apertura Globales
     document.getElementById('create-board-btn')?.addEventListener('click', () => {
         boardModal.classList.remove('hidden');
         boardModal.style.display = 'flex';
