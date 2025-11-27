@@ -319,3 +319,49 @@ html, body {
 .custom-scrollbar:hover::-webkit-scrollbar-thumb {
     background-color: rgba(9, 30, 66, 0.2); /* Más visible al hover */
 }
+
+/* ========================================= */
+/* FASE 2: ESTILOS DE CHECKLIST Y PORTADAS */
+/* ========================================= */
+
+/* Barra de progreso MINI (en la tarjeta del tablero) */
+.checklist-progress-bar {
+    height: 4px;
+    background-color: #DFE1E6; /* Gris base */
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 4px;
+    width: 100%;
+}
+
+.checklist-progress-value {
+    height: 100%;
+    background-color: #5BA4CF; /* Azul progreso */
+    transition: width 0.2s ease;
+}
+
+.checklist-progress-value.complete {
+    background-color: #61BD4F; /* Verde completado */
+}
+
+/* Estilos para ítems del checklist en el modal */
+.checklist-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    group: relative;
+}
+
+.checklist-item:hover .delete-item-btn {
+    opacity: 1;
+}
+
+.delete-item-btn {
+    opacity: 0;
+    color: #eb5a46;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    margin-left: auto;
+    padding: 2px;
+}
