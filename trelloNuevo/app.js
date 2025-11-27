@@ -1,26 +1,29 @@
 import { auth, db } from './firebase-config.js';
 import { 
     collection, addDoc, doc, updateDoc, deleteDoc, query, where, onSnapshot, 
-    orderBy, serverTimestamp, getDoc
+    orderBy, serverTimestamp, getDoc, getDocs, arrayUnion, arrayRemove
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
 document.addEventListener('DOMContentLoaded', initializeApp);
 
 function initializeApp() {
-    console.log('🚀 Inicializando Trello Clone (Corrección Sidebar)...');
+    console.log('🚀 Inicializando Trello Clone (Fase 4: Colaboración)...');
 
     // ESTADO
     let currentUser = null;
     let currentBoardId = null;
+    let currentBoardData = null; // Guardamos datos del tablero para saber quiénes son los miembros
     let currentUserRole = null;
+    
+    // Estado de Edición
     let currentCardData = null; 
     let currentCardCover = { color: null, mode: 'banner', url: null };
     let currentChecklist = []; 
     let currentAttachments = []; 
-    let currentCardLabels = []; // Estado para etiquetas
+    let currentCardLabels = [];
+    let currentCardMembers = []; // [NUEVO] IDs de usuarios asignados a la tarjeta
     
-    let unsubscribeBoards, unsubscribeLists; 
-    let unsubscribeCards = {}; 
+    let unsubscribeBoards, unsubscribeLists, unsubscribeCards = {}; 
 
     // DOM
     const boardsContainer = document.getElementById('boards-container');
@@ -30,7 +33,8 @@ function initializeApp() {
     const listModal = document.getElementById('list-modal');
     const cardModal = document.getElementById('card-modal');
     const coverModal = document.getElementById('card-cover-modal');
-    const labelsModal = document.getElementById('labels-modal'); // [NUEVO]
+    const labelsModal = document.getElementById('labels-modal');
+    const inviteModal = document.getElementById('invite-modal'); // [NUEVO]
 
     // MODO OSCURO
     function initDarkMode() {
@@ -45,7 +49,7 @@ function initializeApp() {
     }
     initDarkMode();
 
-    // AUTH & PERMISOS
+    // PERMISOS
     const PERMISSIONS = { owner: {createList:true, editCard:true}, editor: {createList:true, editCard:true}, viewer: {createList:false, editCard:false} };
     function hasPermission(a) { return currentUserRole && PERMISSIONS[currentUserRole]?.[a]; }
 
@@ -56,7 +60,7 @@ function initializeApp() {
         loadBoards();
     });
 
-    // CORE: TABLEROS
+    // 1. TABLEROS
     function loadBoards() {
         if(unsubscribeBoards) unsubscribeBoards();
         unsubscribeBoards = onSnapshot(query(collection(db, 'boards'), where('memberEmails', 'array-contains', currentUser.email)), (snap) => {
@@ -79,12 +83,32 @@ function initializeApp() {
     }
 
     async function openBoard(id, data) {
-        currentBoardId = id; currentUserRole = data.members?.[currentUser.uid]?.role||'viewer';
+        currentBoardId = id; 
+        currentBoardData = data; // [NUEVO] Guardar data completa para acceder a miembros
+        currentUserRole = data.members?.[currentUser.uid]?.role||'viewer';
+        
         document.getElementById('board-title').textContent = data.title;
+        renderBoardMembers(data.members); // [NUEVO] Mostrar avatares en header
+
         document.querySelector('.boards-section').style.display='none'; boardView.classList.remove('hidden'); boardView.style.display='flex';
         loadLists(id);
     }
 
+    // [NUEVO] Renderizar miembros en la cabecera del tablero
+    function renderBoardMembers(members) {
+        const container = document.getElementById('members-preview');
+        if(!container) return;
+        container.innerHTML = '';
+        Object.values(members).slice(0, 5).forEach(m => {
+            const div = document.createElement('div');
+            div.className = 'member-avatar header-avatar';
+            div.title = m.name;
+            div.textContent = m.name.charAt(0).toUpperCase();
+            container.appendChild(div);
+        });
+    }
+
+    // 2. LISTAS
     function loadLists(bid) {
         if(unsubscribeLists) unsubscribeLists();
         unsubscribeLists = onSnapshot(query(collection(db, 'boards', bid, 'lists'), orderBy('position')), (snap) => {
@@ -109,6 +133,7 @@ function initializeApp() {
         w.appendChild(d); return w;
     }
 
+    // 3. TARJETAS
     function loadCards(bid, lid, cont) {
         if(unsubscribeCards[lid]) unsubscribeCards[lid]();
         unsubscribeCards[lid] = onSnapshot(query(collection(db, 'boards', bid, 'lists', lid, 'cards'), orderBy('position')), (snap) => {
@@ -122,18 +147,27 @@ function initializeApp() {
         const d = document.createElement('div'); d.className = 'list-card group relative';
         d.draggable = hasPermission('editCard'); d.dataset.cardId = cid; d.dataset.listId = lid;
 
-        // Portada
         let coverHtml = '', fullClass = '';
         if(card.cover?.url && card.cover.mode === 'full') { fullClass='full-cover'; d.style.backgroundImage=`url('${card.cover.url}')`; }
         else if(card.cover?.url) coverHtml = `<div class="card-cover-image" style="background-image: url('${card.cover.url}')"></div>`;
         else if(card.cover?.color) coverHtml = `<div class="card-cover ${card.cover.color}"></div>`;
         if(fullClass) d.classList.add(fullClass);
 
-        // Etiquetas
         let labelsHtml = '';
         if(card.labels?.length) labelsHtml = `<div class="flex flex-wrap mb-1 gap-1">${card.labels.map(l=>`<span class="card-label ${l.color}" title="${l.name}"></span>`).join('')}</div>`;
 
-        // Checklist & Date
+        // [NUEVO] Renderizar Avatares de Miembros en la Tarjeta
+        let membersHtml = '';
+        if(card.assignedTo && card.assignedTo.length > 0) {
+            membersHtml = `<div class="card-members">`;
+            card.assignedTo.forEach(uid => {
+                // Buscamos el nombre en los datos del tablero
+                const memberName = currentBoardData.members[uid]?.name || '?';
+                membersHtml += `<div class="member-avatar" style="width:24px; height:24px; font-size:10px;" title="${memberName}">${memberName.charAt(0).toUpperCase()}</div>`;
+            });
+            membersHtml += `</div>`;
+        }
+
         let checkHtml = '';
         if(card.checklist?.length) {
             const c = card.checklist.filter(i=>i.completed).length, t=card.checklist.length, p=Math.round((c/t)*100);
@@ -148,6 +182,7 @@ function initializeApp() {
 
         d.innerHTML = `${coverHtml}${labelsHtml}<span class="block text-sm text-[#172B4D] dark:text-slate-200 mb-1 font-medium card-title">${card.title}</span>
         <div class="flex flex-wrap gap-2 items-center">${dateHtml}${checkHtml}${card.description?`<i data-lucide="align-left" class="w-3 h-3 text-slate-400 card-description-icon"></i>`:''}${card.attachments?.length?`<i data-lucide="paperclip" class="w-3 h-3 text-slate-400"></i>`:''}</div>
+        ${membersHtml}
         <button class="edit-btn absolute top-1 right-1 p-1.5 bg-[#f4f5f7]/80 hover:bg-[#ebecf0] rounded opacity-0 group-hover:opacity-100 z-20"><i data-lucide="pencil" class="w-3 h-3 text-[#42526E]"></i></button>`;
         
         d.addEventListener('click', (e) => {
@@ -177,9 +212,7 @@ function initializeApp() {
         });
     }
 
-    // ========================================
-    // 6. MODAL DE TARJETA (COMPLETO)
-    // ========================================
+    // 4. MODAL & EDICIÓN
     function openCardModal(lid, cid=null, data=null) {
         currentCardData = { lid, cid, data };
         document.getElementById('card-title-input').value = data?.title||'';
@@ -190,119 +223,127 @@ function initializeApp() {
         currentChecklist = data?.checklist||[];
         currentCardCover = data?.cover||{color:null,mode:'banner',url:null};
         currentAttachments = data?.attachments||[];
-        currentCardLabels = data?.labels||[]; // Cargar etiquetas
+        currentCardLabels = data?.labels||[];
+        currentCardMembers = data?.assignedTo||[]; // Cargar asignaciones
 
         renderChecklist();
         renderAttachments();
-        renderLabelsInModal(); // Renderizar etiquetas en modal
+        renderLabelsInModal();
+        renderAssignedMembersInput(); // [NUEVO] Llenar input de asignados (simple)
 
         cardModal.classList.remove('hidden'); cardModal.style.display='flex';
         lucide.createIcons();
     }
 
-    // --- MANEJADORES DEL SIDEBAR (BOTONES LATERALES) ---
-    
-    // 1. ETIQUETAS
-    document.getElementById('card-labels-btn')?.addEventListener('click', () => {
-        labelsModal.classList.remove('hidden'); labelsModal.style.display='flex';
-        // Marcar checkboxes según estado actual
-        document.querySelectorAll('.label-checkbox').forEach(cb => {
-            cb.checked = currentCardLabels.some(l => l.name === cb.dataset.label);
-        });
-    });
-
-    document.querySelectorAll('.label-checkbox').forEach(cb => {
-        cb.addEventListener('change', (e) => {
-            const label = { name: e.target.dataset.label, color: e.target.dataset.color };
-            if (e.target.checked) {
-                if (!currentCardLabels.find(l => l.name === label.name)) currentCardLabels.push(label);
-            } else {
-                currentCardLabels = currentCardLabels.filter(l => l.name !== label.name);
-            }
-            renderLabelsInModal();
-        });
-    });
-
+    // --- MANEJADORES SIDEBAR ---
+    document.getElementById('card-labels-btn')?.addEventListener('click', () => { labelsModal.classList.remove('hidden'); labelsModal.style.display='flex'; });
     document.getElementById('cancel-labels-btn')?.addEventListener('click', () => closeModal('labels-modal'));
+    document.querySelectorAll('.label-checkbox').forEach(cb => cb.addEventListener('change', (e) => {
+        const label = { name: e.target.dataset.label, color: e.target.dataset.color };
+        if (e.target.checked) { if (!currentCardLabels.find(l => l.name === label.name)) currentCardLabels.push(label); } 
+        else { currentCardLabels = currentCardLabels.filter(l => l.name !== label.name); }
+        renderLabelsInModal();
+    }));
 
     function renderLabelsInModal() {
-        const container = document.getElementById('card-labels-display');
-        container.innerHTML = '';
-        if (currentCardLabels.length > 0) container.classList.remove('hidden');
-        else container.classList.add('hidden');
-        
-        currentCardLabels.forEach(l => {
-            const s = document.createElement('span');
-            s.className = `px-2 py-1 rounded text-xs font-bold text-white ${l.color.split(' ')[0]}`; // Hack simple para color
-            s.textContent = l.name;
-            container.appendChild(s);
-        });
+        const c = document.getElementById('card-labels-display'); c.innerHTML='';
+        if (currentCardLabels.length) c.classList.remove('hidden'); else c.classList.add('hidden');
+        currentCardLabels.forEach(l => { const s = document.createElement('span'); s.className=`px-2 py-1 rounded text-xs font-bold text-white ${l.color.split(' ')[0]}`; s.textContent=l.name; c.appendChild(s); });
     }
 
-    // 2. CHECKLIST
-    document.getElementById('card-checklist-btn')?.addEventListener('click', () => {
-        document.getElementById('new-checklist-item-input').focus();
-        document.getElementById('card-checklist-section').scrollIntoView({ behavior: 'smooth' });
-    });
+    // [NUEVO] Asignación de Miembros (Usando el input 'card-assigned-input')
+    // Cambiamos el comportamiento: al hacer click, muestra una lista de miembros del tablero para elegir
+    function renderAssignedMembersInput() {
+        const input = document.getElementById('card-assigned-input');
+        // Mostrar nombres actuales
+        const names = currentCardMembers.map(uid => currentBoardData.members[uid]?.name).join(', ');
+        input.value = names;
+        
+        // Al hacer focus, sugerir miembros (Simplificado con prompt por ahora para no crear otro modal complejo)
+        // En una app real usaríamos un dropdown custom.
+        input.onclick = () => {
+            // Crear lista de emails disponibles
+            const options = Object.entries(currentBoardData.members).map(([uid, m]) => `${m.email} (${m.name})`).join('\n');
+            const email = prompt(`Escribe el email del miembro a asignar/desasignar:\n\n${options}`);
+            
+            if(email) {
+                // Buscar UID por email
+                const foundEntry = Object.entries(currentBoardData.members).find(([uid, m]) => m.email === email.trim());
+                if(foundEntry) {
+                    const [uid, member] = foundEntry;
+                    if(currentCardMembers.includes(uid)) {
+                        currentCardMembers = currentCardMembers.filter(id => id !== uid);
+                    } else {
+                        currentCardMembers.push(uid);
+                    }
+                    renderAssignedMembersInput();
+                } else {
+                    alert("Miembro no encontrado en este tablero.");
+                }
+            }
+        };
+    }
 
-    // 3. FECHAS
-    document.getElementById('card-due-date-btn')?.addEventListener('click', () => {
-        document.getElementById('card-due-date-input').showPicker ? document.getElementById('card-due-date-input').showPicker() : document.getElementById('card-due-date-input').focus();
-    });
-
-    // 4. ADJUNTOS (Ya existía, lo reforzamos)
-    document.getElementById('attach-file-btn')?.addEventListener('click', () => {
-        const url = prompt("URL del archivo o imagen:");
-        if(!url) return;
-        const isImg = url.match(/\.(jpeg|jpg|gif|png|webp)$/)!=null || url.includes('images');
-        currentAttachments.push({name:isImg?'Imagen':'Enlace', url, type:isImg?'image':'link', addedAt:new Date().toISOString()});
-        renderAttachments();
-    });
-
-    // 5. PORTADA
+    document.getElementById('card-checklist-btn')?.addEventListener('click', () => { document.getElementById('new-checklist-item-input').focus(); });
+    document.getElementById('card-due-date-btn')?.addEventListener('click', () => { document.getElementById('card-due-date-input').showPicker?.() || document.getElementById('card-due-date-input').focus(); });
+    document.getElementById('attach-file-btn')?.addEventListener('click', () => { const u=prompt("URL:"); if(u) { const i=u.match(/\.(jpeg|jpg|png|webp)/); currentAttachments.push({name:i?'Imagen':'Enlace', url:u, type:i?'image':'link', addedAt:new Date().toISOString()}); renderAttachments(); }});
     document.getElementById('card-cover-btn')?.addEventListener('click', () => { coverModal.classList.remove('hidden'); coverModal.style.display='flex'; });
 
-    // --- FUNCIONES INTERNAS MODAL ---
+    // --- INVITACIONES (BOTÓN COMPARTIR) ---
+    document.getElementById('invite-member-btn')?.addEventListener('click', () => { inviteModal.classList.remove('hidden'); inviteModal.style.display='flex'; });
+    document.getElementById('cancel-invite-btn')?.addEventListener('click', () => closeModal('invite-modal'));
+    document.getElementById('send-invite-btn')?.addEventListener('click', async () => {
+        const email = document.getElementById('invite-email-input').value.trim();
+        if(!email) return alert("Escribe un email");
+        
+        try {
+            // Buscar usuario real
+            const q = query(collection(db, 'users'), where('email', '==', email));
+            const snap = await getDocs(q);
+            if(snap.empty) return alert("Usuario no registrado en la app.");
+            
+            const user = snap.docs[0].data();
+            const uid = snap.docs[0].id;
+
+            // Añadir invitación
+            await addDoc(collection(db, 'board_invitations'), {
+                boardId: currentBoardId,
+                boardTitle: currentBoardData.title,
+                invitedBy: currentUser.uid,
+                invitedUserId: uid,
+                invitedUserEmail: email,
+                role: 'editor',
+                status: 'pending',
+                createdAt: serverTimestamp()
+            });
+            alert("Invitación enviada. El usuario debe aceptarla.");
+            closeModal('invite-modal');
+        } catch(e) { console.error(e); alert("Error al invitar"); }
+    });
+
+    // FUNCIONES RENDER INTERNAS
     function renderChecklist() {
-        const c = document.getElementById('checklist-items'); c.innerHTML='';
+        const c=document.getElementById('checklist-items'); c.innerHTML='';
         currentChecklist.forEach((i,x)=>{
-            const d = document.createElement('div'); d.className='flex items-center gap-2 py-1 group';
-            d.innerHTML=`<input type="checkbox" ${i.completed?'checked':''} class="cursor-pointer"><span class="flex-1 text-sm ${i.completed?'line-through text-slate-400':''}">${i.text}</span><button class="del text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100"><i data-lucide="trash-2" class="w-3 h-3"></i></button>`;
+            const d=document.createElement('div'); d.className='checklist-item group';
+            d.innerHTML=`<input type="checkbox" ${i.completed?'checked':''}><span class="flex-1 text-sm ${i.completed?'line-through text-slate-400':''}">${i.text}</span><button class="delete-item-btn"><i data-lucide="trash-2" class="w-3 h-3"></i></button>`;
             d.querySelector('input').addEventListener('change',e=>{i.completed=e.target.checked; renderChecklist();});
-            d.querySelector('.del').addEventListener('click',()=>{currentChecklist.splice(x,1); renderChecklist();});
+            d.querySelector('button').addEventListener('click',()=>{currentChecklist.splice(x,1); renderChecklist();});
             c.appendChild(d);
         });
-        const p = document.getElementById('checklist-progress');
-        const done = currentChecklist.filter(i=>i.completed).length, total=currentChecklist.length;
-        if(p) p.innerText = total===0?'0%':Math.round((done/total)*100)+'%';
+        const p=document.getElementById('checklist-progress'); if(p) p.innerText = currentChecklist.length?Math.round((currentChecklist.filter(i=>i.completed).length/currentChecklist.length)*100)+'%':'0%';
     }
 
     function renderAttachments() {
-        const c = document.getElementById('attachments-list'); c.innerHTML='';
+        const c=document.getElementById('attachments-list'); c.innerHTML='';
         currentAttachments.forEach((a,x)=>{
-            const d = document.createElement('div'); d.className='flex items-center gap-3 p-2 hover:bg-slate-100 rounded mb-1';
-            let act = `<button class="text-xs text-slate-500 hover:text-red-600 del underline">Eliminar</button><a href="${a.url}" target="_blank" class="text-xs text-blue-600 underline ml-2">Abrir</a>`;
-            if(a.type==='image') act+=`<button class="text-xs text-slate-500 hover:text-slate-800 ml-2 cover-make flex items-center gap-1"><i data-lucide="image" class="w-3 h-3"></i> Portada</button>`;
-            d.innerHTML = `<div class="w-16 h-12 bg-slate-200 rounded bg-cover bg-center" style="background-image:url('${a.type==='image'?a.url:''}')"></div><div class="flex-1"><div class="text-sm font-bold truncate">${a.name}</div><div class="flex mt-1">${act}</div></div>`;
+            const d=document.createElement('div'); d.className='attachment-item';
+            d.innerHTML=`<div class="attachment-thumbnail" style="background-image:url('${a.type==='image'?a.url:''}')"></div><div class="flex-1"><p class="text-sm font-bold truncate">${a.name}</p><button class="text-xs text-red-500 del">Eliminar</button>${a.type==='image'?`<button class="text-xs text-blue-500 ml-2 cover">Hacer Portada</button>`:''}</div>`;
             d.querySelector('.del').addEventListener('click',()=>{currentAttachments.splice(x,1); renderAttachments();});
-            d.querySelector('.cover-make')?.addEventListener('click',()=>{
-                currentCardCover = (currentCardCover.url===a.url && currentCardCover.mode==='banner') ? {mode:'full',url:a.url,color:null} : (currentCardCover.url===a.url && currentCardCover.mode==='full' ? {mode:'banner',url:null,color:null} : {mode:'banner',url:a.url,color:null});
-                alert('Portada actualizada');
-            });
+            d.querySelector('.cover')?.addEventListener('click',()=>{ currentCardCover={mode:'banner',url:a.url}; alert('Portada puesta'); });
             c.appendChild(d);
         });
-        if(window.lucide) lucide.createIcons();
     }
-
-    document.getElementById('add-checklist-item-btn')?.addEventListener('click', () => {
-        const inp = document.getElementById('new-checklist-item-input');
-        if(inp.value.trim()){ currentChecklist.push({text:inp.value.trim(), completed:false}); inp.value=''; renderChecklist(); }
-    });
-
-    document.querySelectorAll('.cover-color').forEach(b => b.addEventListener('click', () => {
-        currentCardCover = {color:b.dataset.color, mode:'color', url:null}; closeModal('card-cover-modal');
-    }));
-    document.getElementById('remove-cover-btn')?.addEventListener('click', () => { currentCardCover={color:null}; closeModal('card-cover-modal'); });
 
     // GUARDAR Y SALIR
     document.getElementById('save-card-btn')?.addEventListener('click', async () => {
@@ -315,7 +356,8 @@ function initializeApp() {
             checklist: currentChecklist,
             cover: currentCardCover,
             attachments: currentAttachments,
-            labels: currentCardLabels, // Guardar etiquetas
+            labels: currentCardLabels,
+            assignedTo: currentCardMembers, // [NUEVO] Guardar asignados
             updatedAt: serverTimestamp()
         };
         if(currentCardData.cid) await updateDoc(doc(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards',currentCardData.cid), payload);
@@ -324,17 +366,19 @@ function initializeApp() {
     });
 
     document.getElementById('delete-card-btn')?.addEventListener('click', async()=>{if(confirm('¿Borrar?')){await deleteDoc(doc(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards',currentCardData.cid)); closeModal('card-modal');}});
+    document.querySelectorAll('.cover-color').forEach(b => b.addEventListener('click', () => { currentCardCover={color:b.dataset.color, mode:'color', url:null}; closeModal('card-cover-modal'); }));
+    document.getElementById('remove-cover-btn')?.addEventListener('click', () => { currentCardCover={color:null}; closeModal('card-cover-modal'); });
 
+    // UTILS
     function closeModal(id){const m=document.getElementById(id);if(m){m.classList.add('hidden');m.style.display='none';}}
     document.querySelectorAll('[id^="cancel-"]').forEach(b=>b.addEventListener('click',e=>closeModal(e.target.closest('.fixed').id)));
     document.getElementById('create-board-btn').addEventListener('click',()=>{boardModal.classList.remove('hidden');boardModal.style.display='flex'});
     document.getElementById('add-list-btn').addEventListener('click',()=>{listModal.classList.remove('hidden');listModal.style.display='flex'});
     document.getElementById('save-list-btn').addEventListener('click',async()=>{
-        const v=document.getElementById('list-name-input').value.trim();
-        if(v){await addDoc(collection(db,'boards',currentBoardId,'lists'),{name:v,position:Date.now(),createdAt:serverTimestamp()}); closeModal('list-modal'); document.getElementById('list-name-input').value='';}
+        const v=document.getElementById('list-name-input').value.trim(); if(v){await addDoc(collection(db,'boards',currentBoardId,'lists'),{name:v,position:Date.now(),createdAt:serverTimestamp()}); closeModal('list-modal'); document.getElementById('list-name-input').value='';}
     });
     document.getElementById('save-board-btn').addEventListener('click',async()=>{
-        const v=document.getElementById('board-name-input').value.trim();
-        if(v){await addDoc(collection(db,'boards'),{title:v,ownerId:currentUser.uid,memberEmails:[currentUser.email],members:{[currentUser.uid]:{email:currentUser.email,role:'owner'}},createdAt:serverTimestamp()}); closeModal('board-modal');}
+        const v=document.getElementById('board-name-input').value.trim(); if(v){await addDoc(collection(db,'boards'),{title:v,ownerId:currentUser.uid,memberEmails:[currentUser.email],members:{[currentUser.uid]:{email:currentUser.email,name:currentUser.displayName||'User',role:'owner'}},createdAt:serverTimestamp()}); closeModal('board-modal');}
     });
+    document.getElementById('back-to-boards-btn').addEventListener('click', ()=>{boardView.style.display='none'; document.querySelector('.boards-section').style.display='block'; if(unsubscribeLists) unsubscribeLists(); currentBoardId=null;});
 }
