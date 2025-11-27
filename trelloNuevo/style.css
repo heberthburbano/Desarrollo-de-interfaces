@@ -350,7 +350,7 @@ html, body {
     align-items: center;
     gap: 8px;
     padding: 4px 0;
-    group: relative;
+    position: relative; /* Fixed: 'group' is not valid css property */
 }
 
 .checklist-item:hover .delete-item-btn {
@@ -447,4 +447,49 @@ html, body {
     background-position: center;
     border-radius: 4px;
     background-color: #ebecf0;
+}
+
+/* ========================================= */
+/* ARREGLO MENÚ LATERAL (SIDEBAR) */
+/* ========================================= */
+
+.sidebar-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Espacio entre icono y texto */
+    width: 100%;
+    text-align: left;
+    padding: 8px 12px;
+    background-color: #EAECF0; /* Gris Trello N30 */
+    border-radius: 3px;
+    color: #172B4D; /* Texto N800 */
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    transition: background-color 0.1s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.sidebar-btn:hover {
+    background-color: #DCDFE4; /* Gris más oscuro al hover */
+}
+
+.sidebar-btn i {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0; /* Evita que el icono se aplaste */
+    color: #42526E; /* Icono N500 */
+}
+
+/* Modo oscuro para botones */
+.dark .sidebar-btn {
+    background-color: #334155;
+    color: #F1F5F9;
+}
+.dark .sidebar-btn:hover {
+    background-color: #475569;
+}
+.dark .sidebar-btn i {
+    color: #94A3B8;
 }
