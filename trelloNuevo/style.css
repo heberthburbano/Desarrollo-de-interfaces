@@ -1,0 +1,217 @@
+/* style.css - Ingeniería visual Modern Trello 2025 */
+
+/* 1. RESET Y BASE (Lienzo Fijo) */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* CRÍTICO: Previene que la web entera haga scroll */
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #172B4D; /* Color N800 (Atlassian Design System) */
+    -webkit-font-smoothing: antialiased;
+}
+
+/* 2. LAYOUT DEL TABLERO (Grid Horizontal Infinito) */
+.board-view-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background-color: #0079BF; /* Azul Clásico Trello por defecto */
+    transition: background-color 0.5s ease;
+}
+
+.board-canvas {
+    flex-grow: 1;
+    position: relative;
+    display: grid;
+    /* INGENIERÍA: Grid horizontal forzado */
+    grid-auto-flow: column; 
+    /* MEDIDA EXACTA: 272px por lista, el estándar de oro de Trello */
+    grid-auto-columns: 272px; 
+    gap: 12px; /* Espaciado entre listas */
+    padding: 12px;
+    padding-bottom: 8px; /* Ajuste para scrollbar */
+    overflow-x: auto; /* Scroll horizontal habilitado */
+    overflow-y: hidden;
+    align-items: start; /* Las listas cuelgan de arriba */
+}
+
+/* 3. COMPONENTE: LISTA */
+.list-wrapper {
+    width: 272px; /* Ancho fijo */
+    box-sizing: border-box;
+    display: inline-block;
+    vertical-align: top;
+    white-space: nowrap;
+}
+
+.list {
+    background-color: #EBECF0; /* N30 - Fondo de lista estándar */
+    border-radius: 12px; /* Estética moderna 2025 */
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 100px); /* Cálculo para permitir que la lista crezca sin salirse */
+    position: relative;
+    white-space: normal;
+    border: 1px solid rgba(0,0,0,0.05); /* Sutil borde para definición */
+}
+
+/* Modo oscuro para listas (manual override) */
+.dark .list {
+    background-color: #1e293b; /* Slate 800 */
+    border-color: #334155;
+    color: #f1f5f9;
+}
+
+.list-header {
+    flex: 0 0 auto;
+    padding: 10px 12px;
+    position: relative;
+    min-height: 20px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    color: #172B4D;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.dark .list-header {
+    color: #f1f5f9;
+}
+
+/* Contenedor interno de tarjetas (Scroll vertical independiente) */
+.cards-container {
+    flex: 1 1 auto;
+    overflow-y: auto; /* Scroll vertical dentro de la lista */
+    overflow-x: hidden;
+    margin: 0 4px;
+    padding: 0 4px 4px 4px;
+    min-height: 2px; /* Necesario para el Drag&Drop en listas vacías */
+    display: flex;
+    flex-direction: column;
+    gap: 8px; /* Separación vertical entre tarjetas */
+}
+
+/* 4. COMPONENTE: TARJETA */
+.list-card {
+    background-color: #ffffff; /* N0 Blanco puro */
+    border-radius: 8px; /* Radio moderno */
+    /* SOMBRA EXACTA: Da profundidad sin bordes grises toscos */
+    box-shadow: 0 1px 0 rgba(9, 30, 66, 0.25); 
+    cursor: pointer;
+    display: block;
+    margin-bottom: 0px;
+    min-height: 20px;
+    position: relative;
+    text-decoration: none;
+    z-index: 0;
+    transition: background-color 0.1s, transform 0.1s;
+    padding: 8px; /* Padding interno de la tarjeta */
+}
+
+.dark .list-card {
+    background-color: #334155; /* Slate 700 */
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+    color: #f8fafc;
+}
+
+.list-card:hover {
+    background-color: #F4F5F7; /* N20 Hover state */
+}
+
+.dark .list-card:hover {
+    background-color: #475569;
+}
+
+/* Estilos de Drag & Drop */
+.list-card.dragging {
+    transform: rotate(3deg); /* Rotación física al arrastrar */
+    opacity: 0.9;
+    background-color: #e6f7ff; /* Color sutil al arrastrar */
+    z-index: 9999;
+}
+
+.dark .list-card.dragging {
+    background-color: #1e3a8a;
+}
+
+.cards-container.drag-over {
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+}
+
+/* 5. ESTILIZACIÓN DE SCROLLBARS (Tipo "Píldora") */
+.board-canvas::-webkit-scrollbar {
+    height: 12px;
+    width: 12px;
+}
+.board-canvas::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.4);
+    border-radius: 6px;
+}
+.board-canvas::-webkit-scrollbar-track {
+    background-color: rgba(0, 0, 0, 0.15);
+    border-radius: 6px;
+    margin: 8px;
+}
+
+.cards-container::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+.cards-container::-webkit-scrollbar-thumb {
+    background-color: #D2D4D9;
+    border-radius: 4px;
+}
+.dark .cards-container::-webkit-scrollbar-thumb {
+    background-color: #475569;
+}
+
+/* 6. CLASES AUXILIARES PARA LÓGICA JS */
+.hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+/* Etiquetas dentro de las tarjetas */
+.card-label {
+    height: 8px;
+    width: 40px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-right: 4px;
+    margin-bottom: 4px;
+    transition: height 0.2s;
+}
+.card-label:hover {
+    height: 16px; /* Expandir al hover */
+}
+
+/* Portada de tarjeta */
+.card-cover {
+    height: 32px;
+    border-radius: 8px 8px 0 0;
+    margin: -8px -8px 8px -8px; /* Negativo para cubrir padding */
+    background-size: cover;
+    background-position: center;
+}
+
+/* Badge de fecha vencida/próxima */
+.due-date-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    padding: 2px 4px;
+    border-radius: 3px;
+    color: white;
+}
+.due-date-ok { background-color: transparent; color: #5e6c84; }
+.due-date-soon { background-color: #F2D600; color: white; } /* Amarillo */
+.due-date-overdue { background-color: #EB5A46; color: white; } /* Rojo */

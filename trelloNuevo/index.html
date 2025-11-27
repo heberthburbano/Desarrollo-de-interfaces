@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="es" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trello Clone 2025</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: { 750: '#2d3748' },
+                        trello: {
+                            blue: '#0079BF',
+                            nav: 'rgba(0,0,0,0.32)'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 h-screen w-screen overflow-hidden flex flex-col transition-colors duration-200 text-slate-900 dark:text-slate-100">
+
+    <div id="auth-container" class="fixed inset-0 z-[100] bg-[#F9FAFC] flex items-center justify-center">
+        <div class="bg-white p-10 rounded-xl shadow-2xl w-full max-w-[400px] text-center border border-slate-200">
+            <div class="flex justify-center items-center gap-2 mb-6 text-blue-600">
+                <i data-lucide="trello" class="w-8 h-8"></i>
+                <h1 class="text-3xl font-bold tracking-tight">Trello</h1>
+            </div>
+            
+            <div id="login-form" class="text-left">
+                <h2 class="text-center text-sm font-semibold text-slate-500 mb-6 uppercase tracking-wider">Inicia sesión para continuar</h2>
+                <input type="email" id="login-email" placeholder="Introduce tu correo electrónico" class="w-full mb-3 p-3 bg-slate-50 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none transition">
+                <input type="password" id="login-password" placeholder="Introduce tu contraseña" class="w-full mb-6 p-3 bg-slate-50 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none transition">
+                <button id="login-btn" class="w-full bg-[#0052CC] hover:bg-blue-700 text-white font-bold py-2.5 rounded transition shadow-md">Continuar</button>
+                <p class="mt-6 text-sm text-center text-blue-600 hover:underline cursor-pointer" id="show-register">¿No tienes cuenta? Regístrate</p>
+            </div>
+
+            <div id="register-form" class="hidden text-left">
+                <h2 class="text-center text-sm font-semibold text-slate-500 mb-6 uppercase tracking-wider">Crear cuenta</h2>
+                <input type="text" id="register-name" placeholder="Nombre completo" class="w-full mb-3 p-3 bg-slate-50 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none transition">
+                <input type="email" id="register-email" placeholder="Correo electrónico" class="w-full mb-3 p-3 bg-slate-50 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none transition">
+                <input type="password" id="register-password" placeholder="Contraseña (min 6 caracteres)" class="w-full mb-6 p-3 bg-slate-50 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none transition">
+                <button id="register-btn" class="w-full bg-[#0052CC] hover:bg-blue-700 text-white font-bold py-2.5 rounded transition shadow-md">Registrarse</button>
+                <p class="mt-6 text-sm text-center text-blue-600 hover:underline cursor-pointer" id="show-login">¿Ya tienes cuenta? Iniciar sesión</p>
+            </div>
+            <p id="auth-error" class="text-red-500 text-sm mt-4 font-medium min-h-[20px]"></p>
+        </div>
+    </div>
+
+    <div id="app-container" class="hidden flex-col h-full w-full">
+        
+        <nav class="h-[48px] bg-[#026AA7] dark:bg-slate-800 flex items-center justify-between px-3 shrink-0 relative z-20">
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 text-white/90 hover:text-white cursor-pointer font-bold text-lg">
+                    <i data-lucide="trello" class="w-5 h-5"></i> <span>Trello</span>
+                </div>
+                <button id="create-board-btn" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-[3px] text-sm font-bold transition flex items-center gap-2">
+                    <span>Crear</span>
+                </button>
+            </div>
+
+            <div class="flex-1 max-w-xl mx-4 relative hidden md:block">
+                <div class="relative">
+                    <i data-lucide="search" class="absolute left-2 top-1.5 w-4 h-4 text-white/70"></i>
+                    <input type="text" id="global-search" placeholder="Buscar..." 
+                        class="w-full pl-8 pr-4 py-1.5 bg-white/20 hover:bg-white/30 border border-transparent focus:bg-white focus:text-slate-900 rounded-[3px] text-sm text-white placeholder-white/70 outline-none transition-all">
+                </div>
+                
+                <div id="search-results" class="hidden absolute top-full left-0 w-full mt-2 bg-white dark:bg-slate-800 rounded shadow-xl border border-slate-200 dark:border-slate-700 z-50 max-h-[80vh] flex flex-col">
+                    <div class="p-3 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center text-slate-700 dark:text-slate-300">
+                        <span class="text-xs font-bold uppercase">Resultados</span>
+                        <div class="flex gap-2">
+                            <button class="search-filter active text-xs px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-700" data-filter="all">Todo</button>
+                            <button class="search-filter text-xs px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700" data-filter="boards">Tableros</button>
+                            <button class="search-filter text-xs px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700" data-filter="cards">Tarjetas</button>
+                        </div>
+                        <button id="close-search" class="hover:bg-slate-100 p-1 rounded"><i data-lucide="x" class="w-4 h-4"></i></button>
+                    </div>
+                    <div id="search-results-list" class="overflow-y-auto p-2 space-y-1 max-h-[300px]"></div>
+                    <div class="p-2 border-t border-slate-200 dark:border-slate-700 text-xs text-slate-400 text-center" id="search-results-count"></div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button id="dark-mode-toggle" class="p-1.5 text-white/80 hover:bg-white/20 rounded-full" title="Modo Oscuro">
+                    <i data-lucide="moon" class="w-5 h-5"></i>
+                </button>
+
+                <div class="relative">
+                    <button id="notifications-btn" class="p-1.5 text-white/80 hover:bg-white/20 rounded-full relative">
+                        <i data-lucide="bell" class="w-5 h-5"></i>
+                        <span id="notifications-badge" class="hidden absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[#026AA7]"></span>
+                    </button>
+                    <div id="notifications-dropdown" class="hidden absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded shadow-xl border border-slate-200 z-50 text-slate-800 dark:text-slate-200">
+                        <div class="p-3 border-b flex justify-between items-center">
+                            <h4 class="font-semibold text-sm">Notificaciones</h4>
+                            <button id="mark-all-read-btn" class="text-xs text-blue-600 hover:underline">Marcar leídas</button>
+                        </div>
+                        <div id="notifications-list" class="max-h-64 overflow-y-auto"></div>
+                    </div>
+                </div>
+
+                <div class="h-8 w-8 rounded-full bg-gradient-to-tr from-orange-400 to-red-500 flex items-center justify-center text-white font-bold text-xs cursor-pointer hover:opacity-90 ml-1" id="user-avatar">
+                    U
+                </div>
+                <div class="flex items-center gap-2 ml-2">
+                    <span id="user-name" class="hidden md:block text-sm font-medium text-white/90">Usuario</span>
+                    <button id="logout-btn" class="text-xs text-white/70 hover:text-white hover:underline">Salir</button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="boards-section flex-1 p-8 overflow-y-auto bg-slate-50 dark:bg-slate-900">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-lg font-bold text-slate-700 dark:text-slate-200 mb-4 flex items-center gap-2">
+                    <i data-lucide="user"></i> Tus espacios de trabajo
+                </h2>
+                <div id="boards-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    </div>
+            </div>
+        </div>
+
+        <div id="board-view" class="hidden board-view-container relative">
+            
+            <div class="h-auto min-h-[50px] bg-black/10 backdrop-blur-sm px-3 flex items-center justify-between shrink-0 flex-wrap py-2 gap-2 text-white">
+                <div class="flex items-center gap-4">
+                    <button id="back-to-boards-btn" class="hover:bg-white/20 p-1.5 rounded transition">
+                        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                    </button>
+                    <h1 id="board-title" class="font-bold text-lg px-2 py-1 rounded hover:bg-white/20 cursor-pointer transition">
+                        Nombre del Tablero
+                    </h1>
+                    <span id="user-role-badge" class="hidden text-xs px-2 py-0.5 rounded bg-white/20"></span>
+                    <button class="bg-white/20 hover:bg-white/30 h-8 w-8 rounded flex items-center justify-center transition">
+                        <i data-lucide="star" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    <div id="members-preview" class="flex -space-x-1 mr-2">
+                        </div>
+                    <button id="invite-member-btn" class="bg-slate-100 hover:bg-white text-slate-800 px-3 py-1.5 rounded-[3px] text-sm font-medium transition flex items-center gap-2 shadow-sm">
+                        <i data-lucide="user-plus" class="w-4 h-4"></i> Compartir
+                    </button>
+                    <button id="toggle-members-btn" class="hover:bg-white/20 p-2 rounded transition" title="Miembros">
+                        <i data-lucide="users" class="w-5 h-5"></i>
+                    </button>
+                    <button id="toggle-activity-btn" class="hover:bg-white/20 p-2 rounded transition" title="Actividad">
+                        <i data-lucide="activity" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="board-canvas" id="lists-container">
+                <div class="list-wrapper">
+                    <button id="add-list-btn" class="w-full bg-white/20 hover:bg-white/30 text-white font-medium text-sm py-3 px-4 rounded-[12px] text-left transition flex items-center gap-2 backdrop-blur-sm">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Añadir otra lista
+                    </button>
+                </div>
+            </div>
+
+            <div id="members-panel" class="hidden absolute top-[50px] right-0 bottom-0 w-80 bg-white dark:bg-slate-800 shadow-2xl z-40 flex flex-col transform transition-transform duration-300">
+                <div class="p-3 border-b flex justify-between items-center bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200">
+                    <h3 class="font-bold text-sm text-center flex-1">Miembros</h3>
+                    <button id="close-members-btn"><i data-lucide="x" class="w-4 h-4"></i></button>
+                </div>
+                <div id="members-list" class="flex-1 overflow-y-auto p-4 space-y-2"></div>
+            </div>
+
+            <div id="activity-panel" class="hidden absolute top-[50px] right-0 bottom-0 w-80 bg-white dark:bg-slate-800 shadow-2xl z-40 flex flex-col">
+                <div class="p-3 border-b flex justify-between items-center bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200">
+                    <h3 class="font-bold text-sm text-center flex-1">Actividad</h3>
+                    <button id="close-activity-btn"><i data-lucide="x" class="w-4 h-4"></i></button>
+                </div>
+                <div id="activity-list" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="board-modal" class="hidden fixed inset-0 bg-black/60 z-[60] flex items-center justify-center">
+        <div class="bg-white dark:bg-slate-800 rounded p-6 w-96 shadow-lg">
+            <h2 class="font-bold text-lg mb-4 text-slate-700 dark:text-white">Crear Tablero</h2>
+            <input type="text" id="board-name-input" placeholder="Título del tablero" class="w-full p-2 border mb-4 rounded bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+            <div class="flex justify-end gap-2">
+                <button id="cancel-board-btn" class="px-3 py-1.5 text-slate-600 hover:bg-slate-100 rounded">Cancelar</button>
+                <button id="save-board-btn" class="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700">Crear</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="list-modal" class="hidden fixed inset-0 bg-black/60 z-[60] flex items-center justify-center">
+        <div class="bg-white dark:bg-slate-800 rounded p-6 w-80 shadow-lg">
+            <h2 class="font-bold text-lg mb-4 text-slate-700 dark:text-white">Añadir Lista</h2>
+            <input type="text" id="list-name-input" placeholder="Título de la lista" class="w-full p-2 border mb-4 rounded bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+            <div class="flex justify-end gap-2">
+                <button id="cancel-list-btn" class="px-3 py-1.5 text-slate-600 hover:bg-slate-100 rounded">Cancelar</button>
+                <button id="save-list-btn" class="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700">Añadir</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="invite-modal" class="hidden fixed inset-0 bg-black/60 z-[60] flex items-center justify-center">
+        <div class="bg-white dark:bg-slate-800 rounded p-6 w-96 shadow-lg">
+            <h2 class="font-bold text-lg mb-4 text-slate-700 dark:text-white">Invitar al Tablero</h2>
+            <input type="email" id="invite-email-input" placeholder="Correo electrónico del usuario" class="w-full p-2 border mb-4 rounded bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2 dark:text-slate-300">Permisos:</label>
+                <div class="flex gap-4 text-sm">
+                    <label class="flex items-center gap-2"><input type="radio" name="invite-role" value="editor" checked> Editor</label>
+                    <label class="flex items-center gap-2"><input type="radio" name="invite-role" value="viewer"> Observador</label>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <button id="cancel-invite-btn" class="px-3 py-1.5 text-slate-600 hover:bg-slate-100 rounded">Cancelar</button>
+                <button id="send-invite-btn" class="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700">Enviar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="card-modal" class="hidden fixed inset-0 bg-black/60 z-[70] flex items-center justify-center overflow-y-auto py-10">
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-2xl w-full max-w-3xl min-h-[500px] flex flex-col md:flex-row relative">
+            
+            <div class="flex-1 p-8 overflow-y-auto">
+                <h2 id="card-modal-title" class="text-xs font-bold text-slate-500 uppercase mb-4 tracking-wider flex items-center gap-2"><i data-lucide="credit-card" class="w-3 h-3"></i> Tarjeta</h2>
+                
+                <input type="text" id="card-title-input" class="w-full text-xl font-bold mb-4 bg-transparent border-none focus:ring-2 focus:ring-blue-500 rounded p-1 dark:text-white text-slate-800" placeholder="Título de la tarjeta">
+                
+                <div id="card-labels-display" class="flex flex-wrap gap-2 mb-4 hidden"></div>
+
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Miembros</label>
+                        <input type="text" id="card-assigned-input" placeholder="Nombre..." class="w-full bg-slate-100 dark:bg-slate-700 p-2 rounded text-sm border-none">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Vencimiento</label>
+                        <input type="date" id="card-due-date-input" class="w-full bg-slate-100 dark:bg-slate-700 p-2 rounded text-sm border-none">
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <div class="flex items-center gap-2 mb-2 text-slate-700 dark:text-slate-200">
+                        <i data-lucide="align-left" class="w-4 h-4"></i>
+                        <h3 class="font-semibold text-sm">Descripción</h3>
+                    </div>
+                    <textarea id="card-description-input" rows="4" placeholder="Añadir una descripción más detallada..." class="w-full p-3 bg-slate-100 dark:bg-slate-700 rounded border-none focus:ring-2 focus:ring-blue-500 text-sm dark:text-white"></textarea>
+                </div>
+
+                <div id="card-checklist-section" class="mb-6">
+                    <div class="flex items-center justify-between mb-2 text-slate-700 dark:text-slate-200">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="check-square" class="w-4 h-4"></i>
+                            <h3 class="font-semibold text-sm">Checklist</h3>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span id="checklist-progress" class="text-xs text-slate-500"></span>
+                            <button id="hide-checklist-btn" class="p-1 hover:bg-slate-200 rounded"><i data-lucide="eye-off" class="w-3 h-3"></i></button>
+                        </div>
+                    </div>
+                    <div id="checklist-items" class="space-y-2 mb-3 pl-6"></div>
+                    <div class="flex gap-2 pl-6">
+                        <input type="text" id="new-checklist-item-input" placeholder="Añadir un elemento" class="flex-1 bg-slate-100 dark:bg-slate-700 p-2 rounded text-sm border-none">
+                        <button id="add-checklist-item-btn" class="bg-slate-200 hover:bg-slate-300 px-3 py-1 rounded text-sm">Añadir</button>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <div class="flex items-center gap-2 mb-2 text-slate-700 dark:text-slate-200">
+                        <i data-lucide="paperclip" class="w-4 h-4"></i>
+                        <h3 class="font-semibold text-sm">Adjuntos</h3>
+                    </div>
+                    <div id="attachments-list" class="pl-6 space-y-2"></div>
+                </div>
+
+                <div id="card-comments-section" class="pt-4 border-t border-slate-200 dark:border-slate-700">
+                    <div class="flex items-center gap-2 mb-4 text-slate-700 dark:text-slate-200">
+                        <i data-lucide="message-square" class="w-4 h-4"></i>
+                        <h3 class="font-semibold text-sm">Actividad</h3>
+                    </div>
+                    <div class="flex gap-2 mb-4">
+                        <div class="w-8 h-8 rounded-full bg-slate-300 flex items-center justify-center font-bold text-xs">YO</div>
+                        <div class="flex-1">
+                            <input type="text" id="comment-input" placeholder="Escriba un comentario..." class="w-full p-2 border rounded mb-2 bg-white dark:bg-slate-700 dark:border-slate-600">
+                            <button id="add-comment-btn" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-medium rounded">Guardar</button>
+                        </div>
+                    </div>
+                    <div id="comments-list" class="space-y-3 pl-10"></div>
+                </div>
+            </div>
+
+            <div class="w-full md:w-48 bg-slate-50 dark:bg-slate-900 p-4 border-l border-slate-200 dark:border-slate-700 flex flex-col gap-2">
+                <h3 class="text-xs font-bold text-slate-500 uppercase mb-1">Añadir a la tarjeta</h3>
+                <button id="card-labels-btn" class="sidebar-btn"><i data-lucide="tag" class="w-3 h-3"></i> Etiquetas</button>
+                <button id="card-checklist-btn" class="sidebar-btn"><i data-lucide="check-square" class="w-3 h-3"></i> Checklist</button>
+                <button id="card-due-date-btn" class="sidebar-btn"><i data-lucide="clock" class="w-3 h-3"></i> Fechas</button>
+                <button id="attach-file-btn" class="sidebar-btn"><i data-lucide="paperclip" class="w-3 h-3"></i> Adjunto</button>
+                <button id="card-cover-btn" class="sidebar-btn"><i data-lucide="image" class="w-3 h-3"></i> Portada</button>
+
+                <h3 class="text-xs font-bold text-slate-500 uppercase mb-1 mt-4">Acciones</h3>
+                <button id="delete-card-btn" class="sidebar-btn bg-red-50 text-red-700 hover:bg-red-100"><i data-lucide="trash-2" class="w-3 h-3"></i> Eliminar</button>
+
+                <div class="mt-auto pt-4 flex flex-col gap-2">
+                    <button id="save-card-btn" class="w-full py-2 bg-[#0052CC] text-white rounded hover:bg-blue-700 font-medium text-sm">Guardar</button>
+                    <button id="cancel-card-btn" class="w-full py-2 text-slate-500 hover:bg-slate-200 rounded text-sm">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="card-cover-modal" class="hidden fixed inset-0 z-[80] flex items-center justify-center bg-black/20">
+        <div class="bg-white dark:bg-slate-800 p-4 rounded shadow-xl w-64">
+            <h3 class="text-sm font-bold mb-3 dark:text-white">Color de portada</h3>
+            <div class="grid grid-cols-4 gap-2 mb-3">
+                <div class="cover-color w-10 h-8 rounded bg-green-500 cursor-pointer" data-color="bg-green-500"></div>
+                <div class="cover-color w-10 h-8 rounded bg-yellow-500 cursor-pointer" data-color="bg-yellow-500"></div>
+                <div class="cover-color w-10 h-8 rounded bg-orange-500 cursor-pointer" data-color="bg-orange-500"></div>
+                <div class="cover-color w-10 h-8 rounded bg-red-500 cursor-pointer" data-color="bg-red-500"></div>
+                <div class="cover-color w-10 h-8 rounded bg-purple-500 cursor-pointer" data-color="bg-purple-500"></div>
+                <div class="cover-color w-10 h-8 rounded bg-blue-500 cursor-pointer" data-color="bg-blue-500"></div>
+            </div>
+            <button id="remove-cover-btn" class="w-full text-xs py-1 bg-slate-100 hover:bg-slate-200 rounded">Quitar</button>
+            <button id="cancel-cover-btn" class="w-full text-xs py-1 mt-1 text-slate-500">Cancelar</button>
+        </div>
+    </div>
+
+    <div id="labels-modal" class="hidden fixed inset-0 z-[80] flex items-center justify-center bg-black/20">
+        <div class="bg-white dark:bg-slate-800 p-4 rounded shadow-xl w-64">
+            <h3 class="text-sm font-bold mb-3 dark:text-white">Etiquetas</h3>
+            <div class="space-y-2 mb-3">
+                <label class="flex items-center gap-2 cursor-pointer p-1 hover:bg-slate-50 rounded">
+                    <input type="checkbox" class="label-checkbox" data-label="urgente" data-color="bg-red-100 text-red-700">
+                    <span class="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded font-bold">Urgente</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer p-1 hover:bg-slate-50 rounded">
+                    <input type="checkbox" class="label-checkbox" data-label="diseño" data-color="bg-purple-100 text-purple-700">
+                    <span class="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded font-bold">Diseño</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer p-1 hover:bg-slate-50 rounded">
+                    <input type="checkbox" class="label-checkbox" data-label="dev" data-color="bg-green-100 text-green-700">
+                    <span class="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded font-bold">Dev</span>
+                </label>
+            </div>
+            <button id="cancel-labels-btn" class="w-full text-xs py-1 bg-slate-100 hover:bg-slate-200 rounded">Listo</button>
+        </div>
+    </div>
+
+    <div id="shortcuts-modal" class="hidden fixed inset-0 z-[80] flex items-center justify-center bg-black/50">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded shadow-xl max-w-sm w-full dark:text-white">
+            <h2 class="font-bold mb-4">Atajos de teclado</h2>
+            <div class="space-y-2 text-sm">
+                <div class="flex justify-between"><span>Buscar</span> <kbd class="bg-slate-100 px-1 border rounded">/</kbd></div>
+                <div class="flex justify-between"><span>Crear Tarjeta</span> <kbd class="bg-slate-100 px-1 border rounded">N</kbd></div>
+                <div class="flex justify-between"><span>Crear Lista</span> <kbd class="bg-slate-100 px-1 border rounded">L</kbd></div>
+                <div class="flex justify-between"><span>Cerrar</span> <kbd class="bg-slate-100 px-1 border rounded">Esc</kbd></div>
+            </div>
+            <button id="close-shortcuts" class="mt-4 w-full bg-blue-600 text-white py-1 rounded">Cerrar</button>
+        </div>
+    </div>
+
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="auth.js"></script>
+    <script type="module" src="app.js"></script>
+
+    <style>
+        .sidebar-btn {
+            @apply w-full text-left px-3 py-1.5 text-sm text-slate-700 dark:text-slate-300 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 rounded flex items-center gap-2 transition;
+        }
+    </style>
+</body>
+</html>
