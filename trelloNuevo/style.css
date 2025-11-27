@@ -215,3 +215,107 @@ html, body {
 .due-date-ok { background-color: transparent; color: #5e6c84; }
 .due-date-soon { background-color: #F2D600; color: white; } /* Amarillo */
 .due-date-overdue { background-color: #EB5A46; color: white; } /* Rojo */
+
+/* ========================================= */
+/* FÍSICA Y MICRO-INTERACCIONES (Trello 2025) */
+/* ========================================= */
+
+/* 1. Física de Arrastre (Drag & Drop Physics) */
+/* Cuando el usuario "levanta" una tarjeta */
+.list-card.dragging {
+    /* Rotación sutil para simular peso físico */
+    transform: rotate(3deg) !important; /* !important para sobreescribir estilos inline si es necesario */
+    
+    /* Sombra profunda para simular elevación (Z-Index visual) */
+    box-shadow: 0 12px 24px -6px rgba(9, 30, 66, 0.25), 0 0 0 1px rgba(9, 30, 66, 0.08) !important;
+    
+    /* Pequeña transparencia para ver dónde va a caer */
+    opacity: 0.9;
+    
+    /* Asegurar que flote sobre todo lo demás */
+    z-index: 9999;
+    
+    /* Cursor de "agarrando" */
+    cursor: grabbing;
+}
+
+/* El "fantasma" o hueco donde caerá la tarjeta */
+.drag-over {
+    background-color: rgba(9, 30, 66, 0.04); /* Gris muy sutil */
+    border: 2px dashed rgba(9, 30, 66, 0.1);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+/* 2. Etiquetas Expandibles (Micro-interacción) */
+/* Estado Base: Solo barra de color */
+.card-label {
+    height: 8px;
+    width: 40px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-right: 4px;
+    margin-bottom: 4px;
+    
+    /* Transición suave para la expansión */
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Ocultar texto por defecto */
+    color: transparent;
+    font-size: 0;
+    line-height: 0;
+    vertical-align: middle;
+    cursor: pointer;
+}
+
+/* Estado Hover: Feedback visual */
+.card-label:hover {
+    filter: brightness(0.9); /* Oscurecer ligeramente */
+    height: 10px; /* Feedback táctil sutil */
+}
+
+/* Estado Expandido: Muestra texto y crece */
+/* Esta clase se añade vía JS al hacer clic */
+.card-label.expanded {
+    width: auto; /* Ancho automático según texto */
+    height: auto;
+    min-height: 16px;
+    padding: 0 8px; /* Padding interno para el texto */
+    
+    /* Mostrar texto */
+    color: inherit; /* Color de texto legible (blanco o negro según fondo) */
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 16px;
+    text-shadow: none;
+    
+    /* Ajuste de alineación */
+    display: inline-flex;
+    align-items: center;
+}
+
+/* 3. Colores de Etiquetas con Contraste (Accesibilidad) */
+/* Sobreescribimos Tailwind para asegurar contraste en etiquetas */
+.bg-green-500.card-label.expanded { background-color: #61BD4F; color: white; }
+.bg-yellow-500.card-label.expanded { background-color: #F2D600; color: #172B4D; } /* Texto oscuro en amarillo */
+.bg-orange-500.card-label.expanded { background-color: #FF9F1A; color: white; }
+.bg-red-500.card-label.expanded { background-color: #EB5A46; color: white; }
+.bg-purple-500.card-label.expanded { background-color: #C377E0; color: white; }
+.bg-blue-500.card-label.expanded { background-color: #0079BF; color: white; }
+
+/* 4. Scrollbars Finos (Estilo Mac/iOS) */
+/* Para navegadores Webkit (Chrome, Safari, Edge) */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent; /* Track invisible */
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(9, 30, 66, 0.08); /* Gris muy claro */
+    border-radius: 4px;
+}
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(9, 30, 66, 0.2); /* Más visible al hover */
+}
