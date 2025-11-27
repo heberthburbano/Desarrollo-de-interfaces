@@ -7,19 +7,20 @@ import {
 document.addEventListener('DOMContentLoaded', initializeApp);
 
 function initializeApp() {
-    console.log('🚀 Inicializando Trello Clone (Fase 2: Checklists & Covers)...');
+    console.log('🚀 Inicializando Trello Clone (Fase 3: Imágenes y Portadas)...');
 
     // ========================================
-    // VARIABLES DE ESTADO
+    // ESTADO GLOBAL
     // ========================================
     let currentUser = null;
     let currentBoardId = null;
     let currentUserRole = null;
     
-    // Estado de Edición (Tarjeta actual)
-    let currentCardData = null; // { listId, cardId, data }
-    let currentCardCover = { color: null }; // [NUEVO] Estado para portada
-    let currentChecklist = []; // [NUEVO] Estado para checklist
+    // Estado de Edición
+    let currentCardData = null; 
+    let currentCardCover = { color: null, mode: 'banner', url: null }; // [ACTUALIZADO] Soporte para URL y modo
+    let currentChecklist = []; 
+    let currentAttachments = []; // [ACTUALIZADO] Lista de adjuntos
     
     let unsubscribeBoards = null;
     let unsubscribeLists = null;
@@ -32,10 +33,10 @@ function initializeApp() {
     const boardModal = document.getElementById('board-modal');
     const listModal = document.getElementById('list-modal');
     const cardModal = document.getElementById('card-modal');
-    const coverModal = document.getElementById('card-cover-modal'); // [NUEVO]
+    const coverModal = document.getElementById('card-cover-modal');
 
     // ========================================
-    // MODO OSCURO & AUTH
+    // MODOS Y CONFIGURACIÓN
     // ========================================
     function initDarkMode() {
         const darkModeToggle = document.getElementById('dark-mode-toggle');
@@ -68,7 +69,7 @@ function initializeApp() {
     });
 
     // ========================================
-    // GESTIÓN DE TABLEROS & LISTAS (Core)
+    // CORE: TABLEROS Y LISTAS
     // ========================================
 
     function loadBoards() {
@@ -107,7 +108,6 @@ function initializeApp() {
         currentBoardId = boardId;
         currentUserRole = boardData.members?.[currentUser.uid]?.role || 'viewer';
         document.getElementById('board-title').textContent = boardData.title;
-        
         document.querySelector('.boards-section').style.display = 'none'; 
         boardView.classList.remove('hidden');
         boardView.style.display = 'flex'; 
@@ -157,7 +157,7 @@ function initializeApp() {
     }
 
     // ========================================
-    // 4. GESTIÓN DE TARJETAS (Actualizada con Portadas y Checklist)
+    // 4. GESTIÓN DE TARJETAS (IMÁGENES Y PORTADAS)
     // ========================================
 
     function loadCards(boardId, listId, container) {
@@ -178,55 +178,61 @@ function initializeApp() {
         div.dataset.cardId = cardId;
         div.dataset.listId = listId;
 
-        // [NUEVO] Renderizado de Portada (Cover)
+        // [LOGICA DE PORTADA AVANZADA]
         let coverHtml = '';
-        if(card.cover?.color) {
-            // Usa clases de Tailwind para los colores (debes asegurarte que coinciden con los del modal)
+        let fullCoverClass = '';
+        
+        // 1. Portada de IMAGEN
+        if (card.cover?.url) {
+            if (card.cover.mode === 'full') {
+                // Modo Full Cover (Fondo completo)
+                fullCoverClass = 'full-cover';
+                div.style.backgroundImage = `url('${card.cover.url}')`;
+            } else {
+                // Modo Banner (Imagen arriba)
+                coverHtml = `<div class="card-cover-image" style="background-image: url('${card.cover.url}')"></div>`;
+            }
+        } 
+        // 2. Portada de COLOR
+        else if(card.cover?.color) {
             coverHtml = `<div class="card-cover ${card.cover.color}"></div>`;
         }
 
-        // [NUEVO] Renderizado de Checklist (Barra de progreso)
+        // Si es Full Cover, añadimos la clase que cambia todo el layout
+        if (fullCoverClass) div.classList.add(fullCoverClass);
+
+        // Checklist Mini
         let checklistHtml = '';
         if(card.checklist && card.checklist.length > 0) {
             const total = card.checklist.length;
             const completed = card.checklist.filter(i => i.completed).length;
             const percent = Math.round((completed / total) * 100);
             const isDone = completed === total;
-            
-            checklistHtml = `
-                <div class="flex items-center gap-1.5 text-xs ${isDone ? 'text-[#61BD4F]' : 'text-slate-500'} mt-1" title="Progreso del checklist">
-                    <i data-lucide="check-square" class="w-3 h-3"></i> 
-                    <span>${completed}/${total}</span>
-                </div>
-                <div class="checklist-progress-bar">
-                    <div class="checklist-progress-value ${isDone ? 'complete' : ''}" style="width: ${percent}%"></div>
-                </div>
-            `;
+            checklistHtml = `<div class="flex items-center gap-1.5 text-xs ${isDone ? 'text-[#61BD4F]' : 'text-slate-500'} mt-1"><i data-lucide="check-square" class="w-3 h-3"></i> <span>${completed}/${total}</span></div><div class="checklist-progress-bar"><div class="checklist-progress-value ${isDone ? 'complete' : ''}" style="width: ${percent}%"></div></div>`;
         }
 
-        // Renderizado de Fechas (Tu código anterior)
+        // Fechas
         let dateHtml = '';
         if (card.dueDate) {
             const dateObj = new Date(card.dueDate);
             const now = new Date(); now.setHours(0,0,0,0);
             const due = new Date(dateObj); due.setHours(0,0,0,0);
             const diff = (due - now) / (1000 * 60 * 60 * 24);
-            
             let colorClass = 'text-slate-500 bg-transparent';
             let icon = 'calendar';
             if (diff < 0) { colorClass = 'bg-[#EB5A46] text-white'; icon = 'alert-circle'; }
             else if (diff <= 1) { colorClass = 'bg-[#F2D600] text-[#172B4D]'; icon = 'clock'; }
-            
             dateHtml = `<div class="due-date-badge ${colorClass} inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold"><i data-lucide="${icon}" class="w-3 h-3"></i> <span>${dateObj.toLocaleDateString('es-ES', {day:'numeric', month:'short'})}</span></div>`;
         }
 
         div.innerHTML = `
             ${coverHtml}
-            <span class="block text-sm text-[#172B4D] dark:text-slate-200 mb-1 leading-tight font-medium">${card.title}</span>
+            <span class="block text-sm text-[#172B4D] dark:text-slate-200 mb-1 leading-tight font-medium card-title">${card.title}</span>
             <div class="flex flex-wrap gap-2 items-center">
                 ${dateHtml}
                 ${checklistHtml}
-                ${card.description ? `<i data-lucide="align-left" class="w-3 h-3 text-slate-400"></i>` : ''}
+                ${card.description ? `<i data-lucide="align-left" class="w-3 h-3 text-slate-400 card-description-icon"></i>` : ''}
+                ${card.attachments?.length > 0 ? `<i data-lucide="paperclip" class="w-3 h-3 text-slate-400"></i> <span class="text-xs text-slate-500">${card.attachments.length}</span>` : ''}
             </div>
             <button class="icon-edit absolute top-1 right-1 p-1.5 bg-[#f4f5f7]/80 hover:bg-[#ebecf0] rounded opacity-0 group-hover:opacity-100 transition z-20"><i data-lucide="pencil" class="w-3 h-3 text-[#42526E]"></i></button>
         `;
@@ -240,34 +246,18 @@ function initializeApp() {
     }
 
     // ========================================
-    // 5. DRAG & DROP (Física & Lógica)
+    // 5. DRAG & DROP
     // ========================================
     let draggedItem = null;
-
-    function handleDragStart(e) {
-        draggedItem = this;
-        this.style.transform = 'rotate(3deg)'; 
-        this.classList.add('dragging'); 
-        e.dataTransfer.setData('text/plain', JSON.stringify({ cardId: this.dataset.cardId, sourceListId: this.dataset.listId }));
-    }
-
-    function handleDragEnd(e) {
-        this.style.transform = 'none';
-        this.classList.remove('dragging');
-        draggedItem = null;
-        document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-    }
-
+    function handleDragStart(e) { draggedItem = this; this.style.transform = 'rotate(3deg)'; this.classList.add('dragging'); e.dataTransfer.setData('text/plain', JSON.stringify({ cardId: this.dataset.cardId, sourceListId: this.dataset.listId })); }
+    function handleDragEnd(e) { this.style.transform = 'none'; this.classList.remove('dragging'); draggedItem = null; document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over')); }
     function setupDropZone(container, listId) {
         container.addEventListener('dragover', (e) => { e.preventDefault(); container.classList.add('drag-over'); });
         container.addEventListener('dragleave', () => container.classList.remove('drag-over'));
         container.addEventListener('drop', async (e) => {
-            e.preventDefault();
-            container.classList.remove('drag-over');
+            e.preventDefault(); container.classList.remove('drag-over');
             if(!draggedItem) return;
-            
             const { cardId, sourceListId } = JSON.parse(e.dataTransfer.getData('text/plain'));
-            
             try {
                 if (sourceListId !== listId) {
                     const oldRef = doc(db, 'boards', currentBoardId, 'lists', sourceListId, 'cards', cardId);
@@ -284,34 +274,31 @@ function initializeApp() {
     }
 
     // ========================================
-    // 6. MODAL DE TARJETA (CHECKLIST & COVERS)
+    // 6. MODAL DE TARJETA (ADJUNTOS Y PORTADA)
     // ========================================
 
     function openCardModal(listId, cardId = null, cardData = null) {
         currentCardData = { listId, cardId, data: cardData };
-        
-        // Reset Inputs
         document.getElementById('card-title-input').value = cardData ? cardData.title : '';
         document.getElementById('card-description-input').value = cardData?.description || '';
         document.getElementById('card-due-date-input').value = cardData?.dueDate || ''; 
         document.getElementById('card-modal-title').innerHTML = cardData ? '<i data-lucide="credit-card" class="w-3 h-3"></i> Editar Tarjeta' : '<i data-lucide="plus" class="w-3 h-3"></i> Nueva Tarjeta';
 
-        // [NUEVO] Cargar estado de Checklist y Portada
         currentChecklist = cardData?.checklist || [];
-        currentCardCover = cardData?.cover || { color: null };
-        
+        currentCardCover = cardData?.cover || { color: null, mode: 'banner', url: null };
+        currentAttachments = cardData?.attachments || []; // [NUEVO]
+
         renderChecklist();
+        renderAttachments(); // [NUEVO] Renderizar lista de adjuntos
         
         cardModal.classList.remove('hidden');
         cardModal.style.display = 'flex';
         lucide.createIcons();
     }
 
-    // [NUEVO] Función para renderizar el checklist en el modal con botón eliminar
     function renderChecklist() {
         const container = document.getElementById('checklist-items');
         container.innerHTML = '';
-        
         currentChecklist.forEach((item, index) => {
             const div = document.createElement('div');
             div.className = 'checklist-item group flex items-center gap-2 py-1';
@@ -320,83 +307,130 @@ function initializeApp() {
                 <span class="flex-1 text-sm ${item.completed ? 'line-through text-slate-400' : 'text-slate-700 dark:text-slate-300'}">${item.text}</span>
                 <button class="delete-item-btn text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
             `;
-            
-            // Toggle completado
-            div.querySelector('input').addEventListener('change', (e) => {
-                item.completed = e.target.checked;
-                renderChecklist(); // Re-render para actualizar barra progreso
-            });
-
-            // Borrar item
-            div.querySelector('.delete-item-btn').addEventListener('click', () => {
-                currentChecklist.splice(index, 1);
-                renderChecklist();
-            });
-
+            div.querySelector('input').addEventListener('change', (e) => { item.completed = e.target.checked; renderChecklist(); });
+            div.querySelector('.delete-item-btn').addEventListener('click', () => { currentChecklist.splice(index, 1); renderChecklist(); });
             container.appendChild(div);
         });
-
-        // Actualizar barra de progreso del modal
         const progress = document.getElementById('checklist-progress');
         const completed = currentChecklist.filter(i => i.completed).length;
-        const total = currentChecklist.length;
-        const percent = total === 0 ? 0 : Math.round((completed/total)*100);
-        
+        const percent = currentChecklist.length === 0 ? 0 : Math.round((completed/currentChecklist.length)*100);
         if (progress) progress.innerHTML = `${percent}%`;
         if(window.lucide) lucide.createIcons();
     }
 
-    // Event Listeners Checklist
+    // [NUEVO] Renderizar Adjuntos con Botón de Portada
+    function renderAttachments() {
+        const container = document.getElementById('attachments-list');
+        container.innerHTML = '';
+        
+        if (currentAttachments.length === 0) {
+            container.innerHTML = '<p class="text-sm text-slate-400 italic">No hay adjuntos.</p>';
+            return;
+        }
+
+        currentAttachments.forEach((att, index) => {
+            const div = document.createElement('div');
+            div.className = 'attachment-item flex items-center gap-3 p-2 hover:bg-slate-100 rounded';
+            
+            // Si es imagen, mostrar miniatura
+            let thumbHtml = att.type === 'image' 
+                ? `<div class="attachment-thumbnail" style="background-image: url('${att.url}')"></div>` 
+                : `<div class="attachment-thumbnail flex items-center justify-center bg-slate-200"><i data-lucide="link" class="w-6 h-6 text-slate-500"></i></div>`;
+
+            // Botones de acción
+            let actionsHtml = `
+                <button class="text-xs text-slate-500 hover:text-slate-800 underline delete-att-btn">Eliminar</button>
+                <a href="${att.url}" target="_blank" class="text-xs text-slate-500 hover:text-slate-800 underline ml-2">Abrir</a>
+            `;
+
+            // Si es imagen, añadir botón "Hacer Portada"
+            if (att.type === 'image') {
+                actionsHtml += `
+                    <button class="text-xs text-slate-500 hover:text-slate-800 underline ml-2 make-cover-btn flex items-center gap-1">
+                        <i data-lucide="layout" class="w-3 h-3"></i> Hacer Portada
+                    </button>
+                `;
+            }
+
+            div.innerHTML = `
+                ${thumbHtml}
+                <div class="flex-1">
+                    <p class="text-sm font-bold text-slate-700 truncate">${att.name}</p>
+                    <div class="flex mt-1">${actionsHtml}</div>
+                </div>
+            `;
+
+            div.querySelector('.delete-att-btn').addEventListener('click', () => {
+                currentAttachments.splice(index, 1);
+                renderAttachments();
+            });
+
+            div.querySelector('.make-cover-btn')?.addEventListener('click', () => {
+                // Alternar entre banner, full o nada
+                if (currentCardCover.url === att.url && currentCardCover.mode === 'banner') {
+                    currentCardCover.mode = 'full'; // Cambiar a full
+                } else if (currentCardCover.url === att.url && currentCardCover.mode === 'full') {
+                    currentCardCover = { color: null, mode: 'banner', url: null }; // Quitar portada
+                } else {
+                    currentCardCover = { color: null, mode: 'banner', url: att.url }; // Poner portada nueva
+                }
+                alert(`Portada actualizada: ${currentCardCover.mode || 'Eliminada'}`);
+            });
+
+            container.appendChild(div);
+        });
+        if(window.lucide) lucide.createIcons();
+    }
+
+    // Event listeners
     document.getElementById('add-checklist-item-btn')?.addEventListener('click', () => {
         const input = document.getElementById('new-checklist-item-input');
-        if(input.value.trim()) {
-            currentChecklist.push({ text: input.value.trim(), completed: false });
-            input.value = '';
-            renderChecklist();
-        }
+        if(input.value.trim()) { currentChecklist.push({ text: input.value.trim(), completed: false }); input.value = ''; renderChecklist(); }
     });
 
-    // [NUEVO] Gestión de Portadas (Modal)
-    document.getElementById('card-cover-btn')?.addEventListener('click', () => {
-        coverModal.classList.remove('hidden');
-        coverModal.style.display = 'flex';
+    // [NUEVO] Añadir Adjunto (Prompt mejorado)
+    document.getElementById('attach-file-btn')?.addEventListener('click', () => {
+        const url = prompt("URL de la imagen o archivo:");
+        if (!url) return;
+        
+        // Detección simple de imagen por extensión
+        const isImage = url.match(/\.(jpeg|jpg|gif|png|webp)$/) != null || url.includes('images.unsplash.com');
+        const name = prompt("Nombre del archivo:", isImage ? "Imagen" : "Enlace");
+        
+        currentAttachments.push({
+            name: name || "Adjunto",
+            url: url,
+            type: isImage ? 'image' : 'link',
+            addedAt: new Date().toISOString()
+        });
+        renderAttachments();
     });
 
+    document.getElementById('card-cover-btn')?.addEventListener('click', () => { coverModal.classList.remove('hidden'); coverModal.style.display = 'flex'; });
     document.querySelectorAll('.cover-color').forEach(btn => {
         btn.addEventListener('click', () => {
-            const colorClass = btn.getAttribute('data-color'); // ej: 'bg-green-500'
-            currentCardCover = { color: colorClass };
+            currentCardCover = { color: btn.getAttribute('data-color'), mode: 'color', url: null };
             closeModal('card-cover-modal');
         });
     });
+    document.getElementById('remove-cover-btn')?.addEventListener('click', () => { currentCardCover = { color: null }; closeModal('card-cover-modal'); });
 
-    document.getElementById('remove-cover-btn')?.addEventListener('click', () => {
-        currentCardCover = { color: null };
-        closeModal('card-cover-modal');
-    });
-
-    // GUARDAR TARJETA (Ahora incluye cover y checklist)
     document.getElementById('save-card-btn')?.addEventListener('click', async () => {
         const title = document.getElementById('card-title-input').value.trim();
         if(!title) return;
-
         const dataToSave = {
             title,
             description: document.getElementById('card-description-input').value.trim(),
             dueDate: document.getElementById('card-due-date-input').value,
-            checklist: currentChecklist, // Guardamos el array actualizado
-            cover: currentCardCover,     // Guardamos la portada seleccionada
+            checklist: currentChecklist,
+            cover: currentCardCover, // Guarda la configuración completa de la portada
+            attachments: currentAttachments, // Guarda los adjuntos
             updatedAt: serverTimestamp()
         };
-
         if (currentCardData.cardId) {
             await updateDoc(doc(db, 'boards', currentBoardId, 'lists', currentCardData.listId, 'cards', currentCardData.cardId), dataToSave);
         } else {
-            await addDoc(collection(db, 'boards', currentBoardId, 'lists', currentCardData.listId, 'cards'), {
-                ...dataToSave,
-                position: Date.now(),
-                createdAt: serverTimestamp()
-            });
+            await addDoc(collection(db, 'boards', currentBoardId, 'lists', currentCardData.listId, 'cards'), { ...dataToSave, position: Date.now(), createdAt: serverTimestamp() });
         }
         closeModal('card-modal');
     });
@@ -409,24 +443,9 @@ function initializeApp() {
         }
     });
 
-    // ========================================
-    // UTILIDADES
-    // ========================================
-    function closeModal(modalId) {
-        const modal = document.getElementById(modalId);
-        if(modal) { modal.classList.add('hidden'); modal.style.display = 'none'; }
-    }
-
+    function closeModal(modalId) { const modal = document.getElementById(modalId); if(modal) { modal.classList.add('hidden'); modal.style.display = 'none'; } }
     document.querySelectorAll('[id^="cancel-"]').forEach(btn => btn.addEventListener('click', (e) => closeModal(e.target.closest('.fixed').id)));
-    
-    // Abrir modales globales
     document.getElementById('create-board-btn')?.addEventListener('click', () => { boardModal.classList.remove('hidden'); boardModal.style.display = 'flex'; });
     document.getElementById('add-list-btn')?.addEventListener('click', () => { listModal.classList.remove('hidden'); listModal.style.display = 'flex'; });
-    document.getElementById('back-to-boards-btn')?.addEventListener('click', () => {
-        boardView.style.display = 'none';
-        document.querySelector('.boards-section').style.display = 'block';
-        if(unsubscribeLists) unsubscribeLists();
-        currentBoardId = null;
-    });
-
+    document.getElementById('back-to-boards-btn')?.addEventListener('click', () => { boardView.style.display = 'none'; document.querySelector('.boards-section').style.display = 'block'; if(unsubscribeLists) unsubscribeLists(); currentBoardId = null; });
 }
