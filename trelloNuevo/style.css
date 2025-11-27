@@ -493,3 +493,60 @@ html, body {
 .dark .sidebar-btn i {
     color: #94A3B8;
 }
+
+/* ========================================= */
+/* FASE 4: MIEMBROS Y AVATARES */
+/* ========================================= */
+
+/* Avatar Genérico */
+.member-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: #DFE1E6;
+    color: #172B4D;
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid white; /* Borde blanco para solapamiento */
+    cursor: pointer;
+}
+
+/* Avatares en la Tarjeta (Miniaturas) */
+.card-members {
+    display: flex;
+    margin-top: 4px;
+    justify-content: flex-end; /* A la derecha */
+}
+.card-members .member-avatar {
+    margin-left: -4px; /* Efecto solapado (stack) */
+}
+
+/* Avatares en la Cabecera del Tablero */
+.header-avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+    border: none;
+    margin-right: -4px;
+    background-color: #ebecf0;
+}
+
+/* Modal de Selección de Miembros (Simple) */
+.member-select-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+.member-select-item:hover {
+    background-color: #F4F5F7;
+}
+.member-select-item.selected {
+    background-color: #E4F0F6;
+    color: #0079BF;
+}
