@@ -365,3 +365,86 @@ html, body {
     margin-left: auto;
     padding: 2px;
 }
+
+/* ========================================= */
+/* FASE 3: IMÁGENES DE PORTADA (COVERS) */
+/* ========================================= */
+
+/* 1. Modo Banner (Imagen Arriba) */
+.card-cover-image {
+    height: 120px; /* Altura estándar de banner */
+    background-size: cover;
+    background-position: center;
+    border-radius: 8px 8px 0 0;
+    margin: -8px -8px 8px -8px; /* Cubrir padding del padre */
+}
+
+/* 2. Modo Fondo Completo (Full Cover) */
+.list-card.full-cover {
+    min-height: 200px;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding-bottom: 12px;
+    position: relative;
+}
+
+/* Sombra interior para leer texto sobre imagen */
+.list-card.full-cover::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0) 50%, rgba(0,0,0,0.6) 100%);
+    border-radius: 8px;
+    z-index: 1;
+}
+
+/* Ajuste de texto en Full Cover */
+.list-card.full-cover .card-title {
+    color: white !important;
+    font-weight: 700;
+    font-size: 16px;
+    z-index: 2;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    margin-bottom: 4px;
+}
+
+/* Ocultar elementos en Full Cover para limpieza visual */
+.list-card.full-cover .card-cover,
+.list-card.full-cover .card-description-icon, 
+.list-card.full-cover .checklist-progress-bar {
+    display: none; 
+}
+
+/* Badge de fecha en Full Cover (debe ser legible) */
+.list-card.full-cover .due-date-badge {
+    background-color: rgba(0,0,0,0.4);
+    color: white;
+    z-index: 2;
+}
+
+/* 3. Estilos de Adjuntos en Modal */
+.attachment-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+    border-radius: 4px;
+    transition: background 0.1s;
+}
+.attachment-item:hover {
+    background-color: rgba(9, 30, 66, 0.04);
+}
+.attachment-thumbnail {
+    width: 80px;
+    height: 60px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 4px;
+    background-color: #ebecf0;
+}
