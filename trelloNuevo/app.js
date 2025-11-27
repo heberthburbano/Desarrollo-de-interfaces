@@ -4,11 +4,11 @@ import {
     orderBy, arrayUnion, arrayRemove, serverTimestamp, getDoc, getDocs, deleteField
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
-// INICIALIZACIÓN
+// ESPERAR A QUE EL DOM ESTÉ LISTO
 document.addEventListener('DOMContentLoaded', initializeApp);
 
 function initializeApp() {
-    console.log('🚀 Inicializando lógica de Trello Clone...');
+    console.log('🚀 Inicializando aplicación Trello Clone (v2025)...');
 
     // ========================================
     // ESTADO GLOBAL
@@ -17,30 +17,52 @@ function initializeApp() {
     let currentBoardId = null;
     let currentBoardData = null;
     let currentUserRole = null;
-    
-    // Variables para Edición de Tarjeta
-    let currentCardData = null; // { listId, cardId, data }
-    let currentCardLabels = [];
-    let currentChecklist = [];
-    
-    // Suscripciones (para cancelar al salir)
+    let currentCardData = null; 
     let unsubscribeBoards = null;
     let unsubscribeLists = null;
-    let unsubscribeCards = {}; // Objeto para guardar unsubs por lista
+    let unsubscribeCards = {}; 
     let unsubscribeActivity = null;
+    let unsubscribeNotifications = null; // [FIX] Faltaba declarar esta variable
 
     // Elementos DOM Principales
     const boardsContainer = document.getElementById('boards-container');
     const boardView = document.getElementById('board-view');
-    const listsContainer = document.getElementById('lists-container'); // Ojo: este es el div con clase .board-canvas
+    const listsContainer = document.getElementById('lists-container');
+    const boardModal = document.getElementById('board-modal');
+    const listModal = document.getElementById('list-modal');
+    const cardModal = document.getElementById('card-modal');
+    const inviteModal = document.getElementById('invite-modal');
+
+    // ========================================
+    // MODO OSCURO [FIX]
+    // ========================================
+    function initDarkMode() {
+        const darkModeToggle = document.getElementById('dark-mode-toggle');
+        const html = document.documentElement;
+        
+        // Cargar preferencia guardada
+        if (localStorage.getItem('theme') === 'dark') {
+            html.classList.add('dark');
+        }
+
+        darkModeToggle?.addEventListener('click', () => {
+            html.classList.toggle('dark');
+            const isDark = html.classList.contains('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            
+            // Actualizar iconos por si alguno cambia según el tema
+            if(window.lucide) lucide.createIcons();
+        });
+    }
+    initDarkMode();
 
     // ========================================
     // PERMISOS Y ROLES
     // ========================================
     const PERMISSIONS = {
-        owner: { editBoard: true, createList: true, editCard: true, deleteCard: true },
-        editor: { editBoard: false, createList: true, editCard: true, deleteCard: true },
-        viewer: { editBoard: false, createList: false, editCard: false, deleteCard: false }
+        owner: { viewBoard: true, editBoard: true, deleteBoard: true, createList: true, editCard: true, deleteCard: true },
+        editor: { viewBoard: true, editBoard: false, deleteBoard: false, createList: true, editCard: true, deleteCard: true },
+        viewer: { viewBoard: true, editBoard: false, deleteBoard: false, createList: false, editCard: false, deleteCard: false }
     };
 
     function hasPermission(action) {
@@ -49,19 +71,20 @@ function initializeApp() {
     }
 
     // ========================================
-    // AUTENTICACIÓN (Escuchar evento de auth.js)
+    // AUTENTICACIÓN
     // ========================================
     window.addEventListener('user-authenticated', (e) => {
         currentUser = e.detail.user;
-        console.log('👤 Usuario detectado en app.js:', currentUser.email);
+        console.log('👤 Usuario detectado:', currentUser.email);
         
-        // Cargar avatar
+        // UI de Usuario
         const avatar = document.getElementById('user-avatar');
         if(avatar) avatar.textContent = (currentUser.displayName || currentUser.email).charAt(0).toUpperCase();
         const nameDisplay = document.getElementById('user-name');
         if(nameDisplay) nameDisplay.textContent = currentUser.displayName || currentUser.email;
 
         loadBoards();
+        // loadNotifications(); // Descomentar si implementas notificaciones
     });
 
     // ========================================
@@ -71,7 +94,6 @@ function initializeApp() {
     function loadBoards() {
         if (unsubscribeBoards) unsubscribeBoards();
 
-        // Consulta: Tableros donde soy miembro (por email)
         const q = query(
             collection(db, 'boards'),
             where('memberEmails', 'array-contains', currentUser.email)
@@ -94,18 +116,18 @@ function initializeApp() {
                 const card = createBoardCard(docSnap.id, board);
                 boardsContainer.appendChild(card);
             });
+            if(window.lucide) lucide.createIcons();
         });
     }
 
     function createBoardCard(id, board) {
         const div = document.createElement('div');
-        // Estilo de tarjeta de tablero
-        div.className = 'bg-white dark:bg-slate-800 p-4 rounded shadow hover:shadow-lg transition cursor-pointer h-32 flex flex-col justify-between border-l-4 border-trello-blue relative group';
+        div.className = 'bg-white dark:bg-slate-800 p-4 rounded shadow hover:shadow-lg transition cursor-pointer h-32 flex flex-col justify-between border-l-4 border-[#0079BF] relative group';
         
         div.innerHTML = `
             <h3 class="font-bold text-slate-800 dark:text-white truncate">${board.title}</h3>
             <div class="flex justify-between items-end">
-                <span class="text-xs text-slate-500">${Object.keys(board.members || {}).length} miembros</span>
+                <span class="text-xs text-slate-500 flex items-center gap-1"><i data-lucide="users" class="w-3 h-3"></i> ${Object.keys(board.members || {}).length}</span>
                 ${board.ownerId === currentUser.uid ? 
                     `<button class="delete-board-btn opacity-0 group-hover:opacity-100 text-red-500 hover:bg-red-50 p-1 rounded" title="Eliminar"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` 
                     : ''}
@@ -127,13 +149,10 @@ function initializeApp() {
             });
         }
         
-        // Renderizar iconos lucide insertados
-        if(window.lucide) lucide.createIcons({ root: div });
-        
         return div;
     }
 
-    // CREAR TABLERO
+    // CREAR TABLERO [FIX: Lógica de Modal Corregida]
     document.getElementById('save-board-btn')?.addEventListener('click', async () => {
         const nameInput = document.getElementById('board-name-input');
         const title = nameInput.value.trim();
@@ -153,8 +172,7 @@ function initializeApp() {
                 },
                 createdAt: serverTimestamp()
             });
-            document.getElementById('board-modal').style.display = 'none'; // Ocultar modal manual si Tailwind hidden falla
-            document.getElementById('board-modal').classList.add('hidden');
+            closeModal('board-modal'); // Usar función helper
             nameInput.value = '';
         } catch (e) {
             console.error(e);
@@ -170,26 +188,23 @@ function initializeApp() {
         currentBoardId = boardId;
         currentBoardData = boardData;
         
-        // Determinar rol
         const memberData = boardData.members?.[currentUser.uid];
         currentUserRole = memberData ? memberData.role : 'viewer';
 
-        // Actualizar UI Header
+        // Actualizar UI
         document.getElementById('board-title').textContent = boardData.title;
         const roleBadge = document.getElementById('user-role-badge');
-        roleBadge.textContent = currentUserRole === 'owner' ? 'Propietario' : (currentUserRole === 'editor' ? 'Editor' : 'Observador');
-        roleBadge.classList.remove('hidden');
+        if(roleBadge) {
+            roleBadge.textContent = currentUserRole === 'owner' ? 'Propietario' : (currentUserRole === 'editor' ? 'Editor' : 'Observador');
+            roleBadge.classList.remove('hidden');
+        }
 
-        // Cambiar Vistas
-        document.querySelector('.boards-section').style.display = 'none'; // Ocultar home
+        // Transición de Vistas
+        document.querySelector('.boards-section').style.display = 'none'; 
         boardView.classList.remove('hidden');
-        boardView.style.display = 'flex'; // Forzar flex para layout vertical
+        boardView.style.display = 'flex'; // Necesario para mantener el layout vertical
 
-        // Cargar Listas
         loadLists(boardId);
-        
-        // Cargar Actividad (Opcional)
-        // loadActivity(boardId);
     }
 
     // Botón Volver
@@ -198,7 +213,6 @@ function initializeApp() {
         boardView.classList.add('hidden');
         document.querySelector('.boards-section').style.display = 'block';
         
-        // Limpiar suscripciones
         if(unsubscribeLists) unsubscribeLists();
         Object.values(unsubscribeCards).forEach(unsub => unsub());
         unsubscribeCards = {};
@@ -218,18 +232,16 @@ function initializeApp() {
         );
 
         unsubscribeLists = onSnapshot(q, (snapshot) => {
-            // Limpiar contenedor pero MANTENER el botón de "Añadir lista" al final
-            // Estrategia: Borrar todo lo que sea clase .list-wrapper que no sea el botón
+            // Mantener el botón "Añadir lista" al final
             const existingLists = Array.from(listsContainer.querySelectorAll('.list-wrapper:not(:last-child)'));
             existingLists.forEach(el => el.remove());
 
-            const addListBtnWrapper = listsContainer.lastElementChild; // El botón placeholder
+            const addListBtnWrapper = listsContainer.lastElementChild; 
 
             snapshot.forEach((docSnap) => {
                 const listEl = createListElement(docSnap.id, docSnap.data());
                 listsContainer.insertBefore(listEl, addListBtnWrapper);
                 
-                // Cargar tarjetas de esta lista
                 loadCards(boardId, docSnap.id, listEl.querySelector('.cards-container'));
             });
             
@@ -238,51 +250,51 @@ function initializeApp() {
     }
 
     function createListElement(listId, listData) {
-        // IMPORTANTE: Wrapper para el ancho de 272px definido en CSS
+        // [REPORT] Ancho fijo 272px controlado por CSS .list-wrapper
         const wrapper = document.createElement('div');
         wrapper.className = 'list-wrapper';
 
         const listDiv = document.createElement('div');
-        listDiv.className = 'list'; // Clase CSS con estilos de fondo y borde
+        listDiv.className = 'list';
         listDiv.dataset.listId = listId;
 
-        const canEdit = hasPermission('createList'); // Simplificado
+        const canEdit = hasPermission('createList');
 
         listDiv.innerHTML = `
-            <div class="list-header">
-                <h3 class="truncate">${listData.name}</h3>
-                ${canEdit ? `<button class="delete-list text-slate-400 hover:text-red-600"><i data-lucide="more-horizontal" class="w-4 h-4"></i></button>` : ''}
+            <div class="list-header group">
+                <h3 class="truncate text-sm font-semibold text-[#172B4D] dark:text-white">${listData.name}</h3>
+                ${canEdit ? `<button class="delete-list opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-600 transition"><i data-lucide="more-horizontal" class="w-4 h-4"></i></button>` : ''}
             </div>
             
-            <div class="cards-container custom-scrollbar" data-list-id="${listId}">
-                </div>
+            <div class="cards-container custom-scrollbar min-h-[10px]" data-list-id="${listId}"></div>
 
             ${hasPermission('createCard') ? `
-                <button class="add-card-trigger w-full text-left p-2 text-slate-600 hover:bg-slate-200/50 rounded flex items-center gap-2 text-sm m-1">
-                    <i data-lucide="plus" class="w-4 h-4"></i> Añadir tarjeta
-                </button>
+                <div class="p-2">
+                    <button class="add-card-trigger w-full text-left p-2 text-slate-600 hover:bg-slate-200/50 dark:text-slate-300 dark:hover:bg-slate-700 rounded flex items-center gap-2 text-sm transition">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Añadir tarjeta
+                    </button>
+                </div>
             ` : ''}
         `;
 
-        // Evento borrar lista (simulado con el botón more-horizontal por ahora)
+        // Borrar lista
         const deleteBtn = listDiv.querySelector('.delete-list');
         if(deleteBtn) {
             deleteBtn.addEventListener('click', async () => {
-                if(confirm('¿Borrar lista?')) {
+                if(confirm('¿Borrar lista y todas sus tarjetas?')) {
                     await deleteDoc(doc(db, 'boards', currentBoardId, 'lists', listId));
                 }
             });
         }
 
-        // Evento Añadir Tarjeta
+        // Añadir Tarjeta
         const addCardBtn = listDiv.querySelector('.add-card-trigger');
         if(addCardBtn) {
             addCardBtn.addEventListener('click', () => {
-                openCardModal(listId); // Abrir modal modo creación
+                openCardModal(listId);
             });
         }
 
-        // Configurar Dropzone para tarjetas
         setupDropZone(listDiv.querySelector('.cards-container'), listId);
 
         wrapper.appendChild(listDiv);
@@ -301,7 +313,7 @@ function initializeApp() {
             createdAt: serverTimestamp()
         });
 
-        document.getElementById('list-modal').classList.add('hidden');
+        closeModal('list-modal');
         input.value = '';
     });
 
@@ -329,41 +341,42 @@ function initializeApp() {
 
     function createCardElement(cardId, listId, card) {
         const div = document.createElement('div');
-        div.className = 'list-card group'; // Clase CSS definida en style.css
+        div.className = 'list-card group relative'; // Estilos definidos en style.css
         div.draggable = hasPermission('editCard');
         div.dataset.cardId = cardId;
         div.dataset.listId = listId;
 
-        // Cover check
-        let coverHtml = '';
-        if(card.cover?.color) {
-            coverHtml = `<div class="card-cover ${card.cover.color}"></div>`;
-        }
-
-        // Labels check
+        // [REPORT] Etiquetas Expandibles (Interacción Source 182)
         let labelsHtml = '';
         if(card.labels && card.labels.length > 0) {
-            labelsHtml = `<div class="flex flex-wrap mb-1">${card.labels.map(l => `<span class="card-label ${l.color}"></span>`).join('')}</div>`;
+            labelsHtml = `<div class="flex flex-wrap mb-1 gap-1">${card.labels.map(l => 
+                `<span class="card-label ${l.color}" title="${l.name}"></span>`
+            ).join('')}</div>`;
         }
 
         div.innerHTML = `
-            ${coverHtml}
             ${labelsHtml}
-            <span class="block text-sm text-slate-700 dark:text-slate-200 mb-1">${card.title}</span>
-            <div class="flex items-center gap-2 text-xs text-slate-400">
-                ${card.description ? `<i data-lucide="align-left" class="w-3 h-3"></i>` : ''}
+            <span class="block text-sm text-[#172B4D] dark:text-slate-200 mb-1 leading-tight">${card.title}</span>
+            <div class="flex items-center gap-3 text-xs text-[#5e6c84] dark:text-slate-400 mt-1">
+                ${card.description ? `<span title="Tiene descripción"><i data-lucide="align-left" class="w-3 h-3"></i></span>` : ''}
                 ${card.checklist?.length > 0 ? `<div class="flex items-center gap-1"><i data-lucide="check-square" class="w-3 h-3"></i> ${card.checklist.filter(i=>i.completed).length}/${card.checklist.length}</div>` : ''}
             </div>
-            <button class="icon-edit absolute top-1 right-1 p-1 bg-slate-100 hover:bg-slate-200 rounded opacity-0 group-hover:opacity-100 transition"><i data-lucide="pencil" class="w-3 h-3 text-slate-600"></i></button>
+            
+            <button class="icon-edit absolute top-1 right-1 p-1.5 bg-[#f4f5f7]/80 hover:bg-[#ebecf0] dark:bg-slate-700 dark:hover:bg-slate-600 rounded opacity-0 group-hover:opacity-100 transition z-20">
+                <i data-lucide="pencil" class="w-3 h-3 text-[#42526E] dark:text-slate-300"></i>
+            </button>
         `;
 
-        // Click para abrir modal
         div.addEventListener('click', (e) => {
-            // Evitar abrir si click en boton editar rapido (futuro feature)
+            // [REPORT] Lógica de Etiquetas Expandibles
+            if (e.target.closest('.card-label')) {
+                e.stopPropagation();
+                div.querySelectorAll('.card-label').forEach(lbl => lbl.classList.toggle('expanded')); // CSS debe manejar .expanded { width: auto; height: 16px; }
+                return;
+            }
             openCardModal(listId, cardId, card);
         });
 
-        // Drag events
         if(div.draggable) {
             div.addEventListener('dragstart', handleDragStart);
             div.addEventListener('dragend', handleDragEnd);
@@ -373,16 +386,17 @@ function initializeApp() {
     }
 
     // ========================================
-    // 5. DRAG & DROP LOGIC
+    // 5. DRAG & DROP (FÍSICA MEJORADA)
     // ========================================
     
     let draggedItem = null;
 
     function handleDragStart(e) {
         draggedItem = this;
-        this.classList.add('dragging');
+        // [REPORT] Física: Rotación al levantar 
+        this.style.transform = 'rotate(3deg)'; 
+        this.classList.add('dragging'); 
         e.dataTransfer.effectAllowed = 'move';
-        // Datos para transferir
         e.dataTransfer.setData('text/plain', JSON.stringify({
             cardId: this.dataset.cardId,
             sourceListId: this.dataset.listId
@@ -390,6 +404,8 @@ function initializeApp() {
     }
 
     function handleDragEnd(e) {
+        // [REPORT] Restaurar estado físico
+        this.style.transform = 'none';
         this.classList.remove('dragging');
         draggedItem = null;
         document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
@@ -398,6 +414,7 @@ function initializeApp() {
     function setupDropZone(container, listId) {
         container.addEventListener('dragover', (e) => {
             e.preventDefault();
+            // [REPORT] Feedback visual en zona de drop
             container.classList.add('drag-over');
         });
 
@@ -413,21 +430,20 @@ function initializeApp() {
                 const data = JSON.parse(e.dataTransfer.getData('text/plain'));
                 const { cardId, sourceListId } = data;
                 
-                if (sourceListId === listId) return; // Mismo lugar (por ahora no reordenamos en misma lista)
+                if (sourceListId === listId) return; 
 
-                // MOVER: Copiar a nueva lista y borrar de vieja (Firestore way)
-                // 1. Obtener data
+                // Movimiento Optimista (UI First) - Opcional para mayor velocidad
+                
+                // Lógica Firestore: Copiar y Borrar
                 const oldRef = doc(db, 'boards', currentBoardId, 'lists', sourceListId, 'cards', cardId);
                 const snap = await getDoc(oldRef);
                 const cardData = snap.data();
 
-                // 2. Crear en nueva
                 await addDoc(collection(db, 'boards', currentBoardId, 'lists', listId, 'cards'), {
                     ...cardData,
-                    position: Date.now() // Al final
+                    position: Date.now() 
                 });
 
-                // 3. Borrar vieja
                 await deleteDoc(oldRef);
 
             } catch (err) {
@@ -437,28 +453,21 @@ function initializeApp() {
     }
 
     // ========================================
-    // 6. MODAL DE TARJETA (DETALLES)
+    // 6. MODAL DE TARJETA (SIMPLIFICADO)
     // ========================================
 
     function openCardModal(listId, cardId = null, cardData = null) {
         currentCardData = { listId, cardId, data: cardData };
-        const modal = document.getElementById('card-modal');
         
         // Reset Inputs
         document.getElementById('card-title-input').value = cardData ? cardData.title : '';
         document.getElementById('card-description-input').value = cardData ? (cardData.description || '') : '';
-        document.getElementById('card-modal-title').textContent = cardData ? 'Editar Tarjeta' : 'Nueva Tarjeta';
+        document.getElementById('card-modal-title').innerHTML = cardData ? '<i data-lucide="credit-card" class="w-3 h-3"></i> Editar Tarjeta' : '<i data-lucide="plus" class="w-3 h-3"></i> Nueva Tarjeta';
 
-        // Checklist Logic (Simplificada para demo)
-        currentChecklist = cardData ? (cardData.checklist || []) : [];
-        renderChecklist();
-
-        // Etiquetas (Simplificado)
-        currentCardLabels = cardData ? (cardData.labels || []) : [];
-        renderLabels();
-
-        modal.classList.remove('hidden');
-        modal.style.display = 'flex';
+        // Mostrar Modal
+        cardModal.classList.remove('hidden');
+        cardModal.style.display = 'flex';
+        lucide.createIcons();
     }
 
     // GUARDAR TARJETA
@@ -470,25 +479,19 @@ function initializeApp() {
         const newData = {
             title,
             description: desc,
-            checklist: currentChecklist,
-            labels: currentCardLabels,
-            // Mantener cover si existía
-            cover: currentCardData.data?.cover || { color: null }
+            updatedAt: serverTimestamp()
         };
 
         if (currentCardData.cardId) {
-            // EDITAR
             await updateDoc(doc(db, 'boards', currentBoardId, 'lists', currentCardData.listId, 'cards', currentCardData.cardId), newData);
         } else {
-            // CREAR
             await addDoc(collection(db, 'boards', currentBoardId, 'lists', currentCardData.listId, 'cards'), {
                 ...newData,
                 position: Date.now(),
                 createdAt: serverTimestamp()
             });
         }
-
-        document.getElementById('card-modal').classList.add('hidden');
+        closeModal('card-modal');
     });
 
     // ELIMINAR TARJETA
@@ -496,80 +499,45 @@ function initializeApp() {
         if(!currentCardData.cardId) return;
         if(confirm('¿Eliminar tarjeta?')) {
             await deleteDoc(doc(db, 'boards', currentBoardId, 'lists', currentCardData.listId, 'cards', currentCardData.cardId));
-            document.getElementById('card-modal').classList.add('hidden');
+            closeModal('card-modal');
         }
     });
 
-    // CERRAR MODAL
-    document.getElementById('cancel-card-btn')?.addEventListener('click', () => {
-        document.getElementById('card-modal').classList.add('hidden');
-    });
+    // ========================================
+    // UTILIDADES DE UI
+    // ========================================
 
-    // --- FUNCIONES AUXILIARES MODAL (CHECKLIST/LABELS) ---
-    
-    function renderChecklist() {
-        const container = document.getElementById('checklist-items');
-        container.innerHTML = '';
-        currentChecklist.forEach((item, index) => {
-            const div = document.createElement('div');
-            div.className = 'flex items-center gap-2';
-            div.innerHTML = `
-                <input type="checkbox" ${item.completed ? 'checked' : ''} class="w-4 h-4">
-                <span class="${item.completed ? 'line-through text-slate-400' : ''}">${item.text}</span>
-            `;
-            // Listener simple para toggle
-            div.querySelector('input').addEventListener('change', (e) => {
-                item.completed = e.target.checked;
-                renderChecklist();
-            });
-            container.appendChild(div);
-        });
-        
-        // Actualizar barra progreso
-        const completed = currentChecklist.filter(i => i.completed).length;
-        const total = currentChecklist.length;
-        const progress = document.getElementById('checklist-progress');
-        if(progress) progress.textContent = total > 0 ? `${Math.round((completed/total)*100)}%` : '';
-    }
-
-    document.getElementById('add-checklist-item-btn')?.addEventListener('click', () => {
-        const input = document.getElementById('new-checklist-item-input');
-        if(input.value.trim()) {
-            currentChecklist.push({ text: input.value, completed: false });
-            input.value = '';
-            renderChecklist();
+    // [FIX] Función helper para cerrar modales limpiamente
+    function closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.style.display = 'none'; // Quitar estilo inline
+            modal.classList.add('hidden'); // Asegurar clase Tailwind
         }
-    });
-
-    function renderLabels() {
-        const container = document.getElementById('card-labels-display');
-        container.innerHTML = '';
-        if(currentCardLabels.length > 0) container.classList.remove('hidden');
-        currentCardLabels.forEach(l => {
-            const span = document.createElement('span');
-            span.className = `px-2 py-1 rounded text-xs font-bold ${l.color}`;
-            span.textContent = l.name;
-            container.appendChild(span);
-        });
     }
 
-    // EVENT LISTENERS MODALES GLOBALES
+    // Listeners de cierre (Generic)
+    document.querySelectorAll('[id^="cancel-"]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const modal = e.target.closest('.fixed'); // Buscar el modal padre
+            if(modal) closeModal(modal.id);
+        });
+    });
+
+    // Botones específicos que fallaban
+    document.getElementById('cancel-board-btn')?.addEventListener('click', () => closeModal('board-modal'));
+    document.getElementById('cancel-list-btn')?.addEventListener('click', () => closeModal('list-modal'));
+    document.getElementById('cancel-card-btn')?.addEventListener('click', () => closeModal('card-modal'));
+
+    // Listeners de Apertura Globales
     document.getElementById('create-board-btn')?.addEventListener('click', () => {
-        document.getElementById('board-modal').classList.remove('hidden');
-        document.getElementById('board-modal').style.display = 'flex';
-    });
-    
-    document.getElementById('cancel-board-btn')?.addEventListener('click', () => {
-        document.getElementById('board-modal').classList.add('hidden');
+        boardModal.classList.remove('hidden');
+        boardModal.style.display = 'flex';
     });
 
     document.getElementById('add-list-btn')?.addEventListener('click', () => {
-        document.getElementById('list-modal').classList.remove('hidden');
-        document.getElementById('list-modal').style.display = 'flex';
-    });
-
-    document.getElementById('cancel-list-btn')?.addEventListener('click', () => {
-        document.getElementById('list-modal').classList.add('hidden');
+        listModal.classList.remove('hidden');
+        listModal.style.display = 'flex';
     });
 
 } // Fin initializeApp
