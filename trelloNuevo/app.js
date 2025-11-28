@@ -305,9 +305,17 @@ function initializeApp() {
         d.draggable = hasPermission('editCard'); d.dataset.cardId = cid; d.dataset.listId = lid;
 
         let coverHtml = '', fullClass = '';
-        if(card.cover?.url && card.cover.mode === 'full') { fullClass='full-cover'; d.style.backgroundImage=`url('${card.cover.url}')`; }
-        else if(card.cover?.url) coverHtml = `<div class="card-cover-image" style="background-image: url('${card.cover.url}')"></div>`;
-        else if(card.cover?.color) coverHtml = `<div class="card-cover ${card.cover.color}"></div>`;
+        
+        // --- LOGICA DE PORTADAS (Corregida con Emoji) ---
+        if(card.cover?.url && card.cover.mode === 'full') { 
+            fullClass='full-cover'; d.style.backgroundImage=`url('${card.cover.url}')`; 
+        } else if(card.cover?.url) {
+            coverHtml = `<div class="card-cover-image" style="background-image: url('${card.cover.url}')"></div>`;
+        } else if(card.cover?.emoji) {
+            coverHtml = `<div class="h-[32px] bg-slate-100 flex items-center justify-center text-2xl rounded-t mb-2">${card.cover.emoji}</div>`;
+        } else if(card.cover?.color) {
+            coverHtml = `<div class="card-cover ${card.cover.color}"></div>`;
+        }
         if(fullClass) d.classList.add(fullClass);
 
         let labelsHtml = '';
@@ -470,114 +478,32 @@ function initializeApp() {
     document.getElementById('card-checklist-btn')?.addEventListener('click', () => { document.getElementById('new-checklist-item-input').focus(); });
     document.getElementById('card-due-date-btn')?.addEventListener('click', () => { document.getElementById('card-due-date-input').showPicker?.() || document.getElementById('card-due-date-input').focus(); });
     document.getElementById('attach-file-btn')?.addEventListener('click', () => { const u=prompt("URL:"); if(u) { const i=u.match(/\.(jpeg|jpg|png|webp)/); currentAttachments.push({name:i?'Imagen':'Enlace', url:u, type:i?'image':'link', addedAt:new Date().toISOString()}); renderAttachments(); }});
-    document.getElementById('card-cover-btn')?.addEventListener('click', () => { coverModal.classList.remove('hidden'); coverModal.style.display='flex'; });
+    
+    // --- LÓGICA PORTADAS Y EMOJIS ---
+    document.getElementById('card-cover-btn')?.addEventListener('click', () => { 
+        coverModal.classList.remove('hidden'); 
+        coverModal.style.display='flex'; 
 
-    // INVITACIONES
-    document.getElementById('invite-member-btn')?.addEventListener('click', () => { inviteModal.classList.remove('hidden'); inviteModal.style.display='flex'; });
-    document.getElementById('cancel-invite-btn')?.addEventListener('click', () => closeModal('invite-modal'));
-    document.getElementById('send-invite-btn')?.addEventListener('click', async () => {
-        const email = document.getElementById('invite-email-input').value.trim();
-        if(!email) return alert("Escribe un email");
-        try {
-            const q = query(collection(db, 'users'), where('email', '==', email));
-            const snap = await getDocs(q);
-            if(snap.empty) return alert("Usuario no registrado en la app.");
-            const uid = snap.docs[0].id;
-            await addDoc(collection(db, 'notifications'), {
-                userId: uid, type: 'board_invitation', boardId: currentBoardId, boardTitle: currentBoardData.title,
-                invitedBy: currentUser.displayName, invitedByEmail: currentUser.email, role: 'editor', read: false, createdAt: serverTimestamp()
-            });
-            logActivity('invited_member', 'board', currentBoardId, { email });
-            alert("Invitación enviada.");
-            closeModal('invite-modal');
-        } catch(e) { console.error(e); alert("Error al invitar"); }
+        // INYECCIÓN DE BOTÓN EMOJI (Corregido)
+        const coverModalContent = document.querySelector('#card-cover-modal > div');
+        const removeBtn = document.getElementById('remove-cover-btn');
+        
+        if (coverModalContent && removeBtn && !document.getElementById('emoji-btn-injected')) {
+            const emojiBtn = document.createElement('button');
+            emojiBtn.id = 'emoji-btn-injected';
+            emojiBtn.className = "w-full text-xs py-1 mt-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-white rounded mb-2 font-medium";
+            emojiBtn.innerText = "😊 Usar Emoji";
+            emojiBtn.onclick = () => {
+                const emoji = prompt("Introduce un emoji (Win+. o Cmd+Ctrl+Espacio):", "⚡");
+                if(emoji) {
+                    currentCardCover = { color: null, mode: 'color', url: null, emoji: emoji }; 
+                    closeModal('card-cover-modal');
+                }
+            };
+            coverModalContent.insertBefore(emojiBtn, removeBtn);
+        }
     });
 
-    // ACTIVIDAD
-    async function logActivity(action, targetType, targetId, details) {
-        try { await addDoc(collection(db, 'activity_logs'), { boardId: currentBoardId, userId: currentUser.uid, userName: currentUser.displayName, action, targetType, targetId, details, timestamp: serverTimestamp() }); } catch(e){console.error(e);}
-    }
-
-    function loadActivity(boardId) {
-        if(unsubscribeActivity) unsubscribeActivity();
-        unsubscribeActivity = onSnapshot(query(collection(db, 'activity_logs'), where('boardId', '==', boardId), orderBy('timestamp', 'desc')), (snap) => {
-            activityList.innerHTML = '';
-            if(snap.empty) { activityList.innerHTML='<p class="text-center text-sm text-slate-500 p-4">Sin actividad.</p>'; return; }
-            snap.forEach(doc => {
-                const a = doc.data();
-                const div = document.createElement('div'); div.className='activity-item';
-                const msgs = { moved_card: `movió la tarjeta "${a.details.cardTitle}"`, invited_member: `invitó a ${a.details.email}`, created_card: `creó una tarjeta`, deleted_card: `eliminó una tarjeta` };
-                div.innerHTML = `<div class="activity-user">${a.userName}</div><div>${msgs[a.action] || a.action}</div><div class="activity-meta">${new Date(a.timestamp?.toDate()).toLocaleString()}</div>`;
-                activityList.appendChild(div);
-            });
-        });
-    }
-
-    document.getElementById('toggle-activity-btn')?.addEventListener('click', () => { activityPanel.classList.toggle('hidden'); membersPanel.classList.add('hidden'); });
-    document.getElementById('close-activity-btn')?.addEventListener('click', () => activityPanel.classList.add('hidden'));
-    document.getElementById('toggle-members-btn')?.addEventListener('click', () => { membersPanel.classList.toggle('hidden'); activityPanel.classList.add('hidden'); });
-    document.getElementById('close-members-btn')?.addEventListener('click', () => membersPanel.classList.add('hidden'));
-
-    // NOTIFICACIONES
-    function loadNotifications() {
-        if(unsubscribeNotifications) unsubscribeNotifications();
-        unsubscribeNotifications = onSnapshot(query(collection(db, 'notifications'), where('userId', '==', currentUser.uid), orderBy('createdAt', 'desc')), (snap) => {
-            notifList.innerHTML = '';
-            const unread = snap.docs.filter(d => !d.data().read).length;
-            if(unread > 0) { notifBadge.classList.remove('hidden'); notifBadge.textContent = unread; } else notifBadge.classList.add('hidden');
-            if(snap.empty) { notifList.innerHTML = '<p class="p-4 text-center text-sm text-slate-500">No tienes notificaciones.</p>'; return; }
-            snap.forEach(doc => {
-                const n = doc.data();
-                const div = document.createElement('div');
-                div.className = `p-3 border-b border-slate-100 hover:bg-slate-50 cursor-pointer ${!n.read?'bg-blue-50':''}`;
-                if(n.type === 'board_invitation') {
-                    div.innerHTML = `<div class="text-sm"><span class="font-bold text-blue-600">${n.invitedBy}</span> te invitó a <span class="font-bold text-slate-800">${n.boardTitle}</span></div><div class="flex gap-2 mt-2"><button class="accept-btn px-2 py-1 bg-green-500 text-white text-xs rounded">Aceptar</button><button class="reject-btn px-2 py-1 bg-red-500 text-white text-xs rounded">Rechazar</button></div>`;
-                    div.querySelector('.accept-btn').addEventListener('click', () => acceptInvitation(doc.id, n));
-                    div.querySelector('.reject-btn').addEventListener('click', () => rejectInvitation(doc.id));
-                } else { div.innerHTML = `<div class="text-sm">${n.message || 'Nueva notificación'}</div>`; }
-                notifList.appendChild(div);
-            });
-        });
-    }
-
-    async function acceptInvitation(notifId, data) {
-        try {
-            const boardRef = doc(db, 'boards', data.boardId);
-            await updateDoc(boardRef, { [`members.${currentUser.uid}`]: { email: currentUser.email, name: currentUser.displayName || currentUser.email, role: data.role }, memberEmails: arrayUnion(currentUser.email) });
-            await deleteDoc(doc(db, 'notifications', notifId));
-            alert(`¡Te has unido a ${data.boardTitle}!`); loadBoards();
-        } catch(e) { console.error(e); alert("Error al unirse"); }
-    }
-    async function rejectInvitation(notifId) { if(confirm("¿Rechazar invitación?")) await deleteDoc(doc(db, 'notifications', notifId)); }
-    notifBtn?.addEventListener('click', (e) => { e.stopPropagation(); notifDropdown.classList.toggle('hidden'); });
-    document.addEventListener('click', (e) => { if(!notifBtn.contains(e.target) && !notifDropdown.contains(e.target)) notifDropdown.classList.add('hidden'); });
-
-    // RENDER INTERNOS
-    function renderChecklist() {
-        const c = document.getElementById('checklist-items'); c.innerHTML='';
-        currentChecklist.forEach((i,x)=>{
-            const d = document.createElement('div'); d.className='checklist-item group';
-            d.innerHTML=`<input type="checkbox" ${i.completed?'checked':''} class="cursor-pointer"><span class="flex-1 text-sm ${i.completed?'line-through text-slate-400':''}">${i.text}</span><button class="delete-item-btn"><i data-lucide="trash-2" class="w-3 h-3"></i></button>`;
-            d.querySelector('input').addEventListener('change',e=>{i.completed=e.target.checked; renderChecklist();});
-            d.querySelector('.delete-item-btn').addEventListener('click',()=>{currentChecklist.splice(x,1); renderChecklist();});
-            c.appendChild(d);
-        });
-        const p = document.getElementById('checklist-progress'); if(p) p.innerText = currentChecklist.length?Math.round((currentChecklist.filter(i=>i.completed).length/currentChecklist.length)*100)+'%':'0%';
-    }
-
-    function renderAttachments() {
-        const c = document.getElementById('attachments-list'); c.innerHTML='';
-        currentAttachments.forEach((a,x)=>{
-            const d = document.createElement('div'); d.className='attachment-item';
-            d.innerHTML=`<div class="attachment-thumbnail" style="background-image:url('${a.type==='image'?a.url:''}')"></div><div class="flex-1"><p class="text-sm font-bold truncate">${a.name}</p><button class="text-xs text-red-500 del">Eliminar</button>${a.type==='image'?`<button class="text-xs text-blue-500 ml-2 cover">Hacer Portada</button>`:''}</div>`;
-            d.querySelector('.del').addEventListener('click',()=>{currentAttachments.splice(x,1); renderAttachments();});
-            d.querySelector('.cover')?.addEventListener('click',()=>{ currentCardCover={mode:'banner',url:a.url}; alert('Portada puesta'); });
-            c.appendChild(d);
-        });
-        if(window.lucide) lucide.createIcons();
-    }
-
-    document.getElementById('add-checklist-item-btn')?.addEventListener('click', () => { const inp = document.getElementById('new-checklist-item-input'); if(inp.value.trim()){ currentChecklist.push({text:inp.value.trim(), completed:false}); inp.value=''; renderChecklist(); } });
     document.querySelectorAll('.cover-color').forEach(b => b.addEventListener('click', () => { currentCardCover={color:b.dataset.color, mode:'color', url:null}; closeModal('card-cover-modal'); }));
     document.getElementById('remove-cover-btn')?.addEventListener('click', () => { currentCardCover={color:null}; closeModal('card-cover-modal'); });
 
