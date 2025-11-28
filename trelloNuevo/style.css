@@ -550,3 +550,65 @@ html, body {
     background-color: #E4F0F6;
     color: #0079BF;
 }
+
+/* ========================================= */
+/* FASE 6: BÚSQUEDA Y ACTIVIDAD */
+/* ========================================= */
+
+/* Resultados de Búsqueda (Dropdown Flotante) */
+#search-results {
+    top: 100%;
+    left: 0;
+    width: 100%;
+    max-height: 400px;
+    overflow-y: auto;
+    background: white;
+    border-radius: 4px;
+    box-shadow: 0 8px 16px -4px rgba(9, 30, 66, 0.25), 0 0 0 1px rgba(9, 30, 66, 0.08);
+    margin-top: 4px;
+}
+
+.search-result-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #091e420d;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.search-result-item:hover {
+    background-color: #F4F5F7;
+}
+
+.search-match {
+    font-weight: 700;
+    color: #0079BF;
+}
+
+.result-type {
+    font-size: 10px;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #5E6C84;
+    margin-bottom: 2px;
+}
+
+/* Panel de Actividad (Ítems) */
+.activity-item {
+    padding: 10px 0;
+    border-bottom: 1px solid #091e420d;
+    font-size: 14px;
+    color: #172B4D;
+}
+
+.activity-meta {
+    font-size: 12px;
+    color: #5E6C84;
+    margin-top: 4px;
+}
+
+.activity-user {
+    font-weight: 700;
+    color: #172B4D;
+}
