@@ -650,17 +650,57 @@ function openCardModal(lid, cid=null, data=null) {
     notifBtn?.addEventListener('click', (e) => { e.stopPropagation(); notifDropdown.classList.toggle('hidden'); });
     document.addEventListener('click', (e) => { if(!notifBtn.contains(e.target) && !notifDropdown.contains(e.target)) notifDropdown.classList.add('hidden'); });
 
-    function renderChecklist() {
-        const c = document.getElementById('checklist-items'); c.innerHTML='';
-        currentChecklist.forEach((i,x)=>{
-            const d = document.createElement('div'); d.className='checklist-item group';
-            d.innerHTML=`<input type="checkbox" ${i.completed?'checked':''} class="cursor-pointer"><span class="flex-1 text-sm ${i.completed?'line-through text-slate-400':''}">${i.text}</span><button class="delete-item-btn"><i data-lucide="trash-2" class="w-3 h-3"></i></button>`;
-            d.querySelector('input').addEventListener('change',e=>{i.completed=e.target.checked; renderChecklist();});
-            d.querySelector('.delete-item-btn').addEventListener('click',()=>{currentChecklist.splice(x,1); renderChecklist();});
+function renderChecklist() {
+        const c = document.getElementById('checklist-items'); 
+        c.innerHTML='';
+        
+        // Filtrar si el modo ocultar está activo
+        const itemsToShow = checklistHideCompleted 
+            ? currentChecklist.filter(i => !i.completed) 
+            : currentChecklist;
+
+        itemsToShow.forEach((i,x)=>{
+            // Nota: Usamos el índice real 'realIndex' para borrar/editar correctamente del array original
+            const realIndex = currentChecklist.indexOf(i);
+            
+            const d = document.createElement('div'); d.className='checklist-item group flex items-center gap-2 mb-1';
+            d.innerHTML=`
+                <input type="checkbox" ${i.completed?'checked':''} class="cursor-pointer rounded border-slate-300">
+                <span class="flex-1 text-sm ${i.completed?'line-through text-slate-400':''} transition-all">${i.text}</span>
+                <button class="delete-item-btn opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
+            `;
+            
+            d.querySelector('input').addEventListener('change', e => {
+                currentChecklist[realIndex].completed = e.target.checked; 
+                renderChecklist(); // Re-renderizar para actualizar barra progreso y filtros
+            });
+            d.querySelector('.delete-item-btn').addEventListener('click', () => {
+                currentChecklist.splice(realIndex, 1); 
+                renderChecklist();
+            });
             c.appendChild(d);
         });
-        const p = document.getElementById('checklist-progress'); if(p) p.innerText = currentChecklist.length?Math.round((currentChecklist.filter(i=>i.completed).length/currentChecklist.length)*100)+'%':'0%';
+
+        // Actualizar barra y textos
+        const total = currentChecklist.length;
+        const completed = currentChecklist.filter(i=>i.completed).length;
+        const p = document.getElementById('checklist-progress'); 
+        
+        if(p) p.innerText = total ? Math.round((completed/total)*100)+'%' : '0%';
+        
+        // Actualizar botón de "Ocultar completados"
+        const hideBtn = document.getElementById('hide-checklist-btn');
+        if(hideBtn) {
+             hideBtn.innerHTML = checklistHideCompleted ? '<i data-lucide="eye" class="w-3 h-3"></i> Mostrar' : '<i data-lucide="eye-off" class="w-3 h-3"></i> Ocultar';
+        }
+        if(window.lucide) lucide.createIcons();
     }
+
+    // LISTENER NUEVO: Botón Ocultar/Mostrar Checklist
+    document.getElementById('hide-checklist-btn')?.addEventListener('click', () => {
+        checklistHideCompleted = !checklistHideCompleted;
+        renderChecklist();
+    });
 
     function renderAttachments() {
         const c = document.getElementById('attachments-list'); c.innerHTML='';
@@ -703,18 +743,22 @@ function openCardModal(lid, cid=null, data=null) {
         closeModal('card-modal');
     }});
 
-    function closeModal(id){const m=document.getElementById(id);if(m){m.classList.add('hidden');m.style.display='none';}}
-    document.querySelectorAll('[id^="cancel-"]').forEach(b=>b.addEventListener('click',e=>closeModal(e.target.closest('.fixed').id)));
-    document.getElementById('create-board-btn').addEventListener('click',()=>{boardModal.classList.remove('hidden');boardModal.style.display='flex'});
-    document.getElementById('add-list-btn').addEventListener('click',()=>{listModal.classList.remove('hidden');listModal.style.display='flex'});
-    document.getElementById('save-list-btn').addEventListener('click',async()=>{
-        const v=document.getElementById('list-name-input').value.trim(); if(v){
-            const ref = await addDoc(collection(db,'boards',currentBoardId,'lists'),{name:v,position:Date.now(),createdAt:serverTimestamp()}); 
-            logActivity('created_list', 'list', null, { listName: v }); 
-            allSearchCache.push({ id: ref.id, type: 'list', title: v, boardId: currentBoardId, boardTitle: currentBoardData.title });
-            closeModal('list-modal'); document.getElementById('list-name-input').value='';
+// Reemplaza TU función closeModal por ESTA:
+function closeModal(id) {
+    const m = document.getElementById(id);
+    if (m) {
+        // 1. Ocultar visualmente (Tu lógica original)
+        m.classList.add('hidden');
+        m.style.display = 'none';
+
+        // 2. LÓGICA NUEVA: Limpieza de conexiones (Garbage Collection)
+        // Si lo que cerramos es la tarjeta, dejamos de escuchar comentarios
+        if (id === 'card-modal' && unsubscribeComments) {
+            unsubscribeComments(); // Cortar conexión con Firebase
+            unsubscribeComments = null; // Limpiar variable
         }
-    });
+    }
+}
     document.getElementById('save-board-btn').addEventListener('click',async()=>{
         const v=document.getElementById('board-name-input').value.trim(); if(v){
             const ref = await addDoc(collection(db,'boards'),{title:v,ownerId:currentUser.uid,memberEmails:[currentUser.email],members:{[currentUser.uid]:{email:currentUser.email,name:currentUser.displayName||'User',role:'owner'}},createdAt:serverTimestamp()}); 
@@ -723,4 +767,73 @@ function openCardModal(lid, cid=null, data=null) {
         }
     });
     document.getElementById('back-to-boards-btn').addEventListener('click', ()=>{boardView.style.display='none'; document.querySelector('.boards-section').style.display='block'; if(unsubscribeLists) unsubscribeLists(); if(unsubscribeActivity) unsubscribeActivity(); currentBoardId=null;});
+
+    // NUEVO: Cargar Comentarios en Tiempo Real
+    function loadComments(lid, cid) {
+        if (unsubscribeComments) unsubscribeComments(); // Limpiar anterior
+        const listDiv = document.getElementById('comments-list');
+        
+        const q = query(
+            collection(db, 'boards', currentBoardId, 'lists', lid, 'cards', cid, 'comments'),
+            orderBy('createdAt', 'desc')
+        );
+
+        unsubscribeComments = onSnapshot(q, (snap) => {
+            listDiv.innerHTML = '';
+            if (snap.empty) {
+                listDiv.innerHTML = '<p class="text-xs text-slate-400 italic pl-2">No hay comentarios aún.</p>';
+                return;
+            }
+
+            snap.forEach(doc => {
+                const comm = doc.data();
+                const timeString = comm.createdAt ? timeAgo(comm.createdAt.toDate()) : '...';
+                
+                const commentEl = document.createElement('div');
+                commentEl.className = 'flex gap-3 items-start mb-3';
+                commentEl.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center text-xs font-bold text-slate-700 dark:text-slate-200 shrink-0">
+                        ${(comm.userName || 'U').charAt(0).toUpperCase()}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-sm font-bold text-[#172B4D] dark:text-slate-200">${comm.userName}</span>
+                            <span class="text-xs text-slate-500">${timeString}</span>
+                        </div>
+                        <div class="p-2 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg shadow-sm mt-1 text-sm text-slate-800 dark:text-slate-100 break-words">
+                            ${comm.text}
+                        </div>
+                    </div>
+                `;
+                listDiv.appendChild(commentEl);
+            });
+        });
+    }
+
+    // NUEVO: Listener para Guardar Comentario
+    document.getElementById('add-comment-btn').addEventListener('click', async () => {
+        const input = document.getElementById('comment-input');
+        const text = input.value.trim();
+        
+        if (!text || !currentCardData.cid) return;
+
+        try {
+            await addDoc(collection(db, 'boards', currentBoardId, 'lists', currentCardData.lid, 'cards', currentCardData.cid, 'comments'), {
+                text: text,
+                userId: currentUser.uid,
+                userName: currentUser.displayName || currentUser.email,
+                createdAt: serverTimestamp()
+            });
+
+            logActivity('added_comment', 'card', currentCardData.cid, { 
+                cardTitle: currentCardData.data.title,
+                commentSnippet: text.substring(0, 15) + '...'
+            });
+
+            input.value = '';
+        } catch (error) {
+            console.error("Error al comentar:", error);
+        }
+    });
+    initGlobalShortcuts();
 }
