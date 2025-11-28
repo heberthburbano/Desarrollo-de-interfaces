@@ -741,7 +741,6 @@ html, body {
 /* ========================================= */
 /* 10. ADAPTACIÓN MÓVIL (Snap Scrolling) */
 /* ========================================= */
-[cite_start]/* Referencia: Informe de Ingeniería [cite: 149-150] */
 
 @media (max-width: 768px) {
     /* 1. CAMBIO DE GRID A CARRUSEL */
@@ -797,3 +796,38 @@ html, body {
         display: none;
     }
 }
+
+/* ========================================= */
+/* 11. FORZAR COLOR DE BARRA SUPERIOR (OVERRIDE TAILWIND) */
+/* ========================================= */
+
+/* IMPORTANTE: Esta sección debe estar al final del archivo para sobrescribir Tailwind */
+
+/* Sobrescribir cualquier clase de background de Tailwind en nav/header */
+nav[class*="bg-"],
+header[class*="bg-"],
+nav,
+header {
+    background-color: hsl(270, 2.9%, 91.3%) !important;
+    --tw-bg-opacity: 1 !important;
+}
+
+/* Asegurar que el color se aplica específicamente a elementos con clases de Tailwind cyan/blue */
+.bg-cyan-700,
+.bg-cyan-600,
+.bg-blue-700,
+.bg-blue-600,
+nav.bg-cyan-700,
+header.bg-cyan-700 {
+    background-color: hsl(270, 2.9%, 91.3%) !important;
+    --tw-bg-opacity: 1 !important;
+}
+
+/* Aplicar también a la clase específica trello-nav */
+.trello-nav,
+nav.trello-nav,
+header.trello-nav {
+    background-color: hsl(270, 2.9%, 91.3%) !important;
+    --tw-bg-opacity: 1 !important;
+}
+
