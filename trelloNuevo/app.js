@@ -7,7 +7,7 @@ import {
 document.addEventListener('DOMContentLoaded', initializeApp);
 
 function initializeApp() {
-    console.log('🚀 Inicializando Trello Clone (Fase 5: Notificaciones Completo)...');
+    console.log('🚀 Inicializando Trello Clone (Fase 6: Búsqueda y Actividad)...');
 
     // ESTADO
     let currentUser = null;
@@ -15,6 +15,10 @@ function initializeApp() {
     let currentBoardData = null;
     let currentUserRole = null;
     
+    // Cache para Búsqueda Global
+    let searchCache = { boards: [], cards: [] };
+
+    // Edición
     let currentCardData = null; 
     let currentCardCover = { color: null, mode: 'banner', url: null };
     let currentChecklist = []; 
@@ -22,7 +26,8 @@ function initializeApp() {
     let currentCardLabels = [];
     let currentCardMembers = [];
     
-    let unsubscribeBoards, unsubscribeLists, unsubscribeCards = {}, unsubscribeNotifications; 
+    let unsubscribeBoards, unsubscribeLists, unsubscribeActivity, unsubscribeNotifications; 
+    let unsubscribeCards = {}; 
 
     // DOM
     const boardsContainer = document.getElementById('boards-container');
@@ -34,13 +39,23 @@ function initializeApp() {
     const coverModal = document.getElementById('card-cover-modal');
     const labelsModal = document.getElementById('labels-modal');
     const inviteModal = document.getElementById('invite-modal');
-    // [NUEVO] Elementos de Notificaciones
+    
+    // Paneles Laterales
+    const membersPanel = document.getElementById('members-panel');
+    const activityPanel = document.getElementById('activity-panel');
+    const activityList = document.getElementById('activity-list');
+    
+    // Búsqueda
+    const searchInput = document.getElementById('global-search');
+    const searchResults = document.getElementById('search-results');
+    const searchResultsList = document.getElementById('search-results-list');
+
+    // Notificaciones
     const notifBtn = document.getElementById('notifications-btn');
     const notifDropdown = document.getElementById('notifications-dropdown');
     const notifList = document.getElementById('notifications-list');
     const notifBadge = document.getElementById('notifications-badge');
 
-    // MODO OSCURO
     function initDarkMode() {
         const t = document.getElementById('dark-mode-toggle');
         const h = document.documentElement;
@@ -61,7 +76,8 @@ function initializeApp() {
         const av = document.getElementById('user-avatar');
         if(av) av.textContent = (currentUser.displayName||currentUser.email).charAt(0).toUpperCase();
         loadBoards();
-        loadNotifications(); // [NUEVO] Cargar notificaciones al iniciar
+        loadNotifications();
+        initGlobalSearch(); // [NUEVO] Iniciar indexador de búsqueda
     });
 
     // 1. TABLEROS
@@ -69,8 +85,13 @@ function initializeApp() {
         if(unsubscribeBoards) unsubscribeBoards();
         unsubscribeBoards = onSnapshot(query(collection(db, 'boards'), where('memberEmails', 'array-contains', currentUser.email)), (snap) => {
             boardsContainer.innerHTML = '';
+            searchCache.boards = []; // Limpiar caché
             if(snap.empty) { boardsContainer.innerHTML = `<div class="col-span-full text-center py-10 text-slate-500">Sin tableros. <b onclick="document.getElementById('create-board-btn').click()" class="cursor-pointer text-blue-600">Crear uno</b></div>`; return; }
-            snap.forEach(doc => boardsContainer.appendChild(createBoardCard(doc.id, doc.data())));
+            snap.forEach(doc => {
+                const b = doc.data();
+                boardsContainer.appendChild(createBoardCard(doc.id, b));
+                searchCache.boards.push({ id: doc.id, title: b.title, type: 'board' }); // Indexar tablero
+            });
             if(window.lucide) lucide.createIcons();
         });
     }
@@ -94,6 +115,7 @@ function initializeApp() {
         renderBoardMembers(data.members);
         document.querySelector('.boards-section').style.display='none'; boardView.classList.remove('hidden'); boardView.style.display='flex';
         loadLists(id);
+        loadActivity(id); // [NUEVO] Cargar actividad del tablero
     }
 
     function renderBoardMembers(members) {
@@ -115,6 +137,7 @@ function initializeApp() {
         unsubscribeLists = onSnapshot(query(collection(db, 'boards', bid, 'lists'), orderBy('position')), (snap) => {
             Array.from(listsContainer.querySelectorAll('.list-wrapper:not(:last-child)')).forEach(el=>el.remove());
             const btn = listsContainer.lastElementChild;
+            searchCache.cards = []; // Resetear cache de tarjetas de este tablero para re-llenar
             snap.forEach(doc => {
                 const el = createListElement(doc.id, doc.data());
                 listsContainer.insertBefore(el, btn);
@@ -139,7 +162,12 @@ function initializeApp() {
         if(unsubscribeCards[lid]) unsubscribeCards[lid]();
         unsubscribeCards[lid] = onSnapshot(query(collection(db, 'boards', bid, 'lists', lid, 'cards'), orderBy('position')), (snap) => {
             cont.innerHTML = '';
-            snap.forEach(doc => cont.appendChild(createCardElement(doc.id, lid, doc.data())));
+            snap.forEach(doc => {
+                const card = doc.data();
+                cont.appendChild(createCardElement(doc.id, lid, card));
+                // Indexar tarjeta para búsqueda
+                searchCache.cards.push({ id: doc.id, title: card.title, listId: lid, boardId: bid, type: 'card' });
+            });
             if(window.lucide) lucide.createIcons({root:cont});
         });
     }
@@ -192,6 +220,7 @@ function initializeApp() {
         return d;
     }
 
+    // DRAG & DROP
     let draggedItem = null;
     function handleDragStart(e) { draggedItem=this; this.style.transform='rotate(3deg)'; this.classList.add('dragging'); e.dataTransfer.setData('text/plain', JSON.stringify({cid:this.dataset.cardId, slid:this.dataset.listId})); }
     function handleDragEnd() { this.style.transform='none'; this.classList.remove('dragging'); draggedItem=null; document.querySelectorAll('.drag-over').forEach(e=>e.classList.remove('drag-over')); }
@@ -204,13 +233,18 @@ function initializeApp() {
             try {
                 if(slid!==lid) {
                     const snap = await getDoc(doc(db,'boards',currentBoardId,'lists',slid,'cards',cid));
-                    if(snap.exists()) { await addDoc(collection(db,'boards',currentBoardId,'lists',lid,'cards'),{...snap.data(),position:Date.now()}); await deleteDoc(snap.ref); }
+                    if(snap.exists()) { 
+                        const data = snap.data();
+                        await addDoc(collection(db,'boards',currentBoardId,'lists',lid,'cards'),{...data, position:Date.now()}); 
+                        await deleteDoc(snap.ref); 
+                        logActivity('moved_card', 'card', cid, { cardTitle: data.title, fromList: slid, toList: lid });
+                    }
                 } else await updateDoc(doc(db,'boards',currentBoardId,'lists',slid,'cards',cid),{position:Date.now()});
             } catch(er){console.error(er);}
         });
     }
 
-    // 4. MODAL
+    // MODAL
     function openCardModal(lid, cid=null, data=null) {
         currentCardData = { lid, cid, data };
         document.getElementById('card-title-input').value = data?.title||'';
@@ -233,6 +267,7 @@ function initializeApp() {
         lucide.createIcons();
     }
 
+    // --- SIDEBAR ACTIONS ---
     document.getElementById('card-labels-btn')?.addEventListener('click', () => { labelsModal.classList.remove('hidden'); labelsModal.style.display='flex'; });
     document.getElementById('cancel-labels-btn')?.addEventListener('click', () => closeModal('labels-modal'));
     document.querySelectorAll('.label-checkbox').forEach(cb => cb.addEventListener('change', (e) => {
@@ -283,53 +318,102 @@ function initializeApp() {
             if(snap.empty) return alert("Usuario no registrado en la app.");
             const uid = snap.docs[0].id;
             await addDoc(collection(db, 'notifications'), {
-                userId: uid,
-                type: 'board_invitation',
-                boardId: currentBoardId,
-                boardTitle: currentBoardData.title,
-                invitedBy: currentUser.displayName,
-                invitedByEmail: currentUser.email,
-                role: 'editor',
-                read: false,
-                createdAt: serverTimestamp()
+                userId: uid, type: 'board_invitation', boardId: currentBoardId, boardTitle: currentBoardData.title,
+                invitedBy: currentUser.displayName, invitedByEmail: currentUser.email, role: 'editor', read: false, createdAt: serverTimestamp()
             });
+            logActivity('invited_member', 'board', currentBoardId, { email });
             alert("Invitación enviada.");
             closeModal('invite-modal');
         } catch(e) { console.error(e); alert("Error al invitar"); }
     });
 
-    // --- 7. SISTEMA DE NOTIFICACIONES (FASE 5) ---
+    // --- ACTIVIDAD (FASE 6) ---
+    async function logActivity(action, targetType, targetId, details) {
+        try { await addDoc(collection(db, 'activity_logs'), { boardId: currentBoardId, userId: currentUser.uid, userName: currentUser.displayName, action, targetType, targetId, details, timestamp: serverTimestamp() }); } catch(e){console.error(e);}
+    }
+
+    function loadActivity(boardId) {
+        if(unsubscribeActivity) unsubscribeActivity();
+        unsubscribeActivity = onSnapshot(query(collection(db, 'activity_logs'), where('boardId', '==', boardId), orderBy('timestamp', 'desc')), (snap) => {
+            activityList.innerHTML = '';
+            if(snap.empty) { activityList.innerHTML='<p class="text-center text-sm text-slate-500 p-4">Sin actividad.</p>'; return; }
+            snap.forEach(doc => {
+                const a = doc.data();
+                const div = document.createElement('div'); div.className='activity-item';
+                const msgs = { moved_card: `movió la tarjeta "${a.details.cardTitle}"`, invited_member: `invitó a ${a.details.email}`, created_card: `creó una tarjeta`, deleted_card: `eliminó una tarjeta` };
+                div.innerHTML = `<div class="activity-user">${a.userName}</div><div>${msgs[a.action] || a.action}</div><div class="activity-meta">${new Date(a.timestamp?.toDate()).toLocaleString()}</div>`;
+                activityList.appendChild(div);
+            });
+        });
+    }
+
+    // Toggle Panels
+    document.getElementById('toggle-activity-btn')?.addEventListener('click', () => { activityPanel.classList.toggle('hidden'); membersPanel.classList.add('hidden'); });
+    document.getElementById('close-activity-btn')?.addEventListener('click', () => activityPanel.classList.add('hidden'));
+    document.getElementById('toggle-members-btn')?.addEventListener('click', () => { membersPanel.classList.toggle('hidden'); activityPanel.classList.add('hidden'); });
+    document.getElementById('close-members-btn')?.addEventListener('click', () => membersPanel.classList.add('hidden'));
+
+    // --- BÚSQUEDA GLOBAL (FASE 6) ---
+    function initGlobalSearch() {
+        searchInput?.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            if(term.length < 2) { searchResults.classList.add('hidden'); return; }
+            
+            // Filtrar Tableros y Tarjetas (Local Cache)
+            const bResults = searchCache.boards.filter(b => b.title.toLowerCase().includes(term));
+            const cResults = searchCache.cards.filter(c => c.title.toLowerCase().includes(term));
+            
+            searchResultsList.innerHTML = '';
+            if(bResults.length === 0 && cResults.length === 0) { searchResultsList.innerHTML='<p class="p-2 text-sm text-slate-500">No hay resultados.</p>'; }
+            
+            bResults.forEach(b => {
+                const div = document.createElement('div'); div.className='search-result-item';
+                div.innerHTML = `<div class="result-type">Tablero</div><div class="search-match">${b.title}</div>`;
+                div.addEventListener('click', async () => {
+                    const snap = await getDoc(doc(db,'boards',b.id));
+                    if(snap.exists()) { openBoard(b.id, snap.data()); searchResults.classList.add('hidden'); searchInput.value=''; }
+                });
+                searchResultsList.appendChild(div);
+            });
+
+            cResults.forEach(c => {
+                const div = document.createElement('div'); div.className='search-result-item';
+                div.innerHTML = `<div class="result-type">Tarjeta</div><div class="search-match">${c.title}</div>`;
+                div.addEventListener('click', async () => {
+                    // Si estamos en otro tablero, cambiamos. Si no, solo abrimos modal.
+                    if(currentBoardId !== c.boardId) {
+                        const bSnap = await getDoc(doc(db,'boards',c.boardId));
+                        if(bSnap.exists()) await openBoard(c.boardId, bSnap.data());
+                    }
+                    const cSnap = await getDoc(doc(db,'boards',c.boardId,'lists',c.listId,'cards',c.id));
+                    if(cSnap.exists()) openCardModal(c.listId, c.id, cSnap.data());
+                    searchResults.classList.add('hidden'); searchInput.value='';
+                });
+                searchResultsList.appendChild(div);
+            });
+            searchResults.classList.remove('hidden');
+        });
+        // Cerrar búsqueda si click fuera
+        document.addEventListener('click', (e) => { if(!searchInput.contains(e.target) && !searchResults.contains(e.target)) searchResults.classList.add('hidden'); });
+    }
+
+    // --- NOTIFICACIONES ---
     function loadNotifications() {
         if(unsubscribeNotifications) unsubscribeNotifications();
         unsubscribeNotifications = onSnapshot(query(collection(db, 'notifications'), where('userId', '==', currentUser.uid), orderBy('createdAt', 'desc')), (snap) => {
             notifList.innerHTML = '';
             const unread = snap.docs.filter(d => !d.data().read).length;
-            if(unread > 0) { notifBadge.classList.remove('hidden'); notifBadge.textContent = unread; } 
-            else notifBadge.classList.add('hidden');
-
+            if(unread > 0) { notifBadge.classList.remove('hidden'); notifBadge.textContent = unread; } else notifBadge.classList.add('hidden');
             if(snap.empty) { notifList.innerHTML = '<p class="p-4 text-center text-sm text-slate-500">No tienes notificaciones.</p>'; return; }
-
             snap.forEach(doc => {
                 const n = doc.data();
                 const div = document.createElement('div');
                 div.className = `p-3 border-b border-slate-100 hover:bg-slate-50 cursor-pointer ${!n.read?'bg-blue-50':''}`;
-                
                 if(n.type === 'board_invitation') {
-                    div.innerHTML = `
-                        <div class="text-sm">
-                            <span class="font-bold text-blue-600">${n.invitedBy}</span> te invitó a 
-                            <span class="font-bold text-slate-800">${n.boardTitle}</span>
-                        </div>
-                        <div class="flex gap-2 mt-2">
-                            <button class="accept-btn px-2 py-1 bg-green-500 text-white text-xs rounded">Aceptar</button>
-                            <button class="reject-btn px-2 py-1 bg-red-500 text-white text-xs rounded">Rechazar</button>
-                        </div>
-                    `;
+                    div.innerHTML = `<div class="text-sm"><span class="font-bold text-blue-600">${n.invitedBy}</span> te invitó a <span class="font-bold text-slate-800">${n.boardTitle}</span></div><div class="flex gap-2 mt-2"><button class="accept-btn px-2 py-1 bg-green-500 text-white text-xs rounded">Aceptar</button><button class="reject-btn px-2 py-1 bg-red-500 text-white text-xs rounded">Rechazar</button></div>`;
                     div.querySelector('.accept-btn').addEventListener('click', () => acceptInvitation(doc.id, n));
                     div.querySelector('.reject-btn').addEventListener('click', () => rejectInvitation(doc.id));
-                } else {
-                    div.innerHTML = `<div class="text-sm">${n.message || 'Nueva notificación'}</div>`;
-                }
+                } else { div.innerHTML = `<div class="text-sm">${n.message || 'Nueva notificación'}</div>`; }
                 notifList.appendChild(div);
             });
         });
@@ -338,46 +422,26 @@ function initializeApp() {
     async function acceptInvitation(notifId, data) {
         try {
             const boardRef = doc(db, 'boards', data.boardId);
-            await updateDoc(boardRef, {
-                [`members.${currentUser.uid}`]: {
-                    email: currentUser.email,
-                    name: currentUser.displayName || currentUser.email,
-                    role: data.role
-                },
-                memberEmails: arrayUnion(currentUser.email)
-            });
+            await updateDoc(boardRef, { [`members.${currentUser.uid}`]: { email: currentUser.email, name: currentUser.displayName || currentUser.email, role: data.role }, memberEmails: arrayUnion(currentUser.email) });
             await deleteDoc(doc(db, 'notifications', notifId));
-            alert(`¡Te has unido a ${data.boardTitle}!`);
-            loadBoards(); // Recargar para ver el nuevo tablero
+            alert(`¡Te has unido a ${data.boardTitle}!`); loadBoards();
         } catch(e) { console.error(e); alert("Error al unirse"); }
     }
+    async function rejectInvitation(notifId) { if(confirm("¿Rechazar invitación?")) await deleteDoc(doc(db, 'notifications', notifId)); }
+    notifBtn?.addEventListener('click', (e) => { e.stopPropagation(); notifDropdown.classList.toggle('hidden'); });
+    document.addEventListener('click', (e) => { if(!notifBtn.contains(e.target) && !notifDropdown.contains(e.target)) notifDropdown.classList.add('hidden'); });
 
-    async function rejectInvitation(notifId) {
-        if(confirm("¿Rechazar invitación?")) await deleteDoc(doc(db, 'notifications', notifId));
-    }
-
-    // Toggle dropdown
-    notifBtn?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        notifDropdown.classList.toggle('hidden');
-    });
-    document.addEventListener('click', (e) => {
-        if(!notifBtn.contains(e.target) && !notifDropdown.contains(e.target)) notifDropdown.classList.add('hidden');
-    });
-
-    // --- FUNCIONES INTERNAS MODAL ---
+    // RENDER INTERNOS
     function renderChecklist() {
         const c = document.getElementById('checklist-items'); c.innerHTML='';
         currentChecklist.forEach((i,x)=>{
             const d = document.createElement('div'); d.className='checklist-item group';
             d.innerHTML=`<input type="checkbox" ${i.completed?'checked':''} class="cursor-pointer"><span class="flex-1 text-sm ${i.completed?'line-through text-slate-400':''}">${i.text}</span><button class="delete-item-btn"><i data-lucide="trash-2" class="w-3 h-3"></i></button>`;
             d.querySelector('input').addEventListener('change',e=>{i.completed=e.target.checked; renderChecklist();});
-            d.querySelector('.delete-item-btn').addEventListener('click',()=>{currentChecklist.splice(x,1); renderChecklist();});
+            d.querySelector('button').addEventListener('click',()=>{currentChecklist.splice(x,1); renderChecklist();});
             c.appendChild(d);
         });
-        const p = document.getElementById('checklist-progress');
-        const done = currentChecklist.filter(i=>i.completed).length, total=currentChecklist.length;
-        if(p) p.innerText = total===0?'0%':Math.round((done/total)*100)+'%';
+        const p = document.getElementById('checklist-progress'); if(p) p.innerText = currentChecklist.length?Math.round((currentChecklist.filter(i=>i.completed).length/currentChecklist.length)*100)+'%':'0%';
     }
 
     function renderAttachments() {
@@ -392,47 +456,35 @@ function initializeApp() {
         if(window.lucide) lucide.createIcons();
     }
 
-    document.getElementById('add-checklist-item-btn')?.addEventListener('click', () => {
-        const inp = document.getElementById('new-checklist-item-input');
-        if(inp.value.trim()){ currentChecklist.push({text:inp.value.trim(), completed:false}); inp.value=''; renderChecklist(); }
-    });
-
-    document.querySelectorAll('.cover-color').forEach(b => b.addEventListener('click', () => {
-        currentCardCover = {color:b.dataset.color, mode:'color', url:null}; closeModal('card-cover-modal');
-    }));
+    document.getElementById('add-checklist-item-btn')?.addEventListener('click', () => { const inp = document.getElementById('new-checklist-item-input'); if(inp.value.trim()){ currentChecklist.push({text:inp.value.trim(), completed:false}); inp.value=''; renderChecklist(); } });
+    document.querySelectorAll('.cover-color').forEach(b => b.addEventListener('click', () => { currentCardCover={color:b.dataset.color, mode:'color', url:null}; closeModal('card-cover-modal'); }));
     document.getElementById('remove-cover-btn')?.addEventListener('click', () => { currentCardCover={color:null}; closeModal('card-cover-modal'); });
 
     // GUARDAR Y SALIR
     document.getElementById('save-card-btn')?.addEventListener('click', async () => {
-        const title = document.getElementById('card-title-input').value.trim();
-        if(!title) return;
-        const payload = {
-            title,
-            description: document.getElementById('card-description-input').value.trim(),
-            dueDate: document.getElementById('card-due-date-input').value,
-            checklist: currentChecklist,
-            cover: currentCardCover,
-            attachments: currentAttachments,
-            labels: currentCardLabels, 
-            assignedTo: currentCardMembers,
-            updatedAt: serverTimestamp()
-        };
-        if(currentCardData.cid) await updateDoc(doc(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards',currentCardData.cid), payload);
-        else await addDoc(collection(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards'), {...payload, position:Date.now(), createdAt:serverTimestamp()});
+        const title = document.getElementById('card-title-input').value.trim(); if(!title) return;
+        const payload = { title, description: document.getElementById('card-description-input').value.trim(), dueDate: document.getElementById('card-due-date-input').value, checklist: currentChecklist, cover: currentCardCover, attachments: currentAttachments, labels: currentCardLabels, assignedTo: currentCardMembers, updatedAt: serverTimestamp() };
+        if(currentCardData.cid) {
+            await updateDoc(doc(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards',currentCardData.cid), payload);
+            logActivity('updated_card', 'card', currentCardData.cid, { cardTitle: title }); // LOG ACTIVIDAD
+        } else {
+            const ref = await addDoc(collection(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards'), {...payload, position:Date.now(), createdAt:serverTimestamp()});
+            logActivity('created_card', 'card', ref.id, { cardTitle: title }); // LOG ACTIVIDAD
+        }
         closeModal('card-modal');
     });
 
-    document.getElementById('delete-card-btn')?.addEventListener('click', async()=>{if(confirm('¿Borrar?')){await deleteDoc(doc(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards',currentCardData.cid)); closeModal('card-modal');}});
+    document.getElementById('delete-card-btn')?.addEventListener('click', async()=>{if(confirm('¿Borrar?')){await deleteDoc(doc(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards',currentCardData.cid)); logActivity('deleted_card', 'card', currentCardData.cid, { cardTitle: currentCardData.data.title }); closeModal('card-modal');}});
 
     function closeModal(id){const m=document.getElementById(id);if(m){m.classList.add('hidden');m.style.display='none';}}
     document.querySelectorAll('[id^="cancel-"]').forEach(b=>b.addEventListener('click',e=>closeModal(e.target.closest('.fixed').id)));
     document.getElementById('create-board-btn').addEventListener('click',()=>{boardModal.classList.remove('hidden');boardModal.style.display='flex'});
     document.getElementById('add-list-btn').addEventListener('click',()=>{listModal.classList.remove('hidden');listModal.style.display='flex'});
     document.getElementById('save-list-btn').addEventListener('click',async()=>{
-        const v=document.getElementById('list-name-input').value.trim(); if(v){await addDoc(collection(db,'boards',currentBoardId,'lists'),{name:v,position:Date.now(),createdAt:serverTimestamp()}); closeModal('list-modal'); document.getElementById('list-name-input').value='';}
+        const v=document.getElementById('list-name-input').value.trim(); if(v){await addDoc(collection(db,'boards',currentBoardId,'lists'),{name:v,position:Date.now(),createdAt:serverTimestamp()}); logActivity('created_list', 'list', null, { listName: v }); closeModal('list-modal'); document.getElementById('list-name-input').value='';}
     });
     document.getElementById('save-board-btn').addEventListener('click',async()=>{
         const v=document.getElementById('board-name-input').value.trim(); if(v){await addDoc(collection(db,'boards'),{title:v,ownerId:currentUser.uid,memberEmails:[currentUser.email],members:{[currentUser.uid]:{email:currentUser.email,name:currentUser.displayName||'User',role:'owner'}},createdAt:serverTimestamp()}); closeModal('board-modal');}
     });
-    document.getElementById('back-to-boards-btn').addEventListener('click', ()=>{boardView.style.display='none'; document.querySelector('.boards-section').style.display='block'; if(unsubscribeLists) unsubscribeLists(); currentBoardId=null;});
+    document.getElementById('back-to-boards-btn').addEventListener('click', ()=>{boardView.style.display='none'; document.querySelector('.boards-section').style.display='block'; if(unsubscribeLists) unsubscribeLists(); if(unsubscribeActivity) unsubscribeActivity(); currentBoardId=null;});
 }
