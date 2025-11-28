@@ -1,25 +1,25 @@
-/* style.css - Ingeniería visual Modern Trello 2025 (Final Completo) */
+/* style.css - Ingeniería visual Modern Trello 2025 (Versión Final: Header Sólido) */
 
 /* ========================================= */
 /* 0. VARIABLES DINÁMICAS (SISTEMA ATLASSIAN) */
 /* ========================================= */
 :root {
-    /* Colores Base (Light Mode) - Tono N30 exacto */
+    /* Color N30 Solicitado (Fondo Barra y Listas) */
     --dynamic-background: hsl(270, 2.9%, 91.3%);
+    
+    /* Texto Oscuro Principal */
     --dynamic-text: #172B4D;
     --dynamic-text-transparent: hsla(218, 54%, 19.6%, 0.16);
     
-    /* Botones */
-    --dynamic-button: transparent;
-    --dynamic-button-hovered: rgba(9, 30, 66, 0.08); /* N50A */
-    --dynamic-button-primary: rgba(255, 255, 255, 0.2); /* Transparencia para header */
-    --dynamic-button-primary-text: #ffffff; /* Texto blanco en header */
+    /* Botones Header (Sobre fondo claro) */
+    --dynamic-button-primary: rgba(9, 30, 66, 0.08); /* Gris suave */
+    --dynamic-button-hovered: rgba(9, 30, 66, 0.14); /* Gris un poco más oscuro */
+    --dynamic-button-text: #172B4D;
     
     /* Inputs */
-    --dynamic-input-bg: rgba(255, 255, 255, 0.2);
-    --dynamic-input-border: transparent;
-    --dynamic-input-text: #ffffff;
-    --dynamic-icon: #ffffff;
+    --dynamic-input-bg: #FFFFFF;
+    --dynamic-input-border: #DFE1E6;
+    --dynamic-icon: #42526E;
 }
 
 /* Modo Oscuro (Variables Invertidas) */
@@ -28,64 +28,43 @@
     --dynamic-text: #9FADBC;
     --dynamic-text-transparent: rgba(255, 255, 255, 0.4);
     
-    --dynamic-button-hovered: rgba(255, 255, 255, 0.1);
     --dynamic-button-primary: rgba(255, 255, 255, 0.12); 
+    --dynamic-button-hovered: rgba(255, 255, 255, 0.2);
+    --dynamic-button-text: #FFFFFF;
     
     --dynamic-input-bg: #22272B;
     --dynamic-input-border: #454F59;
-    --dynamic-input-text: #9FADBC;
     --dynamic-icon: #9FADBC;
 }
 
 /* CLASES DE UTILIDAD PARA LA NAV (NUEVO) */
 .trello-nav {
-    /* Usamos un fondo oscuro semitransparente por defecto para que se vea bien sobre fotos */
-    background-color: rgba(0, 0, 0, 0.2) !important; 
-    backdrop-filter: blur(4px); /* Efecto Glass */
-    color: white !important;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    transition: background-color 0.2s ease;
-}
-
-/* Ajuste específico: Si estamos en el dashboard (fuera de un tablero), usamos el gris sólido */
-body:not(:has(.board-view-container:not(.hidden))) .trello-nav {
+    /* Usamos el color N30 sólido solicitado */
     background-color: var(--dynamic-background) !important;
-    color: #172B4D !important;
-    backdrop-filter: none;
+    color: var(--dynamic-text) !important;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+    backdrop-filter: none; /* Quitamos el blur porque es color sólido */
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* Botones de la Nav */
 .trello-nav-btn {
     background-color: var(--dynamic-button-primary) !important;
-    color: inherit !important; /* Hereda del padre (blanco en tablero, oscuro en dashboard) */
+    color: var(--dynamic-button-text) !important;
 }
 
 .trello-nav-btn:hover {
-    background-color: rgba(255, 255, 255, 0.3) !important;
-}
-
-/* Ajuste hover para dashboard (fondo claro) */
-body:not(:has(.board-view-container:not(.hidden))) .trello-nav-btn:hover {
-    background-color: rgba(9, 30, 66, 0.08) !important; 
+    background-color: var(--dynamic-button-hovered) !important;
 }
 
 /* Input de Búsqueda */
 .trello-search-input {
     background-color: var(--dynamic-input-bg) !important;
     border: 1px solid var(--dynamic-input-border) !important;
-    color: inherit !important;
+    color: var(--dynamic-text) !important;
 }
 .trello-search-input::placeholder {
-    color: rgba(255, 255, 255, 0.7);
-}
-/* Input en dashboard (fondo claro) */
-body:not(:has(.board-view-container:not(.hidden))) .trello-search-input {
-    background-color: #FFFFFF !important;
-    border: 1px solid #DFE1E6 !important;
-    color: #172B4D !important;
-}
-body:not(:has(.board-view-container:not(.hidden))) .trello-search-input::placeholder {
-    color: #6B778C;
+    color: var(--dynamic-text-transparent);
 }
 
 /* ========================================= */
@@ -97,7 +76,7 @@ html, body {
     padding: 0;
     overflow: hidden; /* CRÍTICO: Previene que la web entera haga scroll */
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    color: #172B4D; /* Color N800 (Atlassian Design System) */
+    color: #172B4D; /* Color N800 */
     -webkit-font-smoothing: antialiased;
 }
 
@@ -131,6 +110,13 @@ html, body {
 .board-view-container > * {
     position: relative;
     z-index: 1;
+}
+
+/* Header secundario (Donde está el nombre del tablero) */
+/* Necesita ser transparente para ver la imagen, pero con texto legible */
+.board-view-container > div:first-of-type {
+    background-color: rgba(0, 0, 0, 0.24); /* Un poco más oscuro para contraste */
+    backdrop-filter: blur(4px);
 }
 
 .board-canvas {
@@ -247,10 +233,11 @@ html, body {
 
 /* Estilos de Drag & Drop */
 .list-card.dragging {
-    transform: rotate(3deg); /* Rotación física al arrastrar */
+    transform: rotate(3deg) !important; /* Rotación física al arrastrar */
     opacity: 0.9;
     background-color: #e6f7ff; /* Color sutil al arrastrar */
     z-index: 9999;
+    cursor: grabbing;
 }
 
 .dark .list-card.dragging {
@@ -260,6 +247,7 @@ html, body {
 .cards-container.drag-over {
     background-color: rgba(0, 0, 0, 0.05);
     border-radius: 8px;
+    transition: all 0.2s ease;
 }
 
 /* ========================================= */
@@ -372,7 +360,7 @@ html, body {
 /* 7. FÍSICA Y MICRO-INTERACCIONES (Trello 2025) */
 /* ========================================= */
 
-/* Física de Arrastre (Drag & Drop Physics) */
+/* 1. Física de Arrastre (Drag & Drop Physics) */
 .list-card.dragging {
     transform: rotate(3deg) !important; 
     box-shadow: 0 12px 24px -6px rgba(9, 30, 66, 0.25), 0 0 0 1px rgba(9, 30, 66, 0.08) !important;
@@ -394,7 +382,7 @@ html, body {
 
 .checklist-progress-bar {
     height: 4px;
-    background-color: #DFE1E6; 
+    background-color: #DFE1E6; /* Gris base */
     border-radius: 2px;
     overflow: hidden;
     margin-top: 4px;
@@ -403,33 +391,37 @@ html, body {
 
 .checklist-progress-value {
     height: 100%;
-    background-color: #5BA4CF; 
+    background-color: #5BA4CF; /* Azul progreso */
     transition: width 0.2s ease;
 }
+
 .checklist-progress-value.complete {
-    background-color: #61BD4F; 
+    background-color: #61BD4F; /* Verde completado */
 }
 
+/* Estilos para ítems del checklist en el modal */
 .checklist-item {
     display: flex;
     align-items: center;
     gap: 8px;
     padding: 4px 0;
-    position: relative;
+    position: relative; /* Fixed: 'group' is not valid css property */
     transition: opacity 0.2s ease;
 }
-.checklist-item:hover .delete-item-btn {
-    opacity: 1;
-}
 
-/* Cuando un item está completado */
+/* Cuando un item está completado, bajamos su opacidad */
 .checklist-item input:checked + span {
     color: #5e6c84;
     text-decoration: line-through;
     opacity: 0.7;
 }
+
 .dark .checklist-item input:checked + span {
     color: #94a3b8;
+}
+
+.checklist-item:hover .delete-item-btn {
+    opacity: 1;
 }
 
 .delete-item-btn {
@@ -452,21 +444,21 @@ html, body {
 
 /* Modo Banner (Imagen Arriba) */
 .card-cover-image {
-    height: 120px; 
+    height: 120px; /* Altura estándar de banner */
     background-size: cover;
     background-position: center;
     border-radius: 8px 8px 0 0;
-    margin: -8px -8px 8px -8px; 
+    margin: -8px -8px 8px -8px; /* Cubrir padding del padre */
 }
 
 /* Corrección Visual de Portada Emoji */
 .list-card div[class*="h-[32px]"] {
-    margin: -8px -8px 8px -8px !important; 
+    margin: -8px -8px 8px -8px !important; /* Negativo para ir de borde a borde */
     border-radius: 8px 8px 0 0 !important;
-    background-color: #F4F5F7; 
+    background-color: #F4F5F7; /* Color de fondo gris suave (Trello default) */
 }
 .dark .list-card div[class*="h-[32px]"] {
-    background-color: #334155; 
+    background-color: #334155; /* Slate 700 */
     border-bottom: 1px solid #475569;
 }
 
@@ -482,6 +474,7 @@ html, body {
     position: relative;
 }
 
+/* Sombra interior para leer texto sobre imagen */
 .list-card.full-cover::before {
     content: '';
     position: absolute;
@@ -494,6 +487,7 @@ html, body {
     z-index: 1;
 }
 
+/* Ajuste de texto en Full Cover */
 .list-card.full-cover .card-title {
     color: white !important;
     font-weight: 700;
@@ -503,12 +497,14 @@ html, body {
     margin-bottom: 4px;
 }
 
+/* Ocultar elementos en Full Cover para limpieza visual */
 .list-card.full-cover .card-cover,
 .list-card.full-cover .card-description-icon, 
 .list-card.full-cover .checklist-progress-bar {
     display: none; 
 }
 
+/* Badge de fecha en Full Cover (debe ser legible) */
 .list-card.full-cover .due-date-badge {
     background-color: rgba(0,0,0,0.4);
     color: white;
@@ -543,13 +539,13 @@ html, body {
 .sidebar-btn {
     display: flex;
     align-items: center;
-    gap: 10px; 
+    gap: 10px; /* Espacio entre icono y texto */
     width: 100%;
     text-align: left;
     padding: 8px 12px;
-    background-color: #EAECF0; 
+    background-color: #EAECF0; /* Gris Trello N30 */
     border-radius: 3px;
-    color: #172B4D; 
+    color: #172B4D; /* Texto N800 */
     font-size: 14px;
     font-weight: 500;
     margin-bottom: 8px;
@@ -559,16 +555,17 @@ html, body {
 }
 
 .sidebar-btn:hover {
-    background-color: #DCDFE4; 
+    background-color: #DCDFE4; /* Gris más oscuro al hover */
 }
 
 .sidebar-btn i {
     width: 16px;
     height: 16px;
-    flex-shrink: 0; 
-    color: #42526E; 
+    flex-shrink: 0; /* Evita que el icono se aplaste */
+    color: #42526E; /* Icono N500 */
 }
 
+/* Modo oscuro para botones */
 .dark .sidebar-btn {
     background-color: #334155;
     color: #F1F5F9;
@@ -592,19 +589,21 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid white; 
+    border: 2px solid white; /* Borde blanco para solapamiento */
     cursor: pointer;
 }
 
+/* Avatares en la Tarjeta (Miniaturas) */
 .card-members {
     display: flex;
     margin-top: 4px;
-    justify-content: flex-end; 
+    justify-content: flex-end; /* A la derecha */
 }
 .card-members .member-avatar {
-    margin-left: -4px; 
+    margin-left: -4px; /* Efecto solapado (stack) */
 }
 
+/* Avatares en la Cabecera del Tablero */
 .header-avatar {
     width: 28px;
     height: 28px;
@@ -614,6 +613,7 @@ html, body {
     background-color: #ebecf0;
 }
 
+/* Modal de Selección de Miembros (Simple) */
 .member-select-item {
     display: flex;
     align-items: center;
@@ -660,14 +660,16 @@ html, body {
     border-left: 3px solid #0079BF;
 }
 
+/* Resaltado de texto coincidente */
 .search-result-highlight {
-    background-color: #FEF3C7; 
+    background-color: #FEF3C7; /* Amarillo suave */
     color: #78350F;
     font-weight: 700;
     border-radius: 2px;
     padding: 0 2px;
 }
 
+/* Badges de Tipo (Chip de color) */
 .result-type-badge {
     font-size: 10px;
     font-weight: 700;
@@ -682,6 +684,7 @@ html, body {
 .result-type-list  { background-color: #FFF0B3; color: #172B4D; }
 .result-type-card  { background-color: #E4F7FA; color: #42526E; }
 
+/* Breadcrumbs (Migas de pan) */
 .result-breadcrumbs {
     font-size: 11px;
     color: #5E6C84;
@@ -739,6 +742,7 @@ html, body {
 /* 10. ADAPTACIÓN MÓVIL (Snap Scrolling) */
 /* ========================================= */
 [cite_start]/* Referencia: Informe de Ingeniería [cite: 149-150] */
+
 @media (max-width: 768px) {
     /* 1. CAMBIO DE GRID A CARRUSEL */
     .board-canvas {
