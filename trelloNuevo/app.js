@@ -7,7 +7,7 @@ import {
 document.addEventListener('DOMContentLoaded', initializeApp);
 
 function initializeApp() {
-    console.log('🚀 Inicializando Trello Clone (Búsqueda Global Pulida)...');
+    console.log('🚀 Inicializando Trello Clone (Search Engine v3.0)...');
 
     // ========================================
     // ESTADO GLOBAL
@@ -17,14 +17,11 @@ function initializeApp() {
     let currentBoardData = null;
     let currentUserRole = null;
     
-    // [MEJORA] Índice de Búsqueda Global (En memoria)
-    let globalSearchIndex = { 
-        boards: [], // {id, title}
-        lists: [],  // {id, name, boardId, boardTitle}
-        cards: []   // {id, title, listId, boardId, listName, boardTitle}
-    };
+    // CACHÉ DE BÚSQUEDA (Todo en un solo array plano para velocidad)
+    let allSearchCache = []; // [{ id, type: 'board'|'list'|'card', title, ...context }]
+    let selectedResultIndex = -1;
 
-    // Variables de Edición
+    // Estado Edición
     let currentCardData = null; 
     let currentCardCover = { color: null, mode: 'banner', url: null };
     let currentChecklist = []; 
@@ -32,7 +29,6 @@ function initializeApp() {
     let currentCardLabels = [];
     let currentCardMembers = [];
     
-    // Suscripciones
     let unsubscribeBoards, unsubscribeLists, unsubscribeActivity, unsubscribeNotifications; 
     let unsubscribeCards = {}; 
 
@@ -47,13 +43,13 @@ function initializeApp() {
     const labelsModal = document.getElementById('labels-modal');
     const inviteModal = document.getElementById('invite-modal');
     
-    // Paneles y Búsqueda
-    const membersPanel = document.getElementById('members-panel');
-    const activityPanel = document.getElementById('activity-panel');
-    const activityList = document.getElementById('activity-list');
+    // Search & Panels
     const searchInput = document.getElementById('global-search');
     const searchResults = document.getElementById('search-results');
     const searchResultsList = document.getElementById('search-results-list');
+    const membersPanel = document.getElementById('members-panel');
+    const activityPanel = document.getElementById('activity-panel');
+    const activityList = document.getElementById('activity-list');
     const notifBtn = document.getElementById('notifications-btn');
     const notifDropdown = document.getElementById('notifications-dropdown');
     const notifList = document.getElementById('notifications-list');
@@ -81,193 +77,228 @@ function initializeApp() {
         if(av) av.textContent = (currentUser.displayName||currentUser.email).charAt(0).toUpperCase();
         loadBoards();
         loadNotifications();
-        buildGlobalIndex(); // Construir índice al inicio
+        buildGlobalIndex(); // Construir índice completo
         initSearchListeners();
     });
 
     // ========================================
-    // MOTOR DE BÚSQUEDA GLOBAL (INDEXACIÓN REAL)
+    // MOTOR DE BÚSQUEDA GLOBAL (INDEXACIÓN COMPLETA)
     // ========================================
     async function buildGlobalIndex() {
-        console.log("🔍 Indexando contenido para búsqueda global...");
-        globalSearchIndex = { boards: [], lists: [], cards: [] };
+        console.log("🔍 Indexando TODO el contenido...");
+        allSearchCache = [];
 
         try {
-            // 1. Traer tableros
+            // 1. Obtener TABLEROS
             const qBoards = query(collection(db, 'boards'), where('memberEmails', 'array-contains', currentUser.email));
             const snapBoards = await getDocs(qBoards);
 
-            // Usamos Promise.all para cargar el contenido de todos los tableros en paralelo
-            await Promise.all(snapBoards.docs.map(async (boardDoc) => {
+            const promises = snapBoards.docs.map(async (boardDoc) => {
                 const b = boardDoc.data();
                 const bId = boardDoc.id;
                 
-                // Indexar Tablero
-                globalSearchIndex.boards.push({ id: bId, title: b.title });
+                // Add Board
+                allSearchCache.push({ id: bId, type: 'board', title: b.title, score: 0 });
 
-                // 2. Traer listas de este tablero
+                // 2. Obtener LISTAS
                 const snapLists = await getDocs(query(collection(db, 'boards', bId, 'lists')));
                 
                 for (const listDoc of snapLists.docs) {
                     const l = listDoc.data();
                     const lId = listDoc.id;
                     
-                    // Indexar Lista
-                    globalSearchIndex.lists.push({ id: lId, name: l.name, boardId: bId, boardTitle: b.title });
+                    // Add List
+                    allSearchCache.push({ 
+                        id: lId, type: 'list', title: l.name, 
+                        boardId: bId, boardTitle: b.title, score: 0 
+                    });
 
-                    // 3. Traer tarjetas de esta lista
+                    // 3. Obtener TARJETAS
                     const snapCards = await getDocs(query(collection(db, 'boards', bId, 'lists', lId, 'cards')));
                     snapCards.forEach(cardDoc => {
                         const c = cardDoc.data();
-                        // Indexar Tarjeta
-                        globalSearchIndex.cards.push({
-                            id: cardDoc.id,
-                            title: c.title,
-                            description: c.description || '',
-                            listId: lId,
-                            listName: l.name,
-                            boardId: bId,
-                            boardTitle: b.title
+                        // Add Card
+                        allSearchCache.push({
+                            id: cardDoc.id, type: 'card', title: c.title, description: c.description||'',
+                            listId: lId, listName: l.name,
+                            boardId: bId, boardTitle: b.title, score: 0
                         });
                     });
                 }
-            }));
-            console.log("✅ Índice construido:", globalSearchIndex);
-        } catch (e) {
-            console.error("Error indexando:", e);
-        }
+            });
+
+            await Promise.all(promises);
+            console.log(`✅ Indexado: ${allSearchCache.length} elementos.`);
+        } catch (e) { console.error("Error indexando:", e); }
+    }
+
+    // Algoritmo de Scoring (Tu código original)
+    function calculateScore(text, searchTerm) {
+        const lowerText = (text || '').toLowerCase();
+        const lowerTerm = searchTerm.toLowerCase();
+        if (lowerText === lowerTerm) return 100; // Exacto
+        if (lowerText.startsWith(lowerTerm)) return 80; // Empieza con
+        if (lowerText.includes(` ${lowerTerm}`)) return 60; // Palabra completa
+        if (lowerText.includes(lowerTerm)) return 40; // Contiene
+        return 0;
+    }
+
+    function highlightText(text, term) {
+        if (!text) return '';
+        const regex = new RegExp(`(${term})`, 'gi');
+        return text.replace(regex, '<span class="search-result-highlight">$1</span>');
     }
 
     function initSearchListeners() {
         searchInput?.addEventListener('input', (e) => {
-            const term = e.target.value.toLowerCase();
-            if(term.length < 2) { searchResults.classList.add('hidden'); return; }
+            const term = e.target.value.trim().toLowerCase();
+            if(term.length < 2) { searchResults.classList.add('hidden'); selectedResultIndex = -1; return; }
             
-            // FILTRADO LOCAL
-            const bResults = globalSearchIndex.boards.filter(b => b.title.toLowerCase().includes(term));
-            const lResults = globalSearchIndex.lists.filter(l => l.name.toLowerCase().includes(term));
-            const cResults = globalSearchIndex.cards.filter(c => c.title.toLowerCase().includes(term) || c.description.toLowerCase().includes(term));
-            
-            searchResultsList.innerHTML = '';
-            if(!bResults.length && !lResults.length && !cResults.length) { 
-                searchResultsList.innerHTML='<p class="p-4 text-sm text-slate-500 text-center">No se encontraron resultados.</p>'; 
-            }
-            
-            // 1. Renderizar Tableros
-            if(bResults.length > 0) {
-                renderSearchHeader('Tableros');
-                bResults.forEach(b => {
-                    const div = createSearchResultItem('layout', b.title, 'Ir al tablero', () => {
-                        openBoardFromSearch(b.id);
-                    });
-                    searchResultsList.appendChild(div);
-                });
-            }
+            // 1. Calcular Score y Filtrar
+            const results = allSearchCache
+                .map(item => {
+                    // Buscar en título y descripción (si es tarjeta)
+                    const titleScore = calculateScore(item.title, term);
+                    const descScore = item.description ? calculateScore(item.description, term) : 0;
+                    return { ...item, score: Math.max(titleScore, descScore) };
+                })
+                .filter(item => item.score > 0)
+                .sort((a, b) => b.score - a.score); // Ordenar por relevancia
 
-            // 2. Renderizar Listas
-            if(lResults.length > 0) {
-                renderSearchHeader('Listas');
-                lResults.forEach(l => {
-                    const div = createSearchResultItem('list', l.name, `En: ${l.boardTitle}`, () => {
-                        openBoardFromSearch(l.boardId, l.id); // Pasamos ID de lista para hacer scroll
-                    });
-                    searchResultsList.appendChild(div);
-                });
-            }
-
-            // 3. Renderizar Tarjetas
-            if(cResults.length > 0) {
-                renderSearchHeader('Tarjetas');
-                cResults.forEach(c => {
-                    // Migas de pan: Tablero > Lista
-                    const breadcrumb = `${c.boardTitle} <i data-lucide="chevron-right" class="w-3 h-3 inline"></i> ${c.listName}`;
-                    const div = createSearchResultItem('credit-card', c.title, breadcrumb, () => {
-                        openBoardFromSearch(c.boardId, null, { listId: c.listId, cardId: c.id });
-                    }, true); // true para permitir HTML en breadcrumb
-                    searchResultsList.appendChild(div);
-                });
-            }
-
-            searchResults.classList.remove('hidden');
-            if(window.lucide) lucide.createIcons();
+            // 2. Renderizar
+            renderSearchResults(results.slice(0, 10), term); // Max 10 resultados
         });
 
-        // Cerrar al hacer click fuera
+        // Navegación Teclado
+        searchInput?.addEventListener('keydown', (e) => {
+            const items = document.querySelectorAll('.search-result-item');
+            if (items.length === 0) return;
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                selectedResultIndex = Math.min(selectedResultIndex + 1, items.length - 1);
+                updateSelection(items);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                selectedResultIndex = Math.max(selectedResultIndex - 1, 0);
+                updateSelection(items);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (selectedResultIndex >= 0) items[selectedResultIndex].click();
+            } else if (e.key === 'Escape') {
+                searchResults.classList.add('hidden');
+            }
+        });
+
         document.addEventListener('click', (e) => { 
-            if(!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
-                searchResults.classList.add('hidden'); 
+            if(!searchInput.contains(e.target) && !searchResults.contains(e.target)) searchResults.classList.add('hidden'); 
+        });
+    }
+
+    function updateSelection(items) {
+        items.forEach((item, index) => {
+            if (index === selectedResultIndex) {
+                item.classList.add('keyboard-selected');
+                item.scrollIntoView({ block: 'nearest' });
+            } else {
+                item.classList.remove('keyboard-selected');
             }
         });
     }
 
-    // Helpers de Renderizado de Búsqueda
-    function renderSearchHeader(text) {
-        const h = document.createElement('div');
-        h.className = 'px-3 py-1.5 text-[10px] font-bold text-slate-500 uppercase bg-slate-100 dark:bg-slate-700 tracking-wider';
-        h.textContent = text;
-        searchResultsList.appendChild(h);
-    }
+    function renderSearchResults(results, term) {
+        searchResultsList.innerHTML = '';
+        selectedResultIndex = -1;
 
-    function createSearchResultItem(icon, title, subtitle, onClick, isHtmlSubtitle = false) {
-        const div = document.createElement('div');
-        div.className = 'search-result-item group p-2 hover:bg-blue-50 dark:hover:bg-slate-600 cursor-pointer flex items-center gap-3 border-b border-slate-100 dark:border-slate-700 last:border-0';
-        div.innerHTML = `
-            <div class="p-1.5 bg-slate-200 dark:bg-slate-500 rounded text-slate-600 dark:text-white"><i data-lucide="${icon}" class="w-4 h-4"></i></div>
-            <div class="flex-1 min-w-0">
-                <div class="text-sm font-semibold text-slate-800 dark:text-white truncate group-hover:text-blue-600">${title}</div>
-                <div class="text-xs text-slate-500 dark:text-slate-400 truncate flex items-center gap-1">${isHtmlSubtitle ? subtitle : subtitle}</div>
-            </div>
-        `;
-        div.addEventListener('click', onClick);
-        return div;
-    }
-
-    // [IMPORTANTE] Navegación Cruzada Inteligente
-    async function openBoardFromSearch(targetBoardId, targetListId = null, targetCard = null) {
-        searchResults.classList.add('hidden');
-        searchInput.value = '';
-
-        // Si ya estamos en el tablero correcto
-        if (currentBoardId === targetBoardId) {
-            if (targetCard) {
-                // Abrir tarjeta directamente
-                const snap = await getDoc(doc(db, 'boards', targetBoardId, 'lists', targetCard.listId, 'cards', targetCard.cardId));
-                if(snap.exists()) openCardModal(targetCard.listId, targetCard.cardId, snap.data());
-            } else if (targetListId) {
-                // Scroll a la lista
-                scrollToList(targetListId);
-            }
+        if(results.length === 0) { 
+            searchResultsList.innerHTML = '<p class="p-4 text-sm text-slate-500 text-center">No se encontraron resultados.</p>'; 
+            searchResults.classList.remove('hidden');
             return;
         }
 
-        // Si estamos en OTRO tablero o en el dashboard, cargar el nuevo
-        const boardSnap = await getDoc(doc(db, 'boards', targetBoardId));
-        if (boardSnap.exists()) {
-            await openBoard(targetBoardId, boardSnap.data());
+        results.forEach((res, index) => {
+            const div = document.createElement('div');
+            div.className = 'search-result-item';
+            div.dataset.index = index;
+
+            const titleHtml = highlightText(res.title, term);
             
-            // Esperar un poco a que se rendericen las listas (hack visual)
-            setTimeout(async () => {
-                if (targetCard) {
-                    const cSnap = await getDoc(doc(db, 'boards', targetBoardId, 'lists', targetCard.listId, 'cards', targetCard.cardId));
-                    if(cSnap.exists()) openCardModal(targetCard.listId, targetCard.cardId, cSnap.data());
-                } else if (targetListId) {
-                    scrollToList(targetListId);
-                }
-            }, 800); // Tiempo para que cargue el DOM
+            // Renderizado Condicional según Tipo
+            if (res.type === 'board') {
+                div.innerHTML = `
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="result-type-badge result-type-board">Tablero</span>
+                        <span class="text-sm font-bold text-slate-800">${titleHtml}</span>
+                    </div>`;
+            } else if (res.type === 'list') {
+                div.innerHTML = `
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="result-type-badge result-type-list">Lista</span>
+                        <span class="text-sm font-bold text-slate-800">${titleHtml}</span>
+                    </div>
+                    <div class="result-breadcrumbs">
+                        <span>En: <strong>${res.boardTitle}</strong></span>
+                    </div>`;
+            } else if (res.type === 'card') {
+                div.innerHTML = `
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="result-type-badge result-type-card">Tarjeta</span>
+                        <span class="text-sm font-bold text-slate-800">${titleHtml}</span>
+                    </div>
+                    <div class="result-breadcrumbs">
+                        <span>${res.boardTitle}</span>
+                        <i data-lucide="chevron-right" class="w-3 h-3"></i>
+                        <span>${res.listName}</span>
+                    </div>`;
+            }
+
+            // Click Handler Unificado
+            div.addEventListener('click', () => handleSearchResultClick(res));
+            searchResultsList.appendChild(div);
+        });
+
+        searchResults.classList.remove('hidden');
+        if(window.lucide) lucide.createIcons();
+    }
+
+    async function handleSearchResultClick(res) {
+        searchResults.classList.add('hidden');
+        searchInput.value = '';
+
+        // Lógica de Navegación Cruzada
+        if (currentBoardId !== res.boardId && res.boardId) {
+            // Estamos en otro tablero o dashboard: Cargar el tablero destino primero
+            const bSnap = await getDoc(doc(db, 'boards', res.boardId));
+            if (bSnap.exists()) {
+                await openBoard(res.boardId, bSnap.data());
+                // Pequeño delay para que el DOM se construya antes de buscar el elemento
+                setTimeout(() => focusTarget(res), 800); 
+            }
+        } else {
+            // Ya estamos en el tablero correcto
+            focusTarget(res);
         }
     }
 
-    function scrollToList(listId) {
-        const el = document.querySelector(`[data-list-id="${listId}"]`);
-        if(el) {
-            el.scrollIntoView({ behavior: 'smooth', inline: 'center' });
-            el.classList.add('ring-2', 'ring-blue-500'); // Feedback visual
-            setTimeout(() => el.classList.remove('ring-2', 'ring-blue-500'), 2000);
+    async function focusTarget(res) {
+        if (res.type === 'board') return; // Ya estamos ahí
+
+        if (res.type === 'list') {
+            const el = document.querySelector(`[data-list-id="${res.id}"]`);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+                el.style.boxShadow = '0 0 0 4px #FFAB00'; // Highlight visual
+                setTimeout(() => el.style.boxShadow = '', 2000);
+            }
+        } else if (res.type === 'card') {
+            // Abrir modal de tarjeta
+            const cSnap = await getDoc(doc(db, 'boards', res.boardId, 'lists', res.listId, 'cards', res.id));
+            if (cSnap.exists()) openCardModal(res.listId, res.id, cSnap.data());
         }
     }
 
     // ========================================
-    // 1. TABLEROS (CORE)
+    // LOGICA CORE (Tableros, Listas, Tarjetas)
     // ========================================
     function loadBoards() {
         if(unsubscribeBoards) unsubscribeBoards();
@@ -314,7 +345,6 @@ function initializeApp() {
         });
     }
 
-    // 2. LISTAS
     function loadLists(bid) {
         if(unsubscribeLists) unsubscribeLists();
         unsubscribeLists = onSnapshot(query(collection(db, 'boards', bid, 'lists'), orderBy('position')), (snap) => {
@@ -339,7 +369,6 @@ function initializeApp() {
         w.appendChild(d); return w;
     }
 
-    // 3. TARJETAS
     function loadCards(bid, lid, cont) {
         if(unsubscribeCards[lid]) unsubscribeCards[lid]();
         unsubscribeCards[lid] = onSnapshot(query(collection(db, 'boards', bid, 'lists', lid, 'cards'), orderBy('position')), (snap) => {
@@ -414,13 +443,13 @@ function initializeApp() {
                         await addDoc(collection(db,'boards',currentBoardId,'lists',lid,'cards'),{...data, position:Date.now()}); 
                         await deleteDoc(snap.ref); 
                         logActivity('moved_card', 'card', cid, { cardTitle: data.title, fromList: slid, toList: lid });
+                        // Actualizar Índice (Simulado eliminando y re-cargando sería costoso, mejor confiar en next reload)
                     }
                 } else await updateDoc(doc(db,'boards',currentBoardId,'lists',slid,'cards',cid),{position:Date.now()});
             } catch(er){console.error(er);}
         });
     }
 
-    // MODAL
     function openCardModal(lid, cid=null, data=null) {
         currentCardData = { lid, cid, data };
         document.getElementById('card-title-input').value = data?.title||'';
@@ -503,7 +532,6 @@ function initializeApp() {
         } catch(e) { console.error(e); alert("Error al invitar"); }
     });
 
-    // ACTIVIDAD
     async function logActivity(action, targetType, targetId, details) {
         try { await addDoc(collection(db, 'activity_logs'), { boardId: currentBoardId, userId: currentUser.uid, userName: currentUser.displayName, action, targetType, targetId, details, timestamp: serverTimestamp() }); } catch(e){console.error(e);}
     }
@@ -528,7 +556,6 @@ function initializeApp() {
     document.getElementById('toggle-members-btn')?.addEventListener('click', () => { membersPanel.classList.toggle('hidden'); activityPanel.classList.add('hidden'); });
     document.getElementById('close-members-btn')?.addEventListener('click', () => membersPanel.classList.add('hidden'));
 
-    // NOTIFICACIONES
     function loadNotifications() {
         if(unsubscribeNotifications) unsubscribeNotifications();
         unsubscribeNotifications = onSnapshot(query(collection(db, 'notifications'), where('userId', '==', currentUser.uid), orderBy('createdAt', 'desc')), (snap) => {
@@ -562,7 +589,6 @@ function initializeApp() {
     notifBtn?.addEventListener('click', (e) => { e.stopPropagation(); notifDropdown.classList.toggle('hidden'); });
     document.addEventListener('click', (e) => { if(!notifBtn.contains(e.target) && !notifDropdown.contains(e.target)) notifDropdown.classList.add('hidden'); });
 
-    // RENDER INTERNOS
     function renderChecklist() {
         const c = document.getElementById('checklist-items'); c.innerHTML='';
         currentChecklist.forEach((i,x)=>{
@@ -591,31 +617,30 @@ function initializeApp() {
     document.querySelectorAll('.cover-color').forEach(b => b.addEventListener('click', () => { currentCardCover={color:b.dataset.color, mode:'color', url:null}; closeModal('card-cover-modal'); }));
     document.getElementById('remove-cover-btn')?.addEventListener('click', () => { currentCardCover={color:null}; closeModal('card-cover-modal'); });
 
-    // GUARDAR Y SALIR (CON ACTUALIZACIÓN DE ÍNDICE)
     document.getElementById('save-card-btn')?.addEventListener('click', async () => {
         const title = document.getElementById('card-title-input').value.trim(); if(!title) return;
         const payload = { title, description: document.getElementById('card-description-input').value.trim(), dueDate: document.getElementById('card-due-date-input').value, checklist: currentChecklist, cover: currentCardCover, attachments: currentAttachments, labels: currentCardLabels, assignedTo: currentCardMembers, updatedAt: serverTimestamp() };
-        
-        let savedId = currentCardData.cid;
-        if(savedId) {
-            await updateDoc(doc(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards',savedId), payload);
-            logActivity('updated_card', 'card', savedId, { cardTitle: title });
+        if(currentCardData.cid) {
+            await updateDoc(doc(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards',currentCardData.cid), payload);
+            logActivity('updated_card', 'card', currentCardData.cid, { cardTitle: title });
+            // Actualizar Índice Local
+            const idx = allSearchCache.findIndex(x => x.id === currentCardData.cid);
+            if(idx >= 0) { allSearchCache[idx].title = title; allSearchCache[idx].description = payload.description; }
         } else {
             const ref = await addDoc(collection(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards'), {...payload, position:Date.now(), createdAt:serverTimestamp()});
-            savedId = ref.id;
-            logActivity('created_card', 'card', savedId, { cardTitle: title });
+            logActivity('created_card', 'card', ref.id, { cardTitle: title });
+            // Añadir al Índice
+            allSearchCache.push({ id: ref.id, type: 'card', title, description: payload.description, listId: currentCardData.lid, boardId: currentBoardId, boardTitle: currentBoardData.title, listName: '...' });
         }
-        
-        // [MEJORA] Actualizar índice local manualmente para búsqueda instantánea
-        const existingIdx = globalSearchIndex.cards.findIndex(c => c.id === savedId);
-        const cardIndexData = { id: savedId, title, description: payload.description, listId: currentCardData.lid, boardId: currentBoardId, boardTitle: currentBoardData.title, listName: '...' }; // Simplificado
-        if(existingIdx >= 0) globalSearchIndex.cards[existingIdx] = cardIndexData;
-        else globalSearchIndex.cards.push(cardIndexData);
-
         closeModal('card-modal');
     });
 
-    document.getElementById('delete-card-btn')?.addEventListener('click', async()=>{if(confirm('¿Borrar?')){await deleteDoc(doc(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards',currentCardData.cid)); logActivity('deleted_card', 'card', currentCardData.cid, { cardTitle: currentCardData.data.title }); closeModal('card-modal');}});
+    document.getElementById('delete-card-btn')?.addEventListener('click', async()=>{if(confirm('¿Borrar?')){
+        await deleteDoc(doc(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards',currentCardData.cid)); 
+        logActivity('deleted_card', 'card', currentCardData.cid, { cardTitle: currentCardData.data.title }); 
+        allSearchCache = allSearchCache.filter(x => x.id !== currentCardData.cid); // Remover del índice
+        closeModal('card-modal');
+    }});
 
     function closeModal(id){const m=document.getElementById(id);if(m){m.classList.add('hidden');m.style.display='none';}}
     document.querySelectorAll('[id^="cancel-"]').forEach(b=>b.addEventListener('click',e=>closeModal(e.target.closest('.fixed').id)));
@@ -623,15 +648,16 @@ function initializeApp() {
     document.getElementById('add-list-btn').addEventListener('click',()=>{listModal.classList.remove('hidden');listModal.style.display='flex'});
     document.getElementById('save-list-btn').addEventListener('click',async()=>{
         const v=document.getElementById('list-name-input').value.trim(); if(v){
-            const ref = await addDoc(collection(db,'boards',currentBoardId,'lists'),{name:v,position:Date.now(),createdAt:serverTimestamp()});
-            globalSearchIndex.lists.push({id: ref.id, name: v, boardId: currentBoardId, boardTitle: currentBoardData.title}); // Indexar lista nueva
-            logActivity('created_list', 'list', null, { listName: v }); closeModal('list-modal'); document.getElementById('list-name-input').value='';
+            const ref = await addDoc(collection(db,'boards',currentBoardId,'lists'),{name:v,position:Date.now(),createdAt:serverTimestamp()}); 
+            logActivity('created_list', 'list', null, { listName: v }); 
+            allSearchCache.push({ id: ref.id, type: 'list', title: v, boardId: currentBoardId, boardTitle: currentBoardData.title });
+            closeModal('list-modal'); document.getElementById('list-name-input').value='';
         }
     });
     document.getElementById('save-board-btn').addEventListener('click',async()=>{
         const v=document.getElementById('board-name-input').value.trim(); if(v){
-            const ref = await addDoc(collection(db,'boards'),{title:v,ownerId:currentUser.uid,memberEmails:[currentUser.email],members:{[currentUser.uid]:{email:currentUser.email,name:currentUser.displayName||'User',role:'owner'}},createdAt:serverTimestamp()});
-            globalSearchIndex.boards.push({id: ref.id, title: v}); // Indexar tablero nuevo
+            const ref = await addDoc(collection(db,'boards'),{title:v,ownerId:currentUser.uid,memberEmails:[currentUser.email],members:{[currentUser.uid]:{email:currentUser.email,name:currentUser.displayName||'User',role:'owner'}},createdAt:serverTimestamp()}); 
+            allSearchCache.push({ id: ref.id, type: 'board', title: v });
             closeModal('board-modal');
         }
     });
