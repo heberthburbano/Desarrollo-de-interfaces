@@ -20,6 +20,11 @@ html, body {
     transition: background-color 0.5s ease;
 }
 
+/* CORRECCIÓN: Fondo oscuro para el tablero en modo Dark */
+.dark .board-view-container {
+    background-color: #0f172a !important; /* Slate 900 */
+}
+
 .board-canvas {
     flex-grow: 1;
     position: relative;
@@ -28,12 +33,14 @@ html, body {
     grid-auto-flow: column; 
     /* MEDIDA EXACTA: 272px por lista, el estándar de oro de Trello */
     grid-auto-columns: 272px; 
+    grid-template-rows: 100%; /* CORRECCIÓN: Altura completa para hijos */
     gap: 12px; /* Espaciado entre listas */
     padding: 12px;
     padding-bottom: 8px; /* Ajuste para scrollbar */
-    overflow-x: auto; /* Scroll horizontal habilitado */
+    overflow-x: auto !important; /* CORRECCIÓN: Forzar scroll horizontal */
     overflow-y: hidden;
     align-items: start; /* Las listas cuelgan de arriba */
+    justify-content: start; /* CORRECCIÓN: Evitar centrado extraño */
 }
 
 /* 3. COMPONENTE: LISTA */
@@ -679,4 +686,64 @@ html, body {
     gap: 4px;
     font-weight: 500;
     transition: background-color 0.2s;
+}
+
+/* ========================================= */
+/* FASE 4: EXPERIENCIA MÓVIL (Snap Scrolling)*/
+/* ========================================= */
+[cite_start]/* Referencia: Informe de Ingeniería [cite: 149-150] */
+
+@media (max-width: 768px) {
+    /* 1. CAMBIO DE GRID A CARRUSEL */
+    .board-canvas {
+        /* En móvil, la lista ocupa el 85% del ancho para ver un poco de la siguiente */
+        grid-auto-columns: 85vw; 
+        
+        /* Espacio visual a la derecha para 'affordance' */
+        padding-right: 15vw; 
+        
+        /* FÍSICA MAGNÉTICA: Obliga a detenerse exactamente en una lista */
+        scroll-snap-type: x mandatory; 
+        
+        /* Mayor separación entre listas en móvil */
+        gap: 16px; 
+    }
+
+    /* 2. COMPORTAMIENTO DE LA LISTA */
+    .list-wrapper {
+        /* Punto de anclaje: la lista siempre se centra al soltar el dedo */
+        scroll-snap-align: center;
+        
+        /* Margen de seguridad para que no se pegue al borde izquierdo */
+        scroll-margin-inline: 16px; 
+    }
+
+    /* 3. ALTURA DINÁMICA */
+    /* Ajuste crítico para navegadores móviles con barra de URL flotante */
+    .board-view-container {
+        height: 100dvh; /* 'dvh' = Dynamic Viewport Height */
+    }
+
+    .list {
+        /* Restamos cabecera (48px) y dejamos un margen inferior seguro */
+        max-height: calc(100dvh - 80px); 
+    }
+
+    /* 4. LIMPIEZA DE UI (Ocultar elementos de escritorio) */
+    /* En móvil ocultamos avatares del header y textos largos para ganar espacio */
+    .board-view-container #members-preview, 
+    .board-view-container #invite-member-btn span {
+        display: none;
+    }
+    
+    /* Convertir botón "Compartir" en solo icono */
+    .board-view-container #invite-member-btn {
+        padding: 8px;
+        background-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    /* Ocultar barra lateral si se quedó abierta */
+    .sidebar-active {
+        display: none;
+    }
 }
