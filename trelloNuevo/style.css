@@ -1,36 +1,25 @@
-/* style.css - Ingeniería visual Modern Trello 2025 (Versión Final Completa) */
-
-/* 1. RESET Y BASE (Lienzo Fijo) */
-html, body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    overflow: hidden; /* CRÍTICO: Previene que la web entera haga scroll */
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    color: #172B4D; /* Color N800 (Atlassian Design System) */
-    -webkit-font-smoothing: antialiased;/* style.css - Ingeniería visual Modern Trello 2025 (Final + Variables Dinámicas) */
+/* style.css - Ingeniería visual Modern Trello 2025 (Final Completo) */
 
 /* ========================================= */
 /* 0. VARIABLES DINÁMICAS (SISTEMA ATLASSIAN) */
 /* ========================================= */
 :root {
-    /* Colores Base (Light Mode) */
+    /* Colores Base (Light Mode) - Tono N30 exacto */
     --dynamic-background: hsl(270, 2.9%, 91.3%);
     --dynamic-text: #172B4D;
     --dynamic-text-transparent: hsla(218, 54%, 19.6%, 0.16);
     
     /* Botones */
     --dynamic-button: transparent;
-    --dynamic-button-hovered: rgba(0, 0, 0, 0.08);
-    --dynamic-button-primary: rgba(0, 0, 0, 0.08); /* Nivel de opacidad ajustado */
-    --dynamic-button-primary-text: #172B4D;
+    --dynamic-button-hovered: rgba(9, 30, 66, 0.08); /* N50A */
+    --dynamic-button-primary: rgba(255, 255, 255, 0.2); /* Transparencia para header */
+    --dynamic-button-primary-text: #ffffff; /* Texto blanco en header */
     
     /* Inputs */
-    --dynamic-input-bg: #FFFFFF;
-    --dynamic-input-border: #DFE1E6;
-    
-    /* Iconos */
-    --dynamic-icon: #42526E;
+    --dynamic-input-bg: rgba(255, 255, 255, 0.2);
+    --dynamic-input-border: transparent;
+    --dynamic-input-text: #ffffff;
+    --dynamic-icon: #ffffff;
 }
 
 /* Modo Oscuro (Variables Invertidas) */
@@ -41,38 +30,62 @@ html, body {
     
     --dynamic-button-hovered: rgba(255, 255, 255, 0.1);
     --dynamic-button-primary: rgba(255, 255, 255, 0.12); 
-    --dynamic-button-primary-text: #FFFFFF;
     
     --dynamic-input-bg: #22272B;
     --dynamic-input-border: #454F59;
-    
+    --dynamic-input-text: #9FADBC;
     --dynamic-icon: #9FADBC;
 }
 
 /* CLASES DE UTILIDAD PARA LA NAV (NUEVO) */
 .trello-nav {
-    background-color: var(--dynamic-background) !important;
-    color: var(--dynamic-text) !important;
-    border-bottom: 1px solid rgba(0,0,0,0.08);
-    transition: background-color 0.2s ease, color 0.2s ease;
+    /* Usamos un fondo oscuro semitransparente por defecto para que se vea bien sobre fotos */
+    background-color: rgba(0, 0, 0, 0.2) !important; 
+    backdrop-filter: blur(4px); /* Efecto Glass */
+    color: white !important;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    transition: background-color 0.2s ease;
 }
 
+/* Ajuste específico: Si estamos en el dashboard (fuera de un tablero), usamos el gris sólido */
+body:not(:has(.board-view-container:not(.hidden))) .trello-nav {
+    background-color: var(--dynamic-background) !important;
+    color: #172B4D !important;
+    backdrop-filter: none;
+}
+
+/* Botones de la Nav */
 .trello-nav-btn {
     background-color: var(--dynamic-button-primary) !important;
-    color: var(--dynamic-button-primary-text) !important;
+    color: inherit !important; /* Hereda del padre (blanco en tablero, oscuro en dashboard) */
 }
 
 .trello-nav-btn:hover {
-    background-color: var(--dynamic-button-hovered) !important;
+    background-color: rgba(255, 255, 255, 0.3) !important;
 }
 
+/* Ajuste hover para dashboard (fondo claro) */
+body:not(:has(.board-view-container:not(.hidden))) .trello-nav-btn:hover {
+    background-color: rgba(9, 30, 66, 0.08) !important; 
+}
+
+/* Input de Búsqueda */
 .trello-search-input {
     background-color: var(--dynamic-input-bg) !important;
     border: 1px solid var(--dynamic-input-border) !important;
-    color: var(--dynamic-text) !important;
+    color: inherit !important;
 }
 .trello-search-input::placeholder {
-    color: var(--dynamic-text-transparent);
+    color: rgba(255, 255, 255, 0.7);
+}
+/* Input en dashboard (fondo claro) */
+body:not(:has(.board-view-container:not(.hidden))) .trello-search-input {
+    background-color: #FFFFFF !important;
+    border: 1px solid #DFE1E6 !important;
+    color: #172B4D !important;
+}
+body:not(:has(.board-view-container:not(.hidden))) .trello-search-input::placeholder {
+    color: #6B778C;
 }
 
 /* ========================================= */
@@ -96,17 +109,17 @@ html, body {
     flex-direction: column;
     height: 100vh;
     background-color: #0079BF; /* Azul Clásico Trello por defecto */
-    transition: background-color 0.5s ease;
+    transition: background-color 0.5s ease, background-image 0.2s ease;
     background-size: cover;
     background-position: center;
 }
 
-/* CORRECCIÓN: Fondo oscuro para el tablero en modo Dark */
+/* CORRECCIÓN: Fondo oscuro para el tablero en modo Dark (si no hay imagen) */
 .dark .board-view-container {
     background-color: #0f172a !important; /* Slate 900 */
 }
 
-/* Velo oscuro para leer sobre imágenes de fondo */
+/* CORRECCIÓN: Velo oscuro para leer sobre imágenes de fondo */
 .board-view-container::before {
     content: '';
     position: absolute;
@@ -128,7 +141,7 @@ html, body {
     grid-auto-flow: column; 
     /* MEDIDA EXACTA: 272px por lista, el estándar de oro de Trello */
     grid-auto-columns: 272px; 
-    grid-template-rows: 100%; /* CORRECCIÓN: Altura completa para hijos */
+    grid-template-rows: 100%; /* CORRECCIÓN: Altura completa */
     gap: 12px; /* Espaciado entre listas */
     padding: 12px;
     padding-bottom: 8px; /* Ajuste para scrollbar */
@@ -161,7 +174,7 @@ html, body {
     border: 1px solid rgba(0,0,0,0.05); /* Sutil borde para definición */
 }
 
-/* Modo oscuro para listas */
+/* Modo oscuro para listas (manual override) */
 .dark .list {
     background-color: #1e293b; /* Slate 800 */
     border-color: #334155;
@@ -186,7 +199,7 @@ html, body {
     color: #f1f5f9;
 }
 
-/* Contenedor interno de tarjetas */
+/* Contenedor interno de tarjetas (Scroll vertical independiente) */
 .cards-container {
     flex: 1 1 auto;
     overflow-y: auto; /* Scroll vertical dentro de la lista */
@@ -232,8 +245,25 @@ html, body {
     background-color: #475569;
 }
 
+/* Estilos de Drag & Drop */
+.list-card.dragging {
+    transform: rotate(3deg); /* Rotación física al arrastrar */
+    opacity: 0.9;
+    background-color: #e6f7ff; /* Color sutil al arrastrar */
+    z-index: 9999;
+}
+
+.dark .list-card.dragging {
+    background-color: #1e3a8a;
+}
+
+.cards-container.drag-over {
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+}
+
 /* ========================================= */
-/* 5. ESTILIZACIÓN DE SCROLLBARS */
+/* 5. ESTILIZACIÓN DE SCROLLBARS (Tipo "Píldora") */
 /* ========================================= */
 .board-canvas::-webkit-scrollbar {
     height: 12px;
@@ -261,6 +291,7 @@ html, body {
     background-color: #475569;
 }
 
+/* 6. CLASES AUXILIARES PARA LÓGICA JS */
 .hide-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -288,12 +319,10 @@ html, body {
     vertical-align: middle;
     cursor: pointer;
 }
-
 .card-label:hover {
     filter: brightness(0.9); 
     height: 10px;
 }
-
 .card-label.expanded {
     width: auto; 
     height: auto;
@@ -316,7 +345,7 @@ html, body {
 .bg-purple-500.card-label.expanded { background-color: #C377E0; color: white; }
 .bg-blue-500.card-label.expanded { background-color: #0079BF; color: white; }
 
-/* Portada de tarjeta (Base) */
+/* Portada de tarjeta */
 .card-cover {
     height: 32px;
     border-radius: 8px 8px 0 0;
@@ -343,7 +372,7 @@ html, body {
 /* 7. FÍSICA Y MICRO-INTERACCIONES (Trello 2025) */
 /* ========================================= */
 
-/* Física de Arrastre */
+/* Física de Arrastre (Drag & Drop Physics) */
 .list-card.dragging {
     transform: rotate(3deg) !important; 
     box-shadow: 0 12px 24px -6px rgba(9, 30, 66, 0.25), 0 0 0 1px rgba(9, 30, 66, 0.08) !important;
@@ -377,7 +406,6 @@ html, body {
     background-color: #5BA4CF; 
     transition: width 0.2s ease;
 }
-
 .checklist-progress-value.complete {
     background-color: #61BD4F; 
 }
@@ -390,6 +418,9 @@ html, body {
     position: relative;
     transition: opacity 0.2s ease;
 }
+.checklist-item:hover .delete-item-btn {
+    opacity: 1;
+}
 
 /* Cuando un item está completado */
 .checklist-item input:checked + span {
@@ -399,10 +430,6 @@ html, body {
 }
 .dark .checklist-item input:checked + span {
     color: #94a3b8;
-}
-
-.checklist-item:hover .delete-item-btn {
-    opacity: 1;
 }
 
 .delete-item-btn {
@@ -683,7 +710,7 @@ html, body {
     color: #172B4D;
 }
 
-/* Botón "Añadir tarjeta" en modo oscuro */
+/* CORRECCIÓN: Botón "Añadir tarjeta" en modo oscuro */
 .dark .add-card {
     color: #94a3b8; 
 }
@@ -711,703 +738,7 @@ html, body {
 /* ========================================= */
 /* 10. ADAPTACIÓN MÓVIL (Snap Scrolling) */
 /* ========================================= */
-@media (max-width: 768px) {
-    .board-canvas {
-        grid-auto-columns: 85vw; 
-        padding-right: 15vw; 
-        scroll-snap-type: x mandatory; 
-        gap: 16px; 
-    }
-
-    .list-wrapper {
-        scroll-snap-align: center;
-        scroll-margin-inline: 16px; 
-    }
-
-    .board-view-container {
-        height: 100dvh; 
-    }
-
-    .list {
-        max-height: calc(100dvh - 80px); 
-    }
-
-    /* Ocultar elementos secundarios */
-    .board-view-container #members-preview, 
-    .board-view-container #invite-member-btn span {
-        display: none;
-    }
-    
-    .board-view-container #invite-member-btn {
-        padding: 8px;
-        background-color: rgba(255, 255, 255, 0.2);
-    }
-    
-    .sidebar-active {
-        display: none;
-    }
-}
-}
-
-/* 2. LAYOUT DEL TABLERO (Grid Horizontal Infinito) */
-.board-view-container {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    background-color: #0079BF; /* Azul Clásico Trello por defecto */
-    transition: background-color 0.5s ease, background-image 0.2s ease;
-    background-size: cover;
-    background-position: center;
-}
-
-/* CORRECCIÓN: Fondo oscuro para el tablero en modo Dark (si no hay imagen) */
-.dark .board-view-container {
-    background-color: #0f172a !important; /* Slate 900 */
-}
-
-/* CORRECCIÓN: Velo oscuro para leer sobre imágenes de fondo */
-.board-view-container::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.1); /* Sutil oscurecimiento */
-    pointer-events: none;
-    z-index: 0;
-}
-.board-view-container > * {
-    position: relative;
-    z-index: 1;
-}
-
-.board-canvas {
-    flex-grow: 1;
-    position: relative;
-    display: grid;
-    /* INGENIERÍA: Grid horizontal forzado */
-    grid-auto-flow: column; 
-    /* MEDIDA EXACTA: 272px por lista, el estándar de oro de Trello */
-    grid-auto-columns: 272px; 
-    grid-template-rows: 100%; /* CORRECCIÓN: Altura completa */
-    gap: 12px; /* Espaciado entre listas */
-    padding: 12px;
-    padding-bottom: 8px; /* Ajuste para scrollbar */
-    overflow-x: auto !important; /* CORRECCIÓN: Forzar scroll horizontal */
-    overflow-y: hidden;
-    align-items: start; /* Las listas cuelgan de arriba */
-    justify-content: start; /* CORRECCIÓN: Evitar centrado extraño */
-}
-
-/* 3. COMPONENTE: LISTA */
-.list-wrapper {
-    width: 272px; /* Ancho fijo */
-    box-sizing: border-box;
-    display: inline-block;
-    vertical-align: top;
-    white-space: nowrap;
-}
-
-.list {
-    background-color: #EBECF0; /* N30 - Fondo de lista estándar */
-    border-radius: 12px; /* Estética moderna 2025 */
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    max-height: calc(100vh - 100px); /* Cálculo para permitir que la lista crezca sin salirse */
-    position: relative;
-    white-space: normal;
-    border: 1px solid rgba(0,0,0,0.05); /* Sutil borde para definición */
-}
-
-/* Modo oscuro para listas (manual override) */
-.dark .list {
-    background-color: #1e293b; /* Slate 800 */
-    border-color: #334155;
-    color: #f1f5f9;
-}
-
-.list-header {
-    flex: 0 0 auto;
-    padding: 10px 12px;
-    position: relative;
-    min-height: 20px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 14px;
-    color: #172B4D;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.dark .list-header {
-    color: #f1f5f9;
-}
-
-/* Contenedor interno de tarjetas (Scroll vertical independiente) */
-.cards-container {
-    flex: 1 1 auto;
-    overflow-y: auto; /* Scroll vertical dentro de la lista */
-    overflow-x: hidden;
-    margin: 0 4px;
-    padding: 0 4px 4px 4px;
-    min-height: 2px; /* Necesario para el Drag&Drop en listas vacías */
-    display: flex;
-    flex-direction: column;
-    gap: 8px; /* Separación vertical entre tarjetas */
-}
-
-/* 4. COMPONENTE: TARJETA */
-.list-card {
-    background-color: #ffffff; /* N0 Blanco puro */
-    border-radius: 8px; /* Radio moderno */
-    /* SOMBRA EXACTA: Da profundidad sin bordes grises toscos */
-    box-shadow: 0 1px 0 rgba(9, 30, 66, 0.25); 
-    cursor: pointer;
-    display: block;
-    margin-bottom: 0px;
-    min-height: 20px;
-    position: relative;
-    text-decoration: none;
-    z-index: 0;
-    transition: background-color 0.1s, transform 0.1s;
-    padding: 8px; /* Padding interno de la tarjeta */
-}
-
-.dark .list-card {
-    background-color: #334155; /* Slate 700 */
-    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
-    color: #f8fafc;
-}
-
-.list-card:hover {
-    background-color: #F4F5F7; /* N20 Hover state */
-}
-
-.dark .list-card:hover {
-    background-color: #475569;
-}
-
-/* Estilos de Drag & Drop */
-.list-card.dragging {
-    transform: rotate(3deg); /* Rotación física al arrastrar */
-    opacity: 0.9;
-    background-color: #e6f7ff; /* Color sutil al arrastrar */
-    z-index: 9999;
-}
-
-.dark .list-card.dragging {
-    background-color: #1e3a8a;
-}
-
-.cards-container.drag-over {
-    background-color: rgba(0, 0, 0, 0.05);
-    border-radius: 8px;
-}
-
-/* 5. ESTILIZACIÓN DE SCROLLBARS (Tipo "Píldora") */
-.board-canvas::-webkit-scrollbar {
-    height: 12px;
-    width: 12px;
-}
-.board-canvas::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.4);
-    border-radius: 6px;
-}
-.board-canvas::-webkit-scrollbar-track {
-    background-color: rgba(0, 0, 0, 0.15);
-    border-radius: 6px;
-    margin: 8px;
-}
-
-.cards-container::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-.cards-container::-webkit-scrollbar-thumb {
-    background-color: #D2D4D9;
-    border-radius: 4px;
-}
-.dark .cards-container::-webkit-scrollbar-thumb {
-    background-color: #475569;
-}
-
-/* 6. CLASES AUXILIARES PARA LÓGICA JS */
-.hide-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-}
-.hide-scrollbar::-webkit-scrollbar {
-    display: none;
-}
-
-/* Etiquetas dentro de las tarjetas */
-.card-label {
-    height: 8px;
-    width: 40px;
-    border-radius: 4px;
-    display: inline-block;
-    margin-right: 4px;
-    margin-bottom: 4px;
-    transition: height 0.2s;
-}
-.card-label:hover {
-    height: 16px; /* Expandir al hover */
-}
-
-/* Portada de tarjeta */
-.card-cover {
-    height: 32px;
-    border-radius: 8px 8px 0 0;
-    margin: -8px -8px 8px -8px; /* Negativo para cubrir padding */
-    background-size: cover;
-    background-position: center;
-}
-
-/* Badge de fecha vencida/próxima */
-.due-date-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 11px;
-    padding: 2px 4px;
-    border-radius: 3px;
-    color: white;
-}
-.due-date-ok { background-color: transparent; color: #5e6c84; }
-.due-date-soon { background-color: #F2D600; color: white; } /* Amarillo */
-.due-date-overdue { background-color: #EB5A46; color: white; } /* Rojo */
-
-/* ========================================= */
-/* FÍSICA Y MICRO-INTERACCIONES (Trello 2025) */
-/* ========================================= */
-
-/* 1. Física de Arrastre (Drag & Drop Physics) */
-.list-card.dragging {
-    transform: rotate(3deg) !important; 
-    box-shadow: 0 12px 24px -6px rgba(9, 30, 66, 0.25), 0 0 0 1px rgba(9, 30, 66, 0.08) !important;
-    opacity: 0.9;
-    z-index: 9999;
-    cursor: grabbing;
-}
-
-.drag-over {
-    background-color: rgba(9, 30, 66, 0.04); 
-    border: 2px dashed rgba(9, 30, 66, 0.1);
-    border-radius: 8px;
-    transition: all 0.2s ease;
-}
-
-/* 2. Etiquetas Expandibles */
-.card-label {
-    height: 8px;
-    width: 40px;
-    border-radius: 4px;
-    display: inline-block;
-    margin-right: 4px;
-    margin-bottom: 4px;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    color: transparent;
-    font-size: 0;
-    line-height: 0;
-    vertical-align: middle;
-    cursor: pointer;
-}
-
-.card-label:hover {
-    filter: brightness(0.9); 
-    height: 10px;
-}
-
-.card-label.expanded {
-    width: auto; 
-    height: auto;
-    min-height: 16px;
-    padding: 0 8px; 
-    color: inherit; 
-    font-size: 11px;
-    font-weight: 700;
-    line-height: 16px;
-    text-shadow: none;
-    display: inline-flex;
-    align-items: center;
-}
-
-/* 3. Colores de Etiquetas */
-.bg-green-500.card-label.expanded { background-color: #61BD4F; color: white; }
-.bg-yellow-500.card-label.expanded { background-color: #F2D600; color: #172B4D; } 
-.bg-orange-500.card-label.expanded { background-color: #FF9F1A; color: white; }
-.bg-red-500.card-label.expanded { background-color: #EB5A46; color: white; }
-.bg-purple-500.card-label.expanded { background-color: #C377E0; color: white; }
-.bg-blue-500.card-label.expanded { background-color: #0079BF; color: white; }
-
-/* 4. Scrollbars Finos */
-.custom-scrollbar::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-.custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent; 
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgba(9, 30, 66, 0.08); 
-    border-radius: 4px;
-}
-.custom-scrollbar:hover::-webkit-scrollbar-thumb {
-    background-color: rgba(9, 30, 66, 0.2); 
-}
-
-/* ========================================= */
-/* FASE 2: ESTILOS DE CHECKLIST Y PORTADAS */
-/* ========================================= */
-
-.checklist-progress-bar {
-    height: 4px;
-    background-color: #DFE1E6; 
-    border-radius: 2px;
-    overflow: hidden;
-    margin-top: 4px;
-    width: 100%;
-}
-
-.checklist-progress-value {
-    height: 100%;
-    background-color: #5BA4CF; 
-    transition: width 0.2s ease;
-}
-
-.checklist-progress-value.complete {
-    background-color: #61BD4F; 
-}
-
-.checklist-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 0;
-    position: relative;
-    transition: opacity 0.2s ease;
-}
-
-/* Cuando un item está completado */
-.checklist-item input:checked + span {
-    color: #5e6c84;
-    text-decoration: line-through;
-    opacity: 0.7;
-}
-.dark .checklist-item input:checked + span {
-    color: #94a3b8;
-}
-
-.checklist-item:hover .delete-item-btn {
-    opacity: 1;
-}
-
-.delete-item-btn {
-    opacity: 0;
-    color: #eb5a46;
-    cursor: pointer;
-    transition: opacity 0.2s;
-    margin-left: auto;
-    padding: 2px;
-}
-
-/* ========================================= */
-/* FASE 3: IMÁGENES DE PORTADA (COVERS) */
-/* ========================================= */
-
-.card-cover-image {
-    height: 120px; 
-    background-size: cover;
-    background-position: center;
-    border-radius: 8px 8px 0 0;
-    margin: -8px -8px 8px -8px; 
-}
-
-/* Corrección Visual de Portada Emoji */
-.list-card div[class*="h-[32px]"] {
-    margin: -8px -8px 8px -8px !important; 
-    border-radius: 8px 8px 0 0 !important;
-    background-color: #F4F5F7; 
-}
-.dark .list-card div[class*="h-[32px]"] {
-    background-color: #334155; 
-    border-bottom: 1px solid #475569;
-}
-
-/* Full Cover */
-.list-card.full-cover {
-    min-height: 200px;
-    background-size: cover;
-    background-position: center;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    padding-bottom: 12px;
-    position: relative;
-}
-
-.list-card.full-cover::before {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    top: 0;
-    background: linear-gradient(to bottom, rgba(0,0,0,0) 50%, rgba(0,0,0,0.6) 100%);
-    border-radius: 8px;
-    z-index: 1;
-}
-
-.list-card.full-cover .card-title {
-    color: white !important;
-    font-weight: 700;
-    font-size: 16px;
-    z-index: 2;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-    margin-bottom: 4px;
-}
-
-.list-card.full-cover .card-cover,
-.list-card.full-cover .card-description-icon, 
-.list-card.full-cover .checklist-progress-bar {
-    display: none; 
-}
-
-.list-card.full-cover .due-date-badge {
-    background-color: rgba(0,0,0,0.4);
-    color: white;
-    z-index: 2;
-}
-
-.attachment-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px;
-    border-radius: 4px;
-    transition: background 0.1s;
-}
-.attachment-item:hover {
-    background-color: rgba(9, 30, 66, 0.04);
-}
-.attachment-thumbnail {
-    width: 80px;
-    height: 60px;
-    background-size: cover;
-    background-position: center;
-    border-radius: 4px;
-    background-color: #ebecf0;
-}
-
-/* ========================================= */
-/* ARREGLO MENÚ LATERAL (SIDEBAR) */
-/* ========================================= */
-
-.sidebar-btn {
-    display: flex;
-    align-items: center;
-    gap: 10px; 
-    width: 100%;
-    text-align: left;
-    padding: 8px 12px;
-    background-color: #EAECF0; 
-    border-radius: 3px;
-    color: #172B4D; 
-    font-size: 14px;
-    font-weight: 500;
-    margin-bottom: 8px;
-    transition: background-color 0.1s ease;
-    border: none;
-    cursor: pointer;
-}
-
-.sidebar-btn:hover {
-    background-color: #DCDFE4; 
-}
-
-.sidebar-btn i {
-    width: 16px;
-    height: 16px;
-    flex-shrink: 0; 
-    color: #42526E; 
-}
-
-.dark .sidebar-btn {
-    background-color: #334155;
-    color: #F1F5F9;
-}
-.dark .sidebar-btn:hover {
-    background-color: #475569;
-}
-.dark .sidebar-btn i {
-    color: #94A3B8;
-}
-
-/* ========================================= */
-/* FASE 4: MIEMBROS Y AVATARES */
-/* ========================================= */
-
-.member-avatar {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background-color: #DFE1E6;
-    color: #172B4D;
-    font-size: 10px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid white; 
-    cursor: pointer;
-}
-
-.card-members {
-    display: flex;
-    margin-top: 4px;
-    justify-content: flex-end; 
-}
-.card-members .member-avatar {
-    margin-left: -4px; 
-}
-
-.header-avatar {
-    width: 28px;
-    height: 28px;
-    font-size: 12px;
-    border: none;
-    margin-right: -4px;
-    background-color: #ebecf0;
-}
-
-.member-select-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px;
-    cursor: pointer;
-    border-radius: 4px;
-}
-.member-select-item:hover {
-    background-color: #F4F5F7;
-}
-.member-select-item.selected {
-    background-color: #E4F0F6;
-    color: #0079BF;
-}
-
-/* ========================================= */
-/* FASE 7: ESTILOS DE BÚSQUEDA AVANZADA */
-/* ========================================= */
-
-#search-results {
-    top: 100%;
-    left: 0;
-    width: 100%;
-    max-height: 500px;
-    overflow-y: auto;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 8px 16px -4px rgba(9, 30, 66, 0.25), 0 0 0 1px rgba(9, 30, 66, 0.08);
-    margin-top: 4px;
-    z-index: 1000;
-}
-
-.search-result-item {
-    padding: 10px 12px;
-    cursor: pointer;
-    border-bottom: 1px solid #091e420d;
-    transition: background 0.1s;
-}
-
-.search-result-item:hover {
-    background-color: #F4F5F7;
-}
-
-.search-result-item.keyboard-selected {
-    background-color: #E6F0FF;
-    border-left: 3px solid #0079BF;
-}
-
-.search-result-highlight {
-    background-color: #FEF3C7; 
-    color: #78350F;
-    font-weight: 700;
-    border-radius: 2px;
-    padding: 0 2px;
-}
-
-.result-type-badge {
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    padding: 2px 6px;
-    border-radius: 4px;
-    margin-right: 8px;
-    display: inline-block;
-}
-
-.result-type-board { background-color: #E6FCFF; color: #008DA6; }
-.result-type-list  { background-color: #FFF0B3; color: #172B4D; }
-.result-type-card  { background-color: #E4F7FA; color: #42526E; }
-
-.result-breadcrumbs {
-    font-size: 11px;
-    color: #5E6C84;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin-top: 4px;
-}
-
-.activity-item {
-    padding: 10px 0;
-    border-bottom: 1px solid #091e420d;
-    font-size: 14px;
-    color: #172B4D;
-}
-
-.activity-meta {
-    font-size: 12px;
-    color: #5E6C84;
-    margin-top: 4px;
-}
-
-.activity-user {
-    font-weight: 700;
-    color: #172B4D;
-}
-
-/* CORRECCIÓN: Botón "Añadir tarjeta" en modo oscuro */
-.dark .add-card {
-    color: #94a3b8; 
-}
-.dark .add-card:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: #f1f5f9;
-}
-
-/* Modal de selección de fondo */
-.bg-picker-option {
-    width: 100%;
-    height: 60px;
-    border-radius: 8px;
-    cursor: pointer;
-    background-size: cover;
-    background-position: center;
-    transition: transform 0.1s, box-shadow 0.1s;
-    position: relative;
-}
-.bg-picker-option:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-}
-
-/* ========================================= */
-/* FASE 4: EXPERIENCIA MÓVIL (Snap Scrolling)*/
-/* ========================================= */
 [cite_start]/* Referencia: Informe de Ingeniería [cite: 149-150] */
-
 @media (max-width: 768px) {
     /* 1. CAMBIO DE GRID A CARRUSEL */
     .board-canvas {
