@@ -32,6 +32,56 @@ function initializeApp() {
     let unsubscribeBoards, unsubscribeLists, unsubscribeActivity, unsubscribeNotifications; 
     let unsubscribeCards = {}; 
 
+    // NUEVAS VARIABLES GLOBALES
+    let unsubscribeComments = null;
+    let checklistHideCompleted = false; // Estado para ocultar/mostrar checklist
+
+    // HELPER: Tiempo Relativo (para comentarios y actividad)
+    function timeAgo(date) {
+        if (!date) return 'hace un momento';
+        const seconds = Math.floor((new Date() - date) / 1000);
+        let interval = seconds / 31536000;
+        if (interval > 1) return "hace " + Math.floor(interval) + " años";
+        interval = seconds / 2592000;
+        if (interval > 1) return "hace " + Math.floor(interval) + " meses";
+        interval = seconds / 86400;
+        if (interval > 1) return "hace " + Math.floor(interval) + " días";
+        interval = seconds / 3600;
+        if (interval > 1) return "hace " + Math.floor(interval) + " h";
+        interval = seconds / 60;
+        if (interval > 1) return "hace " + Math.floor(interval) + " min";
+        return "hace unos segundos";
+    }
+
+    // HELPER: Inicializar Atajos de Teclado
+    function initGlobalShortcuts() {
+        document.addEventListener('keydown', (e) => {
+            // Ignorar si el usuario está escribiendo en un input o textarea
+            if (e.target.matches('input, textarea')) return;
+
+            if (e.key === '/') {
+                e.preventDefault();
+                document.getElementById('global-search').focus();
+            }
+            if (e.key === 'Escape') {
+                // Cerrar cualquier modal abierto
+                document.querySelectorAll('.fixed').forEach(m => {
+                    if (!m.classList.contains('hidden')) closeModal(m.id);
+                });
+            }
+            if (e.key === 'n' || e.key === 'N') {
+                // Solo si estamos en la vista de un tablero
+                if (currentBoardId && !document.getElementById('board-view').classList.contains('hidden')) {
+                    e.preventDefault();
+                    // Intentar abrir modal en la primera lista disponible
+                    const firstList = document.querySelector('.list');
+                    if (firstList) openCardModal(firstList.dataset.listId);
+                }
+            }
+        });
+    }
+    // Llamamos a esto al final de initializeApp()
+
     // DOM Elements
     const boardsContainer = document.getElementById('boards-container');
     const boardView = document.getElementById('board-view');
