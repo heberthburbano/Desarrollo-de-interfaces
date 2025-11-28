@@ -416,6 +416,7 @@ function initializeApp() {
         } else if(card.cover?.url) {
             coverHtml = `<div class="card-cover-image" style="background-image: url('${card.cover.url}')"></div>`;
         } else if(card.cover?.emoji) {
+            // AQUÍ PINTAMOS EL EMOJI
             coverHtml = `<div class="h-[32px] bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-2xl rounded-t mb-2 select-none">${card.cover.emoji}</div>`;
         } else if(card.cover?.color) {
             coverHtml = `<div class="card-cover ${card.cover.color}"></div>`;
@@ -435,12 +436,11 @@ function initializeApp() {
             membersHtml += `</div>`;
         }
 
-        let checkHtml = '';
+        let checkHtml = '', dateHtml = '';
         if(card.checklist?.length) {
             const c = card.checklist.filter(i=>i.completed).length, t=card.checklist.length, p=Math.round((c/t)*100);
             checkHtml = `<div class="flex items-center gap-1.5 text-xs ${c===t?'text-green-600':'text-slate-500'} mt-1"><i data-lucide="check-square" class="w-3 h-3"></i> <span>${c}/${t}</span></div><div class="checklist-progress-bar"><div class="checklist-progress-value ${c===t?'complete':''}" style="width:${p}%"></div></div>`;
         }
-        let dateHtml = '';
         if(card.dueDate) {
             const diff = (new Date(card.dueDate).setHours(0,0,0,0) - new Date().setHours(0,0,0,0))/(1000*60*60*24);
             const cls = diff<0?'bg-red-500 text-white':(diff<=1?'bg-yellow-400 text-slate-800':'bg-transparent text-slate-500');
@@ -486,7 +486,6 @@ function initializeApp() {
     // ========================================
     // 7. MODAL Y COMENTARIOS
     // ========================================
-    // Definimos loadComments ANTES de usarla
     function loadComments(lid, cid) {
         if (unsubscribeComments) unsubscribeComments();
         const listDiv = document.getElementById('comments-list');
