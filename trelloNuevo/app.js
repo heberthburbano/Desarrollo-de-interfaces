@@ -7,7 +7,7 @@ import {
 document.addEventListener('DOMContentLoaded', initializeApp);
 
 function initializeApp() {
-    console.log('🚀 Inicializando Trello Clone (Versión Final Completa + Emojis)...');
+    console.log('🚀 Inicializando Trello Clone (Versión Final Completa + Fondos + Emojis)...');
 
     // ========================================
     // 1. ESTADO GLOBAL
@@ -17,6 +17,19 @@ function initializeApp() {
     let currentBoardData = null;
     let currentUserRole = null;
     
+    // --- NUEVO: COLECCIÓN DE FONDOS ---
+    const BACKGROUNDS = [
+        { type: 'image', thumb: 'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=150&q=80', url: 'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=1920&q=80', name: 'Naturaleza' },
+        { type: 'image', thumb: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=150&q=80', url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1920&q=80', name: 'Montañas' },
+        { type: 'image', thumb: 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=150&q=80', url: 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=1920&q=80', name: 'Islandia' },
+        { type: 'image', thumb: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=150&q=80', url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1920&q=80', name: 'Yosemite' },
+        { type: 'color', val: '#0079BF', name: 'Azul Trello' },
+        { type: 'color', val: '#D29034', name: 'Naranja' },
+        { type: 'color', val: '#519839', name: 'Verde' },
+        { type: 'color', val: '#B04632', name: 'Rojo' },
+        { type: 'color', val: '#89609E', name: 'Morado' },
+    ];
+
     // Caché de Búsqueda
     let allSearchCache = []; 
     let selectedResultIndex = -1;
@@ -96,6 +109,67 @@ function initializeApp() {
         if (!currentUserRole) return false;
         return PERMISSIONS[currentUserRole]?.[a] || false; 
     }
+    
+    // --- NUEVO: LÓGICA DE SELECCIÓN DE FONDO ---
+    function openBackgroundPicker() {
+        let bgModal = document.getElementById('bg-picker-modal');
+        if (!bgModal) {
+            bgModal = document.createElement('div');
+            bgModal.id = 'bg-picker-modal';
+            bgModal.className = 'fixed inset-0 bg-black/60 z-[90] flex items-center justify-center';
+            bgModal.innerHTML = `
+                <div class="bg-white dark:bg-slate-800 rounded-lg shadow-2xl w-96 p-4 max-h-[80vh] overflow-y-auto">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-slate-700 dark:text-white">Cambiar fondo</h3>
+                        <button id="close-bg-modal" class="text-slate-500 hover:bg-slate-100 rounded p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2" id="bg-grid"></div>
+                </div>
+            `;
+            document.body.appendChild(bgModal);
+            
+            const grid = bgModal.querySelector('#bg-grid');
+            BACKGROUNDS.forEach(bg => {
+                const opt = document.createElement('div');
+                opt.className = 'bg-picker-option';
+                if(bg.type === 'image') opt.style.backgroundImage = `url('${bg.thumb}')`;
+                else opt.style.backgroundColor = bg.val;
+                
+                opt.onclick = () => changeBoardBackground(bg);
+                grid.appendChild(opt);
+            });
+
+            bgModal.querySelector('#close-bg-modal').onclick = () => bgModal.classList.add('hidden');
+            if(window.lucide) lucide.createIcons();
+        }
+        bgModal.classList.remove('hidden');
+        bgModal.style.display = 'flex';
+    }
+
+    async function changeBoardBackground(bg) {
+        if (!currentBoardId) return;
+        const container = document.querySelector('.board-view-container');
+        
+        // Aplicar visualmente al instante
+        if (bg.type === 'image') {
+            container.style.backgroundImage = `url('${bg.url}')`;
+            container.style.backgroundColor = 'transparent';
+        } else {
+            container.style.backgroundImage = 'none';
+            container.style.backgroundColor = bg.val;
+        }
+
+        // Guardar en Firebase
+        try {
+            await updateDoc(doc(db, 'boards', currentBoardId), { 
+                background: bg.type === 'image' ? bg.url : bg.val 
+            });
+            document.getElementById('bg-picker-modal').classList.add('hidden');
+        } catch (e) { console.error("Error guardando fondo", e); }
+    }
+    
+    // Exponer globalmente para el HTML
+    window.openBackgroundPicker = openBackgroundPicker;
 
     // ========================================
     // 3. INICIO Y AUTH
@@ -298,9 +372,21 @@ function initializeApp() {
     function createBoardCard(id, board) {
         const d = document.createElement('div');
         d.className = 'bg-white dark:bg-slate-800 p-4 rounded shadow hover:shadow-lg transition cursor-pointer h-32 flex flex-col justify-between border-l-4 border-[#0079BF] relative group';
-        d.innerHTML = `<h3 class="font-bold text-slate-800 dark:text-white truncate">${board.title}</h3>
-        <div class="flex justify-between items-end"><span class="text-xs text-slate-500"><i data-lucide="users" class="w-3 h-3 inline"></i> ${Object.keys(board.members||{}).length}</span>
-        ${board.ownerId===currentUser.uid?`<button class="del-btn opacity-0 group-hover:opacity-100 text-red-500 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`:''}</div>`;
+        
+        // --- NUEVO: MOSTRAR FONDO EN MINIATURA ---
+        if(board.background && board.background.startsWith('http')) {
+            d.style.backgroundImage = `url(${board.background})`;
+            d.style.backgroundSize = 'cover';
+            d.classList.add('text-white', 'shadow-md'); 
+            d.innerHTML = `<div class="absolute inset-0 bg-black/20 rounded"></div><div class="relative z-10 h-full flex flex-col justify-between"><h3 class="font-bold text-white text-shadow truncate">${board.title}</h3><div class="flex justify-between items-end"><span class="text-xs text-white/90"><i data-lucide="users" class="w-3 h-3 inline"></i> ${Object.keys(board.members||{}).length}</span>${board.ownerId===currentUser.uid?`<button class="del-btn opacity-0 group-hover:opacity-100 text-white hover:text-red-300 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`:''}</div></div>`;
+        } else if (board.background) {
+            d.style.backgroundColor = board.background;
+            d.style.borderColor = 'transparent';
+            d.innerHTML = `<h3 class="font-bold text-white truncate">${board.title}</h3><div class="flex justify-between items-end"><span class="text-xs text-white"><i data-lucide="users" class="w-3 h-3 inline"></i> ${Object.keys(board.members||{}).length}</span>${board.ownerId===currentUser.uid?`<button class="del-btn opacity-0 group-hover:opacity-100 text-white hover:text-red-200 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`:''}</div>`;
+        } else {
+            d.innerHTML = `<h3 class="font-bold text-slate-800 dark:text-white truncate">${board.title}</h3><div class="flex justify-between items-end"><span class="text-xs text-slate-500"><i data-lucide="users" class="w-3 h-3 inline"></i> ${Object.keys(board.members||{}).length}</span>${board.ownerId===currentUser.uid?`<button class="del-btn opacity-0 group-hover:opacity-100 text-red-500 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`:''}</div>`;
+        }
+        
         d.addEventListener('click', (e) => !e.target.closest('.del-btn') && openBoard(id, board));
         d.querySelector('.del-btn')?.addEventListener('click', async (e) => { e.stopPropagation(); if(confirm('¿Borrar?')) await deleteDoc(doc(db, 'boards', id)); });
         return d;
@@ -316,6 +402,21 @@ function initializeApp() {
         document.getElementById('board-title').textContent = data.title;
         renderBoardMembers(data.members);
         
+        // --- NUEVO: APLICAR FONDO AL ABRIR ---
+        const container = document.querySelector('.board-view-container');
+        if (data.background) {
+            if (data.background.startsWith('http') || data.background.startsWith('url')) {
+                container.style.backgroundImage = `url('${data.background}')`;
+                container.style.backgroundColor = 'transparent';
+            } else {
+                container.style.backgroundImage = 'none';
+                container.style.backgroundColor = data.background;
+            }
+        } else {
+            container.style.backgroundImage = 'none';
+            container.style.backgroundColor = '#0079BF'; // Default
+        }
+
         // OCULTAR UI GLOBAL
         document.getElementById('create-board-btn').classList.add('hidden');
         document.querySelector('.boards-section').style.display='none'; 
@@ -436,11 +537,12 @@ function initializeApp() {
             membersHtml += `</div>`;
         }
 
-        let checkHtml = '', dateHtml = '';
+        let checkHtml = '';
         if(card.checklist?.length) {
             const c = card.checklist.filter(i=>i.completed).length, t=card.checklist.length, p=Math.round((c/t)*100);
             checkHtml = `<div class="flex items-center gap-1.5 text-xs ${c===t?'text-green-600':'text-slate-500'} mt-1"><i data-lucide="check-square" class="w-3 h-3"></i> <span>${c}/${t}</span></div><div class="checklist-progress-bar"><div class="checklist-progress-value ${c===t?'complete':''}" style="width:${p}%"></div></div>`;
         }
+        let dateHtml = '';
         if(card.dueDate) {
             const diff = (new Date(card.dueDate).setHours(0,0,0,0) - new Date().setHours(0,0,0,0))/(1000*60*60*24);
             const cls = diff<0?'bg-red-500 text-white':(diff<=1?'bg-yellow-400 text-slate-800':'bg-transparent text-slate-500');
