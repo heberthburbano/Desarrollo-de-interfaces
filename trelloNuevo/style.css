@@ -1,4 +1,4 @@
-/* style.css - Ingeniería visual Modern Trello 2025 */
+/* style.css - Ingeniería visual Modern Trello 2025 (Versión Final Completa) */
 
 /* 1. RESET Y BASE (Lienzo Fijo) */
 html, body {
@@ -17,12 +17,28 @@ html, body {
     flex-direction: column;
     height: 100vh;
     background-color: #0079BF; /* Azul Clásico Trello por defecto */
-    transition: background-color 0.5s ease;
+    transition: background-color 0.5s ease, background-image 0.2s ease;
+    background-size: cover;
+    background-position: center;
 }
 
-/* CORRECCIÓN: Fondo oscuro para el tablero en modo Dark */
+/* CORRECCIÓN: Fondo oscuro para el tablero en modo Dark (si no hay imagen) */
 .dark .board-view-container {
     background-color: #0f172a !important; /* Slate 900 */
+}
+
+/* CORRECCIÓN: Velo oscuro para leer sobre imágenes de fondo */
+.board-view-container::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.1); /* Sutil oscurecimiento */
+    pointer-events: none;
+    z-index: 0;
+}
+.board-view-container > * {
+    position: relative;
+    z-index: 1;
 }
 
 .board-canvas {
@@ -33,7 +49,7 @@ html, body {
     grid-auto-flow: column; 
     /* MEDIDA EXACTA: 272px por lista, el estándar de oro de Trello */
     grid-auto-columns: 272px; 
-    grid-template-rows: 100%; /* CORRECCIÓN: Altura completa para hijos */
+    grid-template-rows: 100%; /* CORRECCIÓN: Altura completa */
     gap: 12px; /* Espaciado entre listas */
     padding: 12px;
     padding-bottom: 8px; /* Ajuste para scrollbar */
@@ -228,34 +244,22 @@ html, body {
 /* ========================================= */
 
 /* 1. Física de Arrastre (Drag & Drop Physics) */
-/* Cuando el usuario "levanta" una tarjeta */
 .list-card.dragging {
-    /* Rotación sutil para simular peso físico */
-    transform: rotate(3deg) !important; /* !important para sobreescribir estilos inline si es necesario */
-    
-    /* Sombra profunda para simular elevación (Z-Index visual) */
+    transform: rotate(3deg) !important; 
     box-shadow: 0 12px 24px -6px rgba(9, 30, 66, 0.25), 0 0 0 1px rgba(9, 30, 66, 0.08) !important;
-    
-    /* Pequeña transparencia para ver dónde va a caer */
     opacity: 0.9;
-    
-    /* Asegurar que flote sobre todo lo demás */
     z-index: 9999;
-    
-    /* Cursor de "agarrando" */
     cursor: grabbing;
 }
 
-/* El "fantasma" o hueco donde caerá la tarjeta */
 .drag-over {
-    background-color: rgba(9, 30, 66, 0.04); /* Gris muy sutil */
+    background-color: rgba(9, 30, 66, 0.04); 
     border: 2px dashed rgba(9, 30, 66, 0.1);
     border-radius: 8px;
     transition: all 0.2s ease;
 }
 
-/* 2. Etiquetas Expandibles (Micro-interacción) */
-/* Estado Base: Solo barra de color */
+/* 2. Etiquetas Expandibles */
 .card-label {
     height: 8px;
     width: 40px;
@@ -263,11 +267,7 @@ html, body {
     display: inline-block;
     margin-right: 4px;
     margin-bottom: 4px;
-    
-    /* Transición suave para la expansión */
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    
-    /* Ocultar texto por defecto */
     color: transparent;
     font-size: 0;
     line-height: 0;
@@ -275,66 +275,56 @@ html, body {
     cursor: pointer;
 }
 
-/* Estado Hover: Feedback visual */
 .card-label:hover {
-    filter: brightness(0.9); /* Oscurecer ligeramente */
-    height: 10px; /* Feedback táctil sutil */
+    filter: brightness(0.9); 
+    height: 10px;
 }
 
-/* Estado Expandido: Muestra texto y crece */
-/* Esta clase se añade vía JS al hacer clic */
 .card-label.expanded {
-    width: auto; /* Ancho automático según texto */
+    width: auto; 
     height: auto;
     min-height: 16px;
-    padding: 0 8px; /* Padding interno para el texto */
-    
-    /* Mostrar texto */
-    color: inherit; /* Color de texto legible (blanco o negro según fondo) */
+    padding: 0 8px; 
+    color: inherit; 
     font-size: 11px;
     font-weight: 700;
     line-height: 16px;
     text-shadow: none;
-    
-    /* Ajuste de alineación */
     display: inline-flex;
     align-items: center;
 }
 
-/* 3. Colores de Etiquetas con Contraste (Accesibilidad) */
-/* Sobreescribimos Tailwind para asegurar contraste en etiquetas */
+/* 3. Colores de Etiquetas */
 .bg-green-500.card-label.expanded { background-color: #61BD4F; color: white; }
-.bg-yellow-500.card-label.expanded { background-color: #F2D600; color: #172B4D; } /* Texto oscuro en amarillo */
+.bg-yellow-500.card-label.expanded { background-color: #F2D600; color: #172B4D; } 
 .bg-orange-500.card-label.expanded { background-color: #FF9F1A; color: white; }
 .bg-red-500.card-label.expanded { background-color: #EB5A46; color: white; }
 .bg-purple-500.card-label.expanded { background-color: #C377E0; color: white; }
 .bg-blue-500.card-label.expanded { background-color: #0079BF; color: white; }
 
-/* 4. Scrollbars Finos (Estilo Mac/iOS) */
-/* Para navegadores Webkit (Chrome, Safari, Edge) */
+/* 4. Scrollbars Finos */
 .custom-scrollbar::-webkit-scrollbar {
     width: 8px;
     height: 8px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent; /* Track invisible */
+    background: transparent; 
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgba(9, 30, 66, 0.08); /* Gris muy claro */
+    background-color: rgba(9, 30, 66, 0.08); 
     border-radius: 4px;
 }
 .custom-scrollbar:hover::-webkit-scrollbar-thumb {
-    background-color: rgba(9, 30, 66, 0.2); /* Más visible al hover */
+    background-color: rgba(9, 30, 66, 0.2); 
 }
 
 /* ========================================= */
 /* FASE 2: ESTILOS DE CHECKLIST Y PORTADAS */
 /* ========================================= */
 
-/* Barra de progreso MINI (en la tarjeta del tablero) */
 .checklist-progress-bar {
     height: 4px;
-    background-color: #DFE1E6; /* Gris base */
+    background-color: #DFE1E6; 
     border-radius: 2px;
     overflow: hidden;
     margin-top: 4px;
@@ -343,21 +333,31 @@ html, body {
 
 .checklist-progress-value {
     height: 100%;
-    background-color: #5BA4CF; /* Azul progreso */
+    background-color: #5BA4CF; 
     transition: width 0.2s ease;
 }
 
 .checklist-progress-value.complete {
-    background-color: #61BD4F; /* Verde completado */
+    background-color: #61BD4F; 
 }
 
-/* Estilos para ítems del checklist en el modal */
 .checklist-item {
     display: flex;
     align-items: center;
     gap: 8px;
     padding: 4px 0;
-    position: relative; /* Fixed: 'group' is not valid css property */
+    position: relative;
+    transition: opacity 0.2s ease;
+}
+
+/* Cuando un item está completado */
+.checklist-item input:checked + span {
+    color: #5e6c84;
+    text-decoration: line-through;
+    opacity: 0.7;
+}
+.dark .checklist-item input:checked + span {
+    color: #94a3b8;
 }
 
 .checklist-item:hover .delete-item-btn {
@@ -377,16 +377,26 @@ html, body {
 /* FASE 3: IMÁGENES DE PORTADA (COVERS) */
 /* ========================================= */
 
-/* 1. Modo Banner (Imagen Arriba) */
 .card-cover-image {
-    height: 120px; /* Altura estándar de banner */
+    height: 120px; 
     background-size: cover;
     background-position: center;
     border-radius: 8px 8px 0 0;
-    margin: -8px -8px 8px -8px; /* Cubrir padding del padre */
+    margin: -8px -8px 8px -8px; 
 }
 
-/* 2. Modo Fondo Completo (Full Cover) */
+/* Corrección Visual de Portada Emoji */
+.list-card div[class*="h-[32px]"] {
+    margin: -8px -8px 8px -8px !important; 
+    border-radius: 8px 8px 0 0 !important;
+    background-color: #F4F5F7; 
+}
+.dark .list-card div[class*="h-[32px]"] {
+    background-color: #334155; 
+    border-bottom: 1px solid #475569;
+}
+
+/* Full Cover */
 .list-card.full-cover {
     min-height: 200px;
     background-size: cover;
@@ -398,7 +408,6 @@ html, body {
     position: relative;
 }
 
-/* Sombra interior para leer texto sobre imagen */
 .list-card.full-cover::before {
     content: '';
     position: absolute;
@@ -411,7 +420,6 @@ html, body {
     z-index: 1;
 }
 
-/* Ajuste de texto en Full Cover */
 .list-card.full-cover .card-title {
     color: white !important;
     font-weight: 700;
@@ -421,21 +429,18 @@ html, body {
     margin-bottom: 4px;
 }
 
-/* Ocultar elementos en Full Cover para limpieza visual */
 .list-card.full-cover .card-cover,
 .list-card.full-cover .card-description-icon, 
 .list-card.full-cover .checklist-progress-bar {
     display: none; 
 }
 
-/* Badge de fecha en Full Cover (debe ser legible) */
 .list-card.full-cover .due-date-badge {
     background-color: rgba(0,0,0,0.4);
     color: white;
     z-index: 2;
 }
 
-/* 3. Estilos de Adjuntos en Modal */
 .attachment-item {
     display: flex;
     align-items: center;
@@ -463,13 +468,13 @@ html, body {
 .sidebar-btn {
     display: flex;
     align-items: center;
-    gap: 10px; /* Espacio entre icono y texto */
+    gap: 10px; 
     width: 100%;
     text-align: left;
     padding: 8px 12px;
-    background-color: #EAECF0; /* Gris Trello N30 */
+    background-color: #EAECF0; 
     border-radius: 3px;
-    color: #172B4D; /* Texto N800 */
+    color: #172B4D; 
     font-size: 14px;
     font-weight: 500;
     margin-bottom: 8px;
@@ -479,17 +484,16 @@ html, body {
 }
 
 .sidebar-btn:hover {
-    background-color: #DCDFE4; /* Gris más oscuro al hover */
+    background-color: #DCDFE4; 
 }
 
 .sidebar-btn i {
     width: 16px;
     height: 16px;
-    flex-shrink: 0; /* Evita que el icono se aplaste */
-    color: #42526E; /* Icono N500 */
+    flex-shrink: 0; 
+    color: #42526E; 
 }
 
-/* Modo oscuro para botones */
 .dark .sidebar-btn {
     background-color: #334155;
     color: #F1F5F9;
@@ -505,7 +509,6 @@ html, body {
 /* FASE 4: MIEMBROS Y AVATARES */
 /* ========================================= */
 
-/* Avatar Genérico */
 .member-avatar {
     width: 24px;
     height: 24px;
@@ -517,21 +520,19 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid white; /* Borde blanco para solapamiento */
+    border: 2px solid white; 
     cursor: pointer;
 }
 
-/* Avatares en la Tarjeta (Miniaturas) */
 .card-members {
     display: flex;
     margin-top: 4px;
-    justify-content: flex-end; /* A la derecha */
+    justify-content: flex-end; 
 }
 .card-members .member-avatar {
-    margin-left: -4px; /* Efecto solapado (stack) */
+    margin-left: -4px; 
 }
 
-/* Avatares en la Cabecera del Tablero */
 .header-avatar {
     width: 28px;
     height: 28px;
@@ -541,7 +542,6 @@ html, body {
     background-color: #ebecf0;
 }
 
-/* Modal de Selección de Miembros (Simple) */
 .member-select-item {
     display: flex;
     align-items: center;
@@ -591,16 +591,14 @@ html, body {
     border-left: 3px solid #0079BF;
 }
 
-/* Resaltado de texto coincidente */
 .search-result-highlight {
-    background-color: #FEF3C7; /* Amarillo suave */
+    background-color: #FEF3C7; 
     color: #78350F;
     font-weight: 700;
     border-radius: 2px;
     padding: 0 2px;
 }
 
-/* Badges de Tipo (Chip de color) */
 .result-type-badge {
     font-size: 10px;
     font-weight: 700;
@@ -615,7 +613,6 @@ html, body {
 .result-type-list  { background-color: #FFF0B3; color: #172B4D; }
 .result-type-card  { background-color: #E4F7FA; color: #42526E; }
 
-/* Breadcrumbs (Migas de pan) */
 .result-breadcrumbs {
     font-size: 11px;
     color: #5E6C84;
@@ -625,7 +622,6 @@ html, body {
     margin-top: 4px;
 }
 
-/* Panel de Actividad (Ítems) */
 .activity-item {
     padding: 10px 0;
     border-bottom: 1px solid #091e420d;
@@ -644,48 +640,29 @@ html, body {
     color: #172B4D;
 }
 
-/* ========================================= */
-/* FASE 3: ESTÉTICA DE EMOJIS Y CHECKLIST    */
-/* ========================================= */
-
-/* 1. Corrección Visual de Portada Emoji */
-/* El JS usa clases utilitarias, pero necesitamos forzar márgenes negativos 
-   para contrarrestar el padding de 8px de .list-card */
-.list-card div[class*="h-[32px]"] {
-    margin: -8px -8px 8px -8px !important; /* Negativo para ir de borde a borde */
-    border-radius: 8px 8px 0 0 !important;
-    background-color: #F4F5F7; /* Color de fondo gris suave (Trello default) */
+/* CORRECCIÓN: Botón "Añadir tarjeta" en modo oscuro */
+.dark .add-card {
+    color: #94a3b8; 
+}
+.dark .add-card:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #f1f5f9;
 }
 
-/* Modo oscuro para el fondo del emoji */
-.dark .list-card div[class*="h-[32px]"] {
-    background-color: #334155; /* Slate 700 */
-    border-bottom: 1px solid #475569;
+/* Modal de selección de fondo */
+.bg-picker-option {
+    width: 100%;
+    height: 60px;
+    border-radius: 8px;
+    cursor: pointer;
+    background-size: cover;
+    background-position: center;
+    transition: transform 0.1s, box-shadow 0.1s;
+    position: relative;
 }
-
-/* 2. Estilos de Checklist en el Modal */
-.checklist-item {
-    transition: opacity 0.2s ease;
-}
-
-/* Cuando un item está completado, bajamos su opacidad */
-.checklist-item input:checked + span {
-    color: #5e6c84;
-    text-decoration: line-through;
-    opacity: 0.7;
-}
-
-.dark .checklist-item input:checked + span {
-    color: #94a3b8;
-}
-
-/* Animación para el botón de Ocultar/Mostrar */
-#hide-checklist-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-weight: 500;
-    transition: background-color 0.2s;
+.bg-picker-option:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
 /* ========================================= */
