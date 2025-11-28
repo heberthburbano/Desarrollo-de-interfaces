@@ -1,28 +1,30 @@
 import { auth, db } from './firebase-config.js';
 import { 
     collection, addDoc, doc, updateDoc, deleteDoc, query, where, onSnapshot, 
-    orderBy, serverTimestamp, getDoc, getDocs, arrayUnion, getCountFromServer
+    orderBy, serverTimestamp, getDoc, getDocs, arrayUnion
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
 document.addEventListener('DOMContentLoaded', initializeApp);
 
 function initializeApp() {
-    console.log('🚀 Inicializando Trello Clone (Búsqueda Global Real v2)...');
+    console.log('🚀 Inicializando Trello Clone (Búsqueda Global Pulida)...');
 
-    // ESTADO
+    // ========================================
+    // ESTADO GLOBAL
+    // ========================================
     let currentUser = null;
     let currentBoardId = null;
     let currentBoardData = null;
     let currentUserRole = null;
     
-    // Cache Global para Búsqueda (Se llena al inicio)
+    // [MEJORA] Índice de Búsqueda Global (En memoria)
     let globalSearchIndex = { 
         boards: [], // {id, title}
-        lists: {},  // {id: {name, boardId, boardTitle}} (Mapa para acceso rápido)
+        lists: [],  // {id, name, boardId, boardTitle}
         cards: []   // {id, title, listId, boardId, listName, boardTitle}
     };
 
-    // Edición
+    // Variables de Edición
     let currentCardData = null; 
     let currentCardCover = { color: null, mode: 'banner', url: null };
     let currentChecklist = []; 
@@ -30,10 +32,11 @@ function initializeApp() {
     let currentCardLabels = [];
     let currentCardMembers = [];
     
+    // Suscripciones
     let unsubscribeBoards, unsubscribeLists, unsubscribeActivity, unsubscribeNotifications; 
     let unsubscribeCards = {}; 
 
-    // DOM
+    // DOM Elements
     const boardsContainer = document.getElementById('boards-container');
     const boardView = document.getElementById('board-view');
     const listsContainer = document.getElementById('lists-container');
@@ -44,17 +47,13 @@ function initializeApp() {
     const labelsModal = document.getElementById('labels-modal');
     const inviteModal = document.getElementById('invite-modal');
     
-    // Paneles Laterales
+    // Paneles y Búsqueda
     const membersPanel = document.getElementById('members-panel');
     const activityPanel = document.getElementById('activity-panel');
     const activityList = document.getElementById('activity-list');
-    
-    // Búsqueda
     const searchInput = document.getElementById('global-search');
     const searchResults = document.getElementById('search-results');
     const searchResultsList = document.getElementById('search-results-list');
-
-    // Notificaciones
     const notifBtn = document.getElementById('notifications-btn');
     const notifDropdown = document.getElementById('notifications-dropdown');
     const notifList = document.getElementById('notifications-list');
@@ -82,58 +81,61 @@ function initializeApp() {
         if(av) av.textContent = (currentUser.displayName||currentUser.email).charAt(0).toUpperCase();
         loadBoards();
         loadNotifications();
-        buildGlobalIndex(); // [NUEVO] Indexar todo al iniciar
+        buildGlobalIndex(); // Construir índice al inicio
         initSearchListeners();
     });
 
-    // --- MOTOR DE BÚSQUEDA GLOBAL (INDEXACIÓN) ---
+    // ========================================
+    // MOTOR DE BÚSQUEDA GLOBAL (INDEXACIÓN REAL)
+    // ========================================
     async function buildGlobalIndex() {
-        console.log("🔍 Iniciando indexación global...");
-        globalSearchIndex = { boards: [], lists: {}, cards: [] };
+        console.log("🔍 Indexando contenido para búsqueda global...");
+        globalSearchIndex = { boards: [], lists: [], cards: [] };
 
-        // 1. Obtener todos mis tableros
-        const qBoards = query(collection(db, 'boards'), where('memberEmails', 'array-contains', currentUser.email));
-        const snapBoards = await getDocs(qBoards);
+        try {
+            // 1. Traer tableros
+            const qBoards = query(collection(db, 'boards'), where('memberEmails', 'array-contains', currentUser.email));
+            const snapBoards = await getDocs(qBoards);
 
-        const promises = snapBoards.docs.map(async (boardDoc) => {
-            const board = boardDoc.data();
-            const bId = boardDoc.id;
-            
-            // Indexar Tablero
-            globalSearchIndex.boards.push({ id: bId, title: board.title });
-
-            // 2. Obtener listas de este tablero
-            const qLists = query(collection(db, 'boards', bId, 'lists'));
-            const snapLists = await getDocs(qLists);
-            
-            for (const listDoc of snapLists.docs) {
-                const list = listDoc.data();
-                const lId = listDoc.id;
+            // Usamos Promise.all para cargar el contenido de todos los tableros en paralelo
+            await Promise.all(snapBoards.docs.map(async (boardDoc) => {
+                const b = boardDoc.data();
+                const bId = boardDoc.id;
                 
-                // Guardar info de lista para referencia cruzada
-                globalSearchIndex.lists[lId] = { name: list.name, boardId: bId, boardTitle: board.title };
+                // Indexar Tablero
+                globalSearchIndex.boards.push({ id: bId, title: b.title });
 
-                // 3. Obtener tarjetas de esta lista
-                const qCards = query(collection(db, 'boards', bId, 'lists', lId, 'cards'));
-                const snapCards = await getDocs(qCards);
+                // 2. Traer listas de este tablero
+                const snapLists = await getDocs(query(collection(db, 'boards', bId, 'lists')));
                 
-                snapCards.forEach(cardDoc => {
-                    const card = cardDoc.data();
-                    globalSearchIndex.cards.push({
-                        id: cardDoc.id,
-                        title: card.title,
-                        description: card.description || '',
-                        listId: lId,
-                        boardId: bId,
-                        listName: list.name,
-                        boardTitle: board.title
+                for (const listDoc of snapLists.docs) {
+                    const l = listDoc.data();
+                    const lId = listDoc.id;
+                    
+                    // Indexar Lista
+                    globalSearchIndex.lists.push({ id: lId, name: l.name, boardId: bId, boardTitle: b.title });
+
+                    // 3. Traer tarjetas de esta lista
+                    const snapCards = await getDocs(query(collection(db, 'boards', bId, 'lists', lId, 'cards')));
+                    snapCards.forEach(cardDoc => {
+                        const c = cardDoc.data();
+                        // Indexar Tarjeta
+                        globalSearchIndex.cards.push({
+                            id: cardDoc.id,
+                            title: c.title,
+                            description: c.description || '',
+                            listId: lId,
+                            listName: l.name,
+                            boardId: bId,
+                            boardTitle: b.title
+                        });
                     });
-                });
-            }
-        });
-
-        await Promise.all(promises);
-        console.log("✅ Indexación completada:", globalSearchIndex);
+                }
+            }));
+            console.log("✅ Índice construido:", globalSearchIndex);
+        } catch (e) {
+            console.error("Error indexando:", e);
+        }
     }
 
     function initSearchListeners() {
@@ -141,81 +143,132 @@ function initializeApp() {
             const term = e.target.value.toLowerCase();
             if(term.length < 2) { searchResults.classList.add('hidden'); return; }
             
-            // Filtrar (Búsqueda local en memoria)
+            // FILTRADO LOCAL
             const bResults = globalSearchIndex.boards.filter(b => b.title.toLowerCase().includes(term));
+            const lResults = globalSearchIndex.lists.filter(l => l.name.toLowerCase().includes(term));
             const cResults = globalSearchIndex.cards.filter(c => c.title.toLowerCase().includes(term) || c.description.toLowerCase().includes(term));
             
             searchResultsList.innerHTML = '';
-            if(bResults.length === 0 && cResults.length === 0) { searchResultsList.innerHTML='<p class="p-4 text-sm text-slate-500 text-center">No hay resultados.</p>'; }
+            if(!bResults.length && !lResults.length && !cResults.length) { 
+                searchResultsList.innerHTML='<p class="p-4 text-sm text-slate-500 text-center">No se encontraron resultados.</p>'; 
+            }
             
-            // Render Tableros
+            // 1. Renderizar Tableros
             if(bResults.length > 0) {
-                const header = document.createElement('div');
-                header.className = 'px-3 py-1 text-xs font-bold text-slate-400 uppercase bg-slate-50';
-                header.textContent = 'Tableros';
-                searchResultsList.appendChild(header);
-                
+                renderSearchHeader('Tableros');
                 bResults.forEach(b => {
-                    const div = document.createElement('div'); div.className='search-result-item group';
-                    div.innerHTML = `
-                        <div class="flex items-center gap-2">
-                            <div class="p-1 bg-blue-100 rounded text-blue-600"><i data-lucide="layout" class="w-3 h-3"></i></div>
-                            <div class="search-match text-sm font-medium text-slate-700 group-hover:text-blue-600">${b.title}</div>
-                        </div>`;
-                    div.addEventListener('click', async () => {
-                        const snap = await getDoc(doc(db,'boards',b.id));
-                        if(snap.exists()) { openBoard(b.id, snap.data()); searchResults.classList.add('hidden'); searchInput.value=''; }
+                    const div = createSearchResultItem('layout', b.title, 'Ir al tablero', () => {
+                        openBoardFromSearch(b.id);
                     });
                     searchResultsList.appendChild(div);
                 });
             }
 
-            // Render Tarjetas (Con Breadcrumbs)
+            // 2. Renderizar Listas
+            if(lResults.length > 0) {
+                renderSearchHeader('Listas');
+                lResults.forEach(l => {
+                    const div = createSearchResultItem('list', l.name, `En: ${l.boardTitle}`, () => {
+                        openBoardFromSearch(l.boardId, l.id); // Pasamos ID de lista para hacer scroll
+                    });
+                    searchResultsList.appendChild(div);
+                });
+            }
+
+            // 3. Renderizar Tarjetas
             if(cResults.length > 0) {
-                const header = document.createElement('div');
-                header.className = 'px-3 py-1 text-xs font-bold text-slate-400 uppercase bg-slate-50 mt-2';
-                header.textContent = 'Tarjetas';
-                searchResultsList.appendChild(header);
-
+                renderSearchHeader('Tarjetas');
                 cResults.forEach(c => {
-                    const div = document.createElement('div'); div.className='search-result-item group';
-                    // [MEJORA] Breadcrumbs: Tablero > Lista
-                    div.innerHTML = `
-                        <div class="flex items-start gap-2">
-                            <div class="p-1 bg-slate-100 rounded text-slate-500 mt-0.5"><i data-lucide="credit-card" class="w-3 h-3"></i></div>
-                            <div>
-                                <div class="search-match text-sm font-medium text-slate-700 group-hover:text-blue-600">${c.title}</div>
-                                <div class="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
-                                    <span>${c.boardTitle}</span>
-                                    <i data-lucide="chevron-right" class="w-2 h-2"></i>
-                                    <span>${c.listName}</span>
-                                </div>
-                            </div>
-                        </div>`;
-                    div.addEventListener('click', async () => {
-                        // Navegación Inteligente
-                        if(currentBoardId !== c.boardId) {
-                            // Cargar tablero destino primero
-                            const bSnap = await getDoc(doc(db,'boards',c.boardId));
-                            if(bSnap.exists()) await openBoard(c.boardId, bSnap.data());
-                        }
-                        // Abrir tarjeta
-                        const cSnap = await getDoc(doc(db,'boards',c.boardId,'lists',c.listId,'cards',c.id));
-                        if(cSnap.exists()) openCardModal(c.listId, c.id, cSnap.data());
-                        searchResults.classList.add('hidden'); searchInput.value='';
-                    });
+                    // Migas de pan: Tablero > Lista
+                    const breadcrumb = `${c.boardTitle} <i data-lucide="chevron-right" class="w-3 h-3 inline"></i> ${c.listName}`;
+                    const div = createSearchResultItem('credit-card', c.title, breadcrumb, () => {
+                        openBoardFromSearch(c.boardId, null, { listId: c.listId, cardId: c.id });
+                    }, true); // true para permitir HTML en breadcrumb
                     searchResultsList.appendChild(div);
                 });
             }
+
             searchResults.classList.remove('hidden');
             if(window.lucide) lucide.createIcons();
         });
 
-        // Cerrar búsqueda si click fuera
-        document.addEventListener('click', (e) => { if(!searchInput.contains(e.target) && !searchResults.contains(e.target)) searchResults.classList.add('hidden'); });
+        // Cerrar al hacer click fuera
+        document.addEventListener('click', (e) => { 
+            if(!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                searchResults.classList.add('hidden'); 
+            }
+        });
     }
 
-    // 1. TABLEROS
+    // Helpers de Renderizado de Búsqueda
+    function renderSearchHeader(text) {
+        const h = document.createElement('div');
+        h.className = 'px-3 py-1.5 text-[10px] font-bold text-slate-500 uppercase bg-slate-100 dark:bg-slate-700 tracking-wider';
+        h.textContent = text;
+        searchResultsList.appendChild(h);
+    }
+
+    function createSearchResultItem(icon, title, subtitle, onClick, isHtmlSubtitle = false) {
+        const div = document.createElement('div');
+        div.className = 'search-result-item group p-2 hover:bg-blue-50 dark:hover:bg-slate-600 cursor-pointer flex items-center gap-3 border-b border-slate-100 dark:border-slate-700 last:border-0';
+        div.innerHTML = `
+            <div class="p-1.5 bg-slate-200 dark:bg-slate-500 rounded text-slate-600 dark:text-white"><i data-lucide="${icon}" class="w-4 h-4"></i></div>
+            <div class="flex-1 min-w-0">
+                <div class="text-sm font-semibold text-slate-800 dark:text-white truncate group-hover:text-blue-600">${title}</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 truncate flex items-center gap-1">${isHtmlSubtitle ? subtitle : subtitle}</div>
+            </div>
+        `;
+        div.addEventListener('click', onClick);
+        return div;
+    }
+
+    // [IMPORTANTE] Navegación Cruzada Inteligente
+    async function openBoardFromSearch(targetBoardId, targetListId = null, targetCard = null) {
+        searchResults.classList.add('hidden');
+        searchInput.value = '';
+
+        // Si ya estamos en el tablero correcto
+        if (currentBoardId === targetBoardId) {
+            if (targetCard) {
+                // Abrir tarjeta directamente
+                const snap = await getDoc(doc(db, 'boards', targetBoardId, 'lists', targetCard.listId, 'cards', targetCard.cardId));
+                if(snap.exists()) openCardModal(targetCard.listId, targetCard.cardId, snap.data());
+            } else if (targetListId) {
+                // Scroll a la lista
+                scrollToList(targetListId);
+            }
+            return;
+        }
+
+        // Si estamos en OTRO tablero o en el dashboard, cargar el nuevo
+        const boardSnap = await getDoc(doc(db, 'boards', targetBoardId));
+        if (boardSnap.exists()) {
+            await openBoard(targetBoardId, boardSnap.data());
+            
+            // Esperar un poco a que se rendericen las listas (hack visual)
+            setTimeout(async () => {
+                if (targetCard) {
+                    const cSnap = await getDoc(doc(db, 'boards', targetBoardId, 'lists', targetCard.listId, 'cards', targetCard.cardId));
+                    if(cSnap.exists()) openCardModal(targetCard.listId, targetCard.cardId, cSnap.data());
+                } else if (targetListId) {
+                    scrollToList(targetListId);
+                }
+            }, 800); // Tiempo para que cargue el DOM
+        }
+    }
+
+    function scrollToList(listId) {
+        const el = document.querySelector(`[data-list-id="${listId}"]`);
+        if(el) {
+            el.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+            el.classList.add('ring-2', 'ring-blue-500'); // Feedback visual
+            setTimeout(() => el.classList.remove('ring-2', 'ring-blue-500'), 2000);
+        }
+    }
+
+    // ========================================
+    // 1. TABLEROS (CORE)
+    // ========================================
     function loadBoards() {
         if(unsubscribeBoards) unsubscribeBoards();
         unsubscribeBoards = onSnapshot(query(collection(db, 'boards'), where('memberEmails', 'array-contains', currentUser.email)), (snap) => {
@@ -538,17 +591,27 @@ function initializeApp() {
     document.querySelectorAll('.cover-color').forEach(b => b.addEventListener('click', () => { currentCardCover={color:b.dataset.color, mode:'color', url:null}; closeModal('card-cover-modal'); }));
     document.getElementById('remove-cover-btn')?.addEventListener('click', () => { currentCardCover={color:null}; closeModal('card-cover-modal'); });
 
-    // GUARDAR Y SALIR
+    // GUARDAR Y SALIR (CON ACTUALIZACIÓN DE ÍNDICE)
     document.getElementById('save-card-btn')?.addEventListener('click', async () => {
         const title = document.getElementById('card-title-input').value.trim(); if(!title) return;
         const payload = { title, description: document.getElementById('card-description-input').value.trim(), dueDate: document.getElementById('card-due-date-input').value, checklist: currentChecklist, cover: currentCardCover, attachments: currentAttachments, labels: currentCardLabels, assignedTo: currentCardMembers, updatedAt: serverTimestamp() };
-        if(currentCardData.cid) {
-            await updateDoc(doc(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards',currentCardData.cid), payload);
-            logActivity('updated_card', 'card', currentCardData.cid, { cardTitle: title });
+        
+        let savedId = currentCardData.cid;
+        if(savedId) {
+            await updateDoc(doc(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards',savedId), payload);
+            logActivity('updated_card', 'card', savedId, { cardTitle: title });
         } else {
             const ref = await addDoc(collection(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards'), {...payload, position:Date.now(), createdAt:serverTimestamp()});
-            logActivity('created_card', 'card', ref.id, { cardTitle: title });
+            savedId = ref.id;
+            logActivity('created_card', 'card', savedId, { cardTitle: title });
         }
+        
+        // [MEJORA] Actualizar índice local manualmente para búsqueda instantánea
+        const existingIdx = globalSearchIndex.cards.findIndex(c => c.id === savedId);
+        const cardIndexData = { id: savedId, title, description: payload.description, listId: currentCardData.lid, boardId: currentBoardId, boardTitle: currentBoardData.title, listName: '...' }; // Simplificado
+        if(existingIdx >= 0) globalSearchIndex.cards[existingIdx] = cardIndexData;
+        else globalSearchIndex.cards.push(cardIndexData);
+
         closeModal('card-modal');
     });
 
@@ -559,10 +622,18 @@ function initializeApp() {
     document.getElementById('create-board-btn').addEventListener('click',()=>{boardModal.classList.remove('hidden');boardModal.style.display='flex'});
     document.getElementById('add-list-btn').addEventListener('click',()=>{listModal.classList.remove('hidden');listModal.style.display='flex'});
     document.getElementById('save-list-btn').addEventListener('click',async()=>{
-        const v=document.getElementById('list-name-input').value.trim(); if(v){await addDoc(collection(db,'boards',currentBoardId,'lists'),{name:v,position:Date.now(),createdAt:serverTimestamp()}); logActivity('created_list', 'list', null, { listName: v }); closeModal('list-modal'); document.getElementById('list-name-input').value='';}
+        const v=document.getElementById('list-name-input').value.trim(); if(v){
+            const ref = await addDoc(collection(db,'boards',currentBoardId,'lists'),{name:v,position:Date.now(),createdAt:serverTimestamp()});
+            globalSearchIndex.lists.push({id: ref.id, name: v, boardId: currentBoardId, boardTitle: currentBoardData.title}); // Indexar lista nueva
+            logActivity('created_list', 'list', null, { listName: v }); closeModal('list-modal'); document.getElementById('list-name-input').value='';
+        }
     });
     document.getElementById('save-board-btn').addEventListener('click',async()=>{
-        const v=document.getElementById('board-name-input').value.trim(); if(v){await addDoc(collection(db,'boards'),{title:v,ownerId:currentUser.uid,memberEmails:[currentUser.email],members:{[currentUser.uid]:{email:currentUser.email,name:currentUser.displayName||'User',role:'owner'}},createdAt:serverTimestamp()}); closeModal('board-modal');}
+        const v=document.getElementById('board-name-input').value.trim(); if(v){
+            const ref = await addDoc(collection(db,'boards'),{title:v,ownerId:currentUser.uid,memberEmails:[currentUser.email],members:{[currentUser.uid]:{email:currentUser.email,name:currentUser.displayName||'User',role:'owner'}},createdAt:serverTimestamp()});
+            globalSearchIndex.boards.push({id: ref.id, title: v}); // Indexar tablero nuevo
+            closeModal('board-modal');
+        }
     });
     document.getElementById('back-to-boards-btn').addEventListener('click', ()=>{boardView.style.display='none'; document.querySelector('.boards-section').style.display='block'; if(unsubscribeLists) unsubscribeLists(); if(unsubscribeActivity) unsubscribeActivity(); currentBoardId=null;});
 }
