@@ -500,8 +500,12 @@ function initializeApp() {
         });
     }
 
-    function openCardModal(lid, cid=null, data=null) {
+function openCardModal(lid, cid=null, data=null) {
         currentCardData = { lid, cid, data };
+        
+        // Resetear estados visuales
+        checklistHideCompleted = false; 
+
         document.getElementById('card-title-input').value = data?.title||'';
         document.getElementById('card-description-input').value = data?.description||'';
         document.getElementById('card-due-date-input').value = data?.dueDate||'';
@@ -517,6 +521,13 @@ function initializeApp() {
         renderAttachments();
         renderLabelsInModal();
         renderAssignedMembersInput();
+
+        // CARGAR COMENTARIOS (Nuevo)
+        if(cid) {
+            loadComments(lid, cid);
+        } else {
+            document.getElementById('comments-list').innerHTML = ''; // Limpiar si es nueva tarjeta
+        }
 
         cardModal.classList.remove('hidden'); cardModal.style.display='flex';
         lucide.createIcons();
