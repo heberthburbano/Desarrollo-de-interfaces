@@ -1,29 +1,28 @@
 import { auth, db } from './firebase-config.js';
 import { 
     collection, addDoc, doc, updateDoc, deleteDoc, query, where, onSnapshot, 
-    orderBy, serverTimestamp, getDoc, getDocs, arrayUnion, arrayRemove
+    orderBy, serverTimestamp, getDoc, getDocs, arrayUnion
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
 document.addEventListener('DOMContentLoaded', initializeApp);
 
 function initializeApp() {
-    console.log('🚀 Inicializando Trello Clone (Fase 4: Colaboración)...');
+    console.log('🚀 Inicializando Trello Clone (Fase 5: Notificaciones Completo)...');
 
     // ESTADO
     let currentUser = null;
     let currentBoardId = null;
-    let currentBoardData = null; // Guardamos datos del tablero para saber quiénes son los miembros
+    let currentBoardData = null;
     let currentUserRole = null;
     
-    // Estado de Edición
     let currentCardData = null; 
     let currentCardCover = { color: null, mode: 'banner', url: null };
     let currentChecklist = []; 
     let currentAttachments = []; 
     let currentCardLabels = [];
-    let currentCardMembers = []; // [NUEVO] IDs de usuarios asignados a la tarjeta
+    let currentCardMembers = [];
     
-    let unsubscribeBoards, unsubscribeLists, unsubscribeCards = {}; 
+    let unsubscribeBoards, unsubscribeLists, unsubscribeCards = {}, unsubscribeNotifications; 
 
     // DOM
     const boardsContainer = document.getElementById('boards-container');
@@ -34,7 +33,12 @@ function initializeApp() {
     const cardModal = document.getElementById('card-modal');
     const coverModal = document.getElementById('card-cover-modal');
     const labelsModal = document.getElementById('labels-modal');
-    const inviteModal = document.getElementById('invite-modal'); // [NUEVO]
+    const inviteModal = document.getElementById('invite-modal');
+    // [NUEVO] Elementos de Notificaciones
+    const notifBtn = document.getElementById('notifications-btn');
+    const notifDropdown = document.getElementById('notifications-dropdown');
+    const notifList = document.getElementById('notifications-list');
+    const notifBadge = document.getElementById('notifications-badge');
 
     // MODO OSCURO
     function initDarkMode() {
@@ -49,7 +53,6 @@ function initializeApp() {
     }
     initDarkMode();
 
-    // PERMISOS
     const PERMISSIONS = { owner: {createList:true, editCard:true}, editor: {createList:true, editCard:true}, viewer: {createList:false, editCard:false} };
     function hasPermission(a) { return currentUserRole && PERMISSIONS[currentUserRole]?.[a]; }
 
@@ -58,6 +61,7 @@ function initializeApp() {
         const av = document.getElementById('user-avatar');
         if(av) av.textContent = (currentUser.displayName||currentUser.email).charAt(0).toUpperCase();
         loadBoards();
+        loadNotifications(); // [NUEVO] Cargar notificaciones al iniciar
     });
 
     // 1. TABLEROS
@@ -84,17 +88,14 @@ function initializeApp() {
 
     async function openBoard(id, data) {
         currentBoardId = id; 
-        currentBoardData = data; // [NUEVO] Guardar data completa para acceder a miembros
+        currentBoardData = data; 
         currentUserRole = data.members?.[currentUser.uid]?.role||'viewer';
-        
         document.getElementById('board-title').textContent = data.title;
-        renderBoardMembers(data.members); // [NUEVO] Mostrar avatares en header
-
+        renderBoardMembers(data.members);
         document.querySelector('.boards-section').style.display='none'; boardView.classList.remove('hidden'); boardView.style.display='flex';
         loadLists(id);
     }
 
-    // [NUEVO] Renderizar miembros en la cabecera del tablero
     function renderBoardMembers(members) {
         const container = document.getElementById('members-preview');
         if(!container) return;
@@ -156,12 +157,10 @@ function initializeApp() {
         let labelsHtml = '';
         if(card.labels?.length) labelsHtml = `<div class="flex flex-wrap mb-1 gap-1">${card.labels.map(l=>`<span class="card-label ${l.color}" title="${l.name}"></span>`).join('')}</div>`;
 
-        // [NUEVO] Renderizar Avatares de Miembros en la Tarjeta
         let membersHtml = '';
         if(card.assignedTo && card.assignedTo.length > 0) {
             membersHtml = `<div class="card-members">`;
             card.assignedTo.forEach(uid => {
-                // Buscamos el nombre en los datos del tablero
                 const memberName = currentBoardData.members[uid]?.name || '?';
                 membersHtml += `<div class="member-avatar" style="width:24px; height:24px; font-size:10px;" title="${memberName}">${memberName.charAt(0).toUpperCase()}</div>`;
             });
@@ -193,7 +192,6 @@ function initializeApp() {
         return d;
     }
 
-    // DRAG & DROP
     let draggedItem = null;
     function handleDragStart(e) { draggedItem=this; this.style.transform='rotate(3deg)'; this.classList.add('dragging'); e.dataTransfer.setData('text/plain', JSON.stringify({cid:this.dataset.cardId, slid:this.dataset.listId})); }
     function handleDragEnd() { this.style.transform='none'; this.classList.remove('dragging'); draggedItem=null; document.querySelectorAll('.drag-over').forEach(e=>e.classList.remove('drag-over')); }
@@ -212,7 +210,7 @@ function initializeApp() {
         });
     }
 
-    // 4. MODAL & EDICIÓN
+    // 4. MODAL
     function openCardModal(lid, cid=null, data=null) {
         currentCardData = { lid, cid, data };
         document.getElementById('card-title-input').value = data?.title||'';
@@ -224,18 +222,17 @@ function initializeApp() {
         currentCardCover = data?.cover||{color:null,mode:'banner',url:null};
         currentAttachments = data?.attachments||[];
         currentCardLabels = data?.labels||[];
-        currentCardMembers = data?.assignedTo||[]; // Cargar asignaciones
+        currentCardMembers = data?.assignedTo||[]; 
 
         renderChecklist();
         renderAttachments();
         renderLabelsInModal();
-        renderAssignedMembersInput(); // [NUEVO] Llenar input de asignados (simple)
+        renderAssignedMembersInput();
 
         cardModal.classList.remove('hidden'); cardModal.style.display='flex';
         lucide.createIcons();
     }
 
-    // --- MANEJADORES SIDEBAR ---
     document.getElementById('card-labels-btn')?.addEventListener('click', () => { labelsModal.classList.remove('hidden'); labelsModal.style.display='flex'; });
     document.getElementById('cancel-labels-btn')?.addEventListener('click', () => closeModal('labels-modal'));
     document.querySelectorAll('.label-checkbox').forEach(cb => cb.addEventListener('change', (e) => {
@@ -251,35 +248,20 @@ function initializeApp() {
         currentCardLabels.forEach(l => { const s = document.createElement('span'); s.className=`px-2 py-1 rounded text-xs font-bold text-white ${l.color.split(' ')[0]}`; s.textContent=l.name; c.appendChild(s); });
     }
 
-    // [NUEVO] Asignación de Miembros (Usando el input 'card-assigned-input')
-    // Cambiamos el comportamiento: al hacer click, muestra una lista de miembros del tablero para elegir
     function renderAssignedMembersInput() {
         const input = document.getElementById('card-assigned-input');
-        // Mostrar nombres actuales
         const names = currentCardMembers.map(uid => currentBoardData.members[uid]?.name).join(', ');
         input.value = names;
-        
-        // Al hacer focus, sugerir miembros (Simplificado con prompt por ahora para no crear otro modal complejo)
-        // En una app real usaríamos un dropdown custom.
         input.onclick = () => {
-            // Crear lista de emails disponibles
             const options = Object.entries(currentBoardData.members).map(([uid, m]) => `${m.email} (${m.name})`).join('\n');
-            const email = prompt(`Escribe el email del miembro a asignar/desasignar:\n\n${options}`);
-            
+            const email = prompt(`Escribe el email para asignar/quitar:\n\n${options}`);
             if(email) {
-                // Buscar UID por email
-                const foundEntry = Object.entries(currentBoardData.members).find(([uid, m]) => m.email === email.trim());
-                if(foundEntry) {
-                    const [uid, member] = foundEntry;
-                    if(currentCardMembers.includes(uid)) {
-                        currentCardMembers = currentCardMembers.filter(id => id !== uid);
-                    } else {
-                        currentCardMembers.push(uid);
-                    }
+                const found = Object.entries(currentBoardData.members).find(([uid, m]) => m.email === email.trim());
+                if(found) {
+                    const [uid] = found;
+                    currentCardMembers = currentCardMembers.includes(uid) ? currentCardMembers.filter(id => id !== uid) : [...currentCardMembers, uid];
                     renderAssignedMembersInput();
-                } else {
-                    alert("Miembro no encontrado en este tablero.");
-                }
+                } else alert("Miembro no encontrado.");
             }
         };
     }
@@ -289,61 +271,136 @@ function initializeApp() {
     document.getElementById('attach-file-btn')?.addEventListener('click', () => { const u=prompt("URL:"); if(u) { const i=u.match(/\.(jpeg|jpg|png|webp)/); currentAttachments.push({name:i?'Imagen':'Enlace', url:u, type:i?'image':'link', addedAt:new Date().toISOString()}); renderAttachments(); }});
     document.getElementById('card-cover-btn')?.addEventListener('click', () => { coverModal.classList.remove('hidden'); coverModal.style.display='flex'; });
 
-    // --- INVITACIONES (BOTÓN COMPARTIR) ---
+    // --- INVITACIONES ---
     document.getElementById('invite-member-btn')?.addEventListener('click', () => { inviteModal.classList.remove('hidden'); inviteModal.style.display='flex'; });
     document.getElementById('cancel-invite-btn')?.addEventListener('click', () => closeModal('invite-modal'));
     document.getElementById('send-invite-btn')?.addEventListener('click', async () => {
         const email = document.getElementById('invite-email-input').value.trim();
         if(!email) return alert("Escribe un email");
-        
         try {
-            // Buscar usuario real
             const q = query(collection(db, 'users'), where('email', '==', email));
             const snap = await getDocs(q);
             if(snap.empty) return alert("Usuario no registrado en la app.");
-            
-            const user = snap.docs[0].data();
             const uid = snap.docs[0].id;
-
-            // Añadir invitación
-            await addDoc(collection(db, 'board_invitations'), {
+            await addDoc(collection(db, 'notifications'), {
+                userId: uid,
+                type: 'board_invitation',
                 boardId: currentBoardId,
                 boardTitle: currentBoardData.title,
-                invitedBy: currentUser.uid,
-                invitedUserId: uid,
-                invitedUserEmail: email,
+                invitedBy: currentUser.displayName,
+                invitedByEmail: currentUser.email,
                 role: 'editor',
-                status: 'pending',
+                read: false,
                 createdAt: serverTimestamp()
             });
-            alert("Invitación enviada. El usuario debe aceptarla.");
+            alert("Invitación enviada.");
             closeModal('invite-modal');
         } catch(e) { console.error(e); alert("Error al invitar"); }
     });
 
-    // FUNCIONES RENDER INTERNAS
+    // --- 7. SISTEMA DE NOTIFICACIONES (FASE 5) ---
+    function loadNotifications() {
+        if(unsubscribeNotifications) unsubscribeNotifications();
+        unsubscribeNotifications = onSnapshot(query(collection(db, 'notifications'), where('userId', '==', currentUser.uid), orderBy('createdAt', 'desc')), (snap) => {
+            notifList.innerHTML = '';
+            const unread = snap.docs.filter(d => !d.data().read).length;
+            if(unread > 0) { notifBadge.classList.remove('hidden'); notifBadge.textContent = unread; } 
+            else notifBadge.classList.add('hidden');
+
+            if(snap.empty) { notifList.innerHTML = '<p class="p-4 text-center text-sm text-slate-500">No tienes notificaciones.</p>'; return; }
+
+            snap.forEach(doc => {
+                const n = doc.data();
+                const div = document.createElement('div');
+                div.className = `p-3 border-b border-slate-100 hover:bg-slate-50 cursor-pointer ${!n.read?'bg-blue-50':''}`;
+                
+                if(n.type === 'board_invitation') {
+                    div.innerHTML = `
+                        <div class="text-sm">
+                            <span class="font-bold text-blue-600">${n.invitedBy}</span> te invitó a 
+                            <span class="font-bold text-slate-800">${n.boardTitle}</span>
+                        </div>
+                        <div class="flex gap-2 mt-2">
+                            <button class="accept-btn px-2 py-1 bg-green-500 text-white text-xs rounded">Aceptar</button>
+                            <button class="reject-btn px-2 py-1 bg-red-500 text-white text-xs rounded">Rechazar</button>
+                        </div>
+                    `;
+                    div.querySelector('.accept-btn').addEventListener('click', () => acceptInvitation(doc.id, n));
+                    div.querySelector('.reject-btn').addEventListener('click', () => rejectInvitation(doc.id));
+                } else {
+                    div.innerHTML = `<div class="text-sm">${n.message || 'Nueva notificación'}</div>`;
+                }
+                notifList.appendChild(div);
+            });
+        });
+    }
+
+    async function acceptInvitation(notifId, data) {
+        try {
+            const boardRef = doc(db, 'boards', data.boardId);
+            await updateDoc(boardRef, {
+                [`members.${currentUser.uid}`]: {
+                    email: currentUser.email,
+                    name: currentUser.displayName || currentUser.email,
+                    role: data.role
+                },
+                memberEmails: arrayUnion(currentUser.email)
+            });
+            await deleteDoc(doc(db, 'notifications', notifId));
+            alert(`¡Te has unido a ${data.boardTitle}!`);
+            loadBoards(); // Recargar para ver el nuevo tablero
+        } catch(e) { console.error(e); alert("Error al unirse"); }
+    }
+
+    async function rejectInvitation(notifId) {
+        if(confirm("¿Rechazar invitación?")) await deleteDoc(doc(db, 'notifications', notifId));
+    }
+
+    // Toggle dropdown
+    notifBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        notifDropdown.classList.toggle('hidden');
+    });
+    document.addEventListener('click', (e) => {
+        if(!notifBtn.contains(e.target) && !notifDropdown.contains(e.target)) notifDropdown.classList.add('hidden');
+    });
+
+    // --- FUNCIONES INTERNAS MODAL ---
     function renderChecklist() {
-        const c=document.getElementById('checklist-items'); c.innerHTML='';
+        const c = document.getElementById('checklist-items'); c.innerHTML='';
         currentChecklist.forEach((i,x)=>{
-            const d=document.createElement('div'); d.className='checklist-item group';
-            d.innerHTML=`<input type="checkbox" ${i.completed?'checked':''}><span class="flex-1 text-sm ${i.completed?'line-through text-slate-400':''}">${i.text}</span><button class="delete-item-btn"><i data-lucide="trash-2" class="w-3 h-3"></i></button>`;
+            const d = document.createElement('div'); d.className='checklist-item group';
+            d.innerHTML=`<input type="checkbox" ${i.completed?'checked':''} class="cursor-pointer"><span class="flex-1 text-sm ${i.completed?'line-through text-slate-400':''}">${i.text}</span><button class="delete-item-btn"><i data-lucide="trash-2" class="w-3 h-3"></i></button>`;
             d.querySelector('input').addEventListener('change',e=>{i.completed=e.target.checked; renderChecklist();});
-            d.querySelector('button').addEventListener('click',()=>{currentChecklist.splice(x,1); renderChecklist();});
+            d.querySelector('.delete-item-btn').addEventListener('click',()=>{currentChecklist.splice(x,1); renderChecklist();});
             c.appendChild(d);
         });
-        const p=document.getElementById('checklist-progress'); if(p) p.innerText = currentChecklist.length?Math.round((currentChecklist.filter(i=>i.completed).length/currentChecklist.length)*100)+'%':'0%';
+        const p = document.getElementById('checklist-progress');
+        const done = currentChecklist.filter(i=>i.completed).length, total=currentChecklist.length;
+        if(p) p.innerText = total===0?'0%':Math.round((done/total)*100)+'%';
     }
 
     function renderAttachments() {
-        const c=document.getElementById('attachments-list'); c.innerHTML='';
+        const c = document.getElementById('attachments-list'); c.innerHTML='';
         currentAttachments.forEach((a,x)=>{
-            const d=document.createElement('div'); d.className='attachment-item';
+            const d = document.createElement('div'); d.className='attachment-item';
             d.innerHTML=`<div class="attachment-thumbnail" style="background-image:url('${a.type==='image'?a.url:''}')"></div><div class="flex-1"><p class="text-sm font-bold truncate">${a.name}</p><button class="text-xs text-red-500 del">Eliminar</button>${a.type==='image'?`<button class="text-xs text-blue-500 ml-2 cover">Hacer Portada</button>`:''}</div>`;
             d.querySelector('.del').addEventListener('click',()=>{currentAttachments.splice(x,1); renderAttachments();});
             d.querySelector('.cover')?.addEventListener('click',()=>{ currentCardCover={mode:'banner',url:a.url}; alert('Portada puesta'); });
             c.appendChild(d);
         });
+        if(window.lucide) lucide.createIcons();
     }
+
+    document.getElementById('add-checklist-item-btn')?.addEventListener('click', () => {
+        const inp = document.getElementById('new-checklist-item-input');
+        if(inp.value.trim()){ currentChecklist.push({text:inp.value.trim(), completed:false}); inp.value=''; renderChecklist(); }
+    });
+
+    document.querySelectorAll('.cover-color').forEach(b => b.addEventListener('click', () => {
+        currentCardCover = {color:b.dataset.color, mode:'color', url:null}; closeModal('card-cover-modal');
+    }));
+    document.getElementById('remove-cover-btn')?.addEventListener('click', () => { currentCardCover={color:null}; closeModal('card-cover-modal'); });
 
     // GUARDAR Y SALIR
     document.getElementById('save-card-btn')?.addEventListener('click', async () => {
@@ -356,8 +413,8 @@ function initializeApp() {
             checklist: currentChecklist,
             cover: currentCardCover,
             attachments: currentAttachments,
-            labels: currentCardLabels,
-            assignedTo: currentCardMembers, // [NUEVO] Guardar asignados
+            labels: currentCardLabels, 
+            assignedTo: currentCardMembers,
             updatedAt: serverTimestamp()
         };
         if(currentCardData.cid) await updateDoc(doc(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards',currentCardData.cid), payload);
@@ -366,10 +423,7 @@ function initializeApp() {
     });
 
     document.getElementById('delete-card-btn')?.addEventListener('click', async()=>{if(confirm('¿Borrar?')){await deleteDoc(doc(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards',currentCardData.cid)); closeModal('card-modal');}});
-    document.querySelectorAll('.cover-color').forEach(b => b.addEventListener('click', () => { currentCardCover={color:b.dataset.color, mode:'color', url:null}; closeModal('card-cover-modal'); }));
-    document.getElementById('remove-cover-btn')?.addEventListener('click', () => { currentCardCover={color:null}; closeModal('card-cover-modal'); });
 
-    // UTILS
     function closeModal(id){const m=document.getElementById(id);if(m){m.classList.add('hidden');m.style.display='none';}}
     document.querySelectorAll('[id^="cancel-"]').forEach(b=>b.addEventListener('click',e=>closeModal(e.target.closest('.fixed').id)));
     document.getElementById('create-board-btn').addEventListener('click',()=>{boardModal.classList.remove('hidden');boardModal.style.display='flex'});
