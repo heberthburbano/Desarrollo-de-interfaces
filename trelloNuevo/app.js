@@ -7,7 +7,7 @@ import {
 document.addEventListener('DOMContentLoaded', initializeApp);
 
 function initializeApp() {
-    console.log('🚀 Inicializando Trello Clone (Search Engine v3.0)...');
+    console.log('🚀 Inicializando Trello Clone (Versión Final Reparada)...');
 
     // ========================================
     // ESTADO GLOBAL
@@ -17,70 +17,22 @@ function initializeApp() {
     let currentBoardData = null;
     let currentUserRole = null;
     
-    // CACHÉ DE BÚSQUEDA (Todo en un solo array plano para velocidad)
-    let allSearchCache = []; // [{ id, type: 'board'|'list'|'card', title, ...context }]
-    let selectedResultIndex = -1;
+    // Cache de Búsqueda
+    let globalSearchIndex = { boards: [], lists: [], cards: [] };
+    let searchResultIndex = -1;
 
-    // Estado Edición
+    // Estado Edición (Modal)
     let currentCardData = null; 
     let currentCardCover = { color: null, mode: 'banner', url: null };
     let currentChecklist = []; 
     let currentAttachments = []; 
     let currentCardLabels = [];
     let currentCardMembers = [];
+    let checklistHideCompleted = false;
     
-    let unsubscribeBoards, unsubscribeLists, unsubscribeActivity, unsubscribeNotifications; 
+    // Suscripciones
+    let unsubscribeBoards, unsubscribeLists, unsubscribeActivity, unsubscribeNotifications, unsubscribeComments; 
     let unsubscribeCards = {}; 
-
-    // NUEVAS VARIABLES GLOBALES
-    let unsubscribeComments = null;
-    let checklistHideCompleted = false; // Estado para ocultar/mostrar checklist
-
-    // HELPER: Tiempo Relativo (para comentarios y actividad)
-    function timeAgo(date) {
-        if (!date) return 'hace un momento';
-        const seconds = Math.floor((new Date() - date) / 1000);
-        let interval = seconds / 31536000;
-        if (interval > 1) return "hace " + Math.floor(interval) + " años";
-        interval = seconds / 2592000;
-        if (interval > 1) return "hace " + Math.floor(interval) + " meses";
-        interval = seconds / 86400;
-        if (interval > 1) return "hace " + Math.floor(interval) + " días";
-        interval = seconds / 3600;
-        if (interval > 1) return "hace " + Math.floor(interval) + " h";
-        interval = seconds / 60;
-        if (interval > 1) return "hace " + Math.floor(interval) + " min";
-        return "hace unos segundos";
-    }
-
-    // HELPER: Inicializar Atajos de Teclado
-    function initGlobalShortcuts() {
-        document.addEventListener('keydown', (e) => {
-            // Ignorar si el usuario está escribiendo en un input o textarea
-            if (e.target.matches('input, textarea')) return;
-
-            if (e.key === '/') {
-                e.preventDefault();
-                document.getElementById('global-search').focus();
-            }
-            if (e.key === 'Escape') {
-                // Cerrar cualquier modal abierto
-                document.querySelectorAll('.fixed').forEach(m => {
-                    if (!m.classList.contains('hidden')) closeModal(m.id);
-                });
-            }
-            if (e.key === 'n' || e.key === 'N') {
-                // Solo si estamos en la vista de un tablero
-                if (currentBoardId && !document.getElementById('board-view').classList.contains('hidden')) {
-                    e.preventDefault();
-                    // Intentar abrir modal en la primera lista disponible
-                    const firstList = document.querySelector('.list');
-                    if (firstList) openCardModal(firstList.dataset.listId);
-                }
-            }
-        });
-    }
-    // Llamamos a esto al final de initializeApp()
 
     // DOM Elements
     const boardsContainer = document.getElementById('boards-container');
@@ -93,7 +45,7 @@ function initializeApp() {
     const labelsModal = document.getElementById('labels-modal');
     const inviteModal = document.getElementById('invite-modal');
     
-    // Search & Panels
+    // Paneles & Búsqueda
     const searchInput = document.getElementById('global-search');
     const searchResults = document.getElementById('search-results');
     const searchResultsList = document.getElementById('search-results-list');
@@ -104,6 +56,18 @@ function initializeApp() {
     const notifDropdown = document.getElementById('notifications-dropdown');
     const notifList = document.getElementById('notifications-list');
     const notifBadge = document.getElementById('notifications-badge');
+
+    // HELPER: Tiempo relativo
+    function timeAgo(date) {
+        if (!date) return 'justo ahora';
+        const seconds = Math.floor((new Date() - date) / 1000);
+        const intervals = { año: 31536000, mes: 2592000, día: 86400, h: 3600, min: 60 };
+        for (const [key, val] of Object.entries(intervals)) {
+            const count = Math.floor(seconds / val);
+            if (count >= 1) return `hace ${count} ${key}${count > 1 ? 's' : ''}`;
+        }
+        return "hace unos segundos";
+    }
 
     // MODO OSCURO
     function initDarkMode() {
@@ -118,237 +82,145 @@ function initializeApp() {
     }
     initDarkMode();
 
+    // PERMISOS
     const PERMISSIONS = { owner: {createList:true, editCard:true}, editor: {createList:true, editCard:true}, viewer: {createList:false, editCard:false} };
     function hasPermission(a) { return currentUserRole && PERMISSIONS[currentUserRole]?.[a]; }
 
+    // ========================================
+    // INICIO DE SESIÓN Y CARGA INICIAL
+    // ========================================
     window.addEventListener('user-authenticated', (e) => {
         currentUser = e.detail.user;
         const av = document.getElementById('user-avatar');
         if(av) av.textContent = (currentUser.displayName||currentUser.email).charAt(0).toUpperCase();
+        
         loadBoards();
         loadNotifications();
-        buildGlobalIndex(); // Construir índice completo
+        buildGlobalIndex(); // Indexar todo para búsqueda
         initSearchListeners();
+        initGlobalShortcuts();
     });
 
     // ========================================
-    // MOTOR DE BÚSQUEDA GLOBAL (INDEXACIÓN COMPLETA)
+    // BÚSQUEDA GLOBAL V3 (CON MIGAS DE PAN)
     // ========================================
     async function buildGlobalIndex() {
-        console.log("🔍 Indexando TODO el contenido...");
-        allSearchCache = [];
-
+        console.log("🔍 Indexando contenido...");
+        globalSearchIndex = { boards: [], lists: [], cards: [] };
         try {
-            // 1. Obtener TABLEROS
             const qBoards = query(collection(db, 'boards'), where('memberEmails', 'array-contains', currentUser.email));
             const snapBoards = await getDocs(qBoards);
-
-            const promises = snapBoards.docs.map(async (boardDoc) => {
+            
+            await Promise.all(snapBoards.docs.map(async (boardDoc) => {
                 const b = boardDoc.data();
-                const bId = boardDoc.id;
-                
-                // Add Board
-                allSearchCache.push({ id: bId, type: 'board', title: b.title, score: 0 });
+                globalSearchIndex.boards.push({ id: boardDoc.id, title: b.title, type: 'board' });
 
-                // 2. Obtener LISTAS
-                const snapLists = await getDocs(query(collection(db, 'boards', bId, 'lists')));
-                
+                const snapLists = await getDocs(query(collection(db, 'boards', boardDoc.id, 'lists')));
                 for (const listDoc of snapLists.docs) {
                     const l = listDoc.data();
-                    const lId = listDoc.id;
-                    
-                    // Add List
-                    allSearchCache.push({ 
-                        id: lId, type: 'list', title: l.name, 
-                        boardId: bId, boardTitle: b.title, score: 0 
-                    });
+                    globalSearchIndex.lists.push({ id: listDoc.id, name: l.name, boardId: boardDoc.id, boardTitle: b.title, type: 'list' });
 
-                    // 3. Obtener TARJETAS
-                    const snapCards = await getDocs(query(collection(db, 'boards', bId, 'lists', lId, 'cards')));
+                    const snapCards = await getDocs(query(collection(db, 'boards', boardDoc.id, 'lists', listDoc.id, 'cards')));
                     snapCards.forEach(cardDoc => {
                         const c = cardDoc.data();
-                        // Add Card
-                        allSearchCache.push({
-                            id: cardDoc.id, type: 'card', title: c.title, description: c.description||'',
-                            listId: lId, listName: l.name,
-                            boardId: bId, boardTitle: b.title, score: 0
+                        globalSearchIndex.cards.push({
+                            id: cardDoc.id, title: c.title, description: c.description||'',
+                            listId: listDoc.id, listName: l.name, boardId: boardDoc.id, boardTitle: b.title, type: 'card'
                         });
                     });
                 }
-            });
-
-            await Promise.all(promises);
-            console.log(`✅ Indexado: ${allSearchCache.length} elementos.`);
+            }));
+            console.log(`✅ Indexado completado: ${globalSearchIndex.cards.length} tarjetas.`);
         } catch (e) { console.error("Error indexando:", e); }
-    }
-
-    // Algoritmo de Scoring (Tu código original)
-    function calculateScore(text, searchTerm) {
-        const lowerText = (text || '').toLowerCase();
-        const lowerTerm = searchTerm.toLowerCase();
-        if (lowerText === lowerTerm) return 100; // Exacto
-        if (lowerText.startsWith(lowerTerm)) return 80; // Empieza con
-        if (lowerText.includes(` ${lowerTerm}`)) return 60; // Palabra completa
-        if (lowerText.includes(lowerTerm)) return 40; // Contiene
-        return 0;
-    }
-
-    function highlightText(text, term) {
-        if (!text) return '';
-        const regex = new RegExp(`(${term})`, 'gi');
-        return text.replace(regex, '<span class="search-result-highlight">$1</span>');
     }
 
     function initSearchListeners() {
         searchInput?.addEventListener('input', (e) => {
             const term = e.target.value.trim().toLowerCase();
-            if(term.length < 2) { searchResults.classList.add('hidden'); selectedResultIndex = -1; return; }
+            if(term.length < 2) { searchResults.classList.add('hidden'); searchResultIndex = -1; return; }
             
-            // 1. Calcular Score y Filtrar
-            const results = allSearchCache
-                .map(item => {
-                    // Buscar en título y descripción (si es tarjeta)
-                    const titleScore = calculateScore(item.title, term);
-                    const descScore = item.description ? calculateScore(item.description, term) : 0;
-                    return { ...item, score: Math.max(titleScore, descScore) };
-                })
-                .filter(item => item.score > 0)
-                .sort((a, b) => b.score - a.score); // Ordenar por relevancia
+            const matches = [
+                ...globalSearchIndex.boards.filter(b => b.title.toLowerCase().includes(term)),
+                ...globalSearchIndex.lists.filter(l => l.name.toLowerCase().includes(term)),
+                ...globalSearchIndex.cards.filter(c => c.title.toLowerCase().includes(term) || c.description.toLowerCase().includes(term))
+            ].slice(0, 15); // Limitar resultados
 
-            // 2. Renderizar
-            renderSearchResults(results.slice(0, 10), term); // Max 10 resultados
-        });
+            searchResultsList.innerHTML = '';
+            if(matches.length === 0) {
+                searchResultsList.innerHTML = '<p class="p-4 text-sm text-slate-500 text-center">No hay resultados</p>';
+            } else {
+                matches.forEach((res, idx) => {
+                    const div = document.createElement('div');
+                    div.className = 'search-result-item p-2 hover:bg-slate-100 cursor-pointer border-b border-slate-50';
+                    div.dataset.index = idx;
+                    
+                    let icon = 'layout', typeLabel = 'Tablero', sub = '';
+                    if(res.type === 'list') { icon='list'; typeLabel='Lista'; sub=`En: ${res.boardTitle}`; }
+                    if(res.type === 'card') { 
+                        icon='credit-card'; typeLabel='Tarjeta'; 
+                        // Migas de Pan (Breadcrumbs)
+                        sub=`<span class="flex items-center gap-1 text-[10px] text-slate-400">${res.boardTitle} <i data-lucide="chevron-right" class="w-2 h-2"></i> ${res.listName}</span>`; 
+                    }
 
-        // Navegación Teclado
-        searchInput?.addEventListener('keydown', (e) => {
-            const items = document.querySelectorAll('.search-result-item');
-            if (items.length === 0) return;
-            
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                selectedResultIndex = Math.min(selectedResultIndex + 1, items.length - 1);
-                updateSelection(items);
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                selectedResultIndex = Math.max(selectedResultIndex - 1, 0);
-                updateSelection(items);
-            } else if (e.key === 'Enter') {
-                e.preventDefault();
-                if (selectedResultIndex >= 0) items[selectedResultIndex].click();
-            } else if (e.key === 'Escape') {
-                searchResults.classList.add('hidden');
+                    div.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <div class="p-1.5 bg-slate-200 rounded text-slate-600"><i data-lucide="${icon}" class="w-4 h-4"></i></div>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-sm font-semibold text-slate-800 truncate">${highlightText(res.title || res.name, term)}</div>
+                                <div class="text-xs text-slate-500">${sub}</div>
+                            </div>
+                            <span class="text-[9px] uppercase font-bold text-slate-400 bg-slate-100 px-1 rounded">${typeLabel}</span>
+                        </div>
+                    `;
+                    div.addEventListener('click', () => handleSearchResultClick(res));
+                    searchResultsList.appendChild(div);
+                });
             }
+            searchResults.classList.remove('hidden');
+            if(window.lucide) lucide.createIcons();
         });
 
+        // Click fuera para cerrar
         document.addEventListener('click', (e) => { 
             if(!searchInput.contains(e.target) && !searchResults.contains(e.target)) searchResults.classList.add('hidden'); 
         });
     }
 
-    function updateSelection(items) {
-        items.forEach((item, index) => {
-            if (index === selectedResultIndex) {
-                item.classList.add('keyboard-selected');
-                item.scrollIntoView({ block: 'nearest' });
-            } else {
-                item.classList.remove('keyboard-selected');
-            }
-        });
-    }
-
-    function renderSearchResults(results, term) {
-        searchResultsList.innerHTML = '';
-        selectedResultIndex = -1;
-
-        if(results.length === 0) { 
-            searchResultsList.innerHTML = '<p class="p-4 text-sm text-slate-500 text-center">No se encontraron resultados.</p>'; 
-            searchResults.classList.remove('hidden');
-            return;
-        }
-
-        results.forEach((res, index) => {
-            const div = document.createElement('div');
-            div.className = 'search-result-item';
-            div.dataset.index = index;
-
-            const titleHtml = highlightText(res.title, term);
-            
-            // Renderizado Condicional según Tipo
-            if (res.type === 'board') {
-                div.innerHTML = `
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="result-type-badge result-type-board">Tablero</span>
-                        <span class="text-sm font-bold text-slate-800">${titleHtml}</span>
-                    </div>`;
-            } else if (res.type === 'list') {
-                div.innerHTML = `
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="result-type-badge result-type-list">Lista</span>
-                        <span class="text-sm font-bold text-slate-800">${titleHtml}</span>
-                    </div>
-                    <div class="result-breadcrumbs">
-                        <span>En: <strong>${res.boardTitle}</strong></span>
-                    </div>`;
-            } else if (res.type === 'card') {
-                div.innerHTML = `
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="result-type-badge result-type-card">Tarjeta</span>
-                        <span class="text-sm font-bold text-slate-800">${titleHtml}</span>
-                    </div>
-                    <div class="result-breadcrumbs">
-                        <span>${res.boardTitle}</span>
-                        <i data-lucide="chevron-right" class="w-3 h-3"></i>
-                        <span>${res.listName}</span>
-                    </div>`;
-            }
-
-            // Click Handler Unificado
-            div.addEventListener('click', () => handleSearchResultClick(res));
-            searchResultsList.appendChild(div);
-        });
-
-        searchResults.classList.remove('hidden');
-        if(window.lucide) lucide.createIcons();
+    function highlightText(text, term) {
+        if (!text) return '';
+        const regex = new RegExp(`(${term})`, 'gi');
+        return text.replace(regex, '<span class="search-result-highlight bg-yellow-200 text-yellow-900 rounded px-0.5">$1</span>');
     }
 
     async function handleSearchResultClick(res) {
         searchResults.classList.add('hidden');
         searchInput.value = '';
 
-        // Lógica de Navegación Cruzada
+        // Navegación Cruzada
         if (currentBoardId !== res.boardId && res.boardId) {
-            // Estamos en otro tablero o dashboard: Cargar el tablero destino primero
             const bSnap = await getDoc(doc(db, 'boards', res.boardId));
             if (bSnap.exists()) {
                 await openBoard(res.boardId, bSnap.data());
-                // Pequeño delay para que el DOM se construya antes de buscar el elemento
-                setTimeout(() => focusTarget(res), 800); 
+                // Delay para esperar renderizado de listas
+                if(res.type !== 'board') setTimeout(() => focusResult(res), 800); 
             }
         } else {
-            // Ya estamos en el tablero correcto
-            focusTarget(res);
+            focusResult(res);
         }
     }
 
-    async function focusTarget(res) {
-        if (res.type === 'board') return; // Ya estamos ahí
-
-        if (res.type === 'list') {
+    async function focusResult(res) {
+        if(res.type === 'list') {
             const el = document.querySelector(`[data-list-id="${res.id}"]`);
-            if (el) {
-                el.scrollIntoView({ behavior: 'smooth', inline: 'center' });
-                el.style.boxShadow = '0 0 0 4px #FFAB00'; // Highlight visual
-                setTimeout(() => el.style.boxShadow = '', 2000);
-            }
-        } else if (res.type === 'card') {
-            // Abrir modal de tarjeta
-            const cSnap = await getDoc(doc(db, 'boards', res.boardId, 'lists', res.listId, 'cards', res.id));
-            if (cSnap.exists()) openCardModal(res.listId, res.id, cSnap.data());
+            if(el) { el.scrollIntoView({behavior:'smooth', inline:'center'}); el.classList.add('ring-4', 'ring-blue-300'); setTimeout(()=>el.classList.remove('ring-4', 'ring-blue-300'), 1500); }
+        } else if(res.type === 'card') {
+            const snap = await getDoc(doc(db, 'boards', res.boardId, 'lists', res.listId, 'cards', res.id));
+            if(snap.exists()) openCardModal(res.listId, res.id, snap.data());
         }
     }
 
     // ========================================
-    // LOGICA CORE (Tableros, Listas, Tarjetas)
+    // TABLEROS & LISTAS
     // ========================================
     function loadBoards() {
         if(unsubscribeBoards) unsubscribeBoards();
@@ -372,8 +244,7 @@ function initializeApp() {
     }
 
     async function openBoard(id, data) {
-        currentBoardId = id; 
-        currentBoardData = data; 
+        currentBoardId = id; currentBoardData = data; 
         currentUserRole = data.members?.[currentUser.uid]?.role||'viewer';
         document.getElementById('board-title').textContent = data.title;
         renderBoardMembers(data.members);
@@ -419,6 +290,7 @@ function initializeApp() {
         w.appendChild(d); return w;
     }
 
+    // TARJETAS
     function loadCards(bid, lid, cont) {
         if(unsubscribeCards[lid]) unsubscribeCards[lid]();
         unsubscribeCards[lid] = onSnapshot(query(collection(db, 'boards', bid, 'lists', lid, 'cards'), orderBy('position')), (snap) => {
@@ -451,12 +323,11 @@ function initializeApp() {
             membersHtml += `</div>`;
         }
 
-        let checkHtml = '';
+        let checkHtml = '', dateHtml = '';
         if(card.checklist?.length) {
             const c = card.checklist.filter(i=>i.completed).length, t=card.checklist.length, p=Math.round((c/t)*100);
             checkHtml = `<div class="flex items-center gap-1.5 text-xs ${c===t?'text-green-600':'text-slate-500'} mt-1"><i data-lucide="check-square" class="w-3 h-3"></i> <span>${c}/${t}</span></div><div class="checklist-progress-bar"><div class="checklist-progress-value ${c===t?'complete':''}" style="width:${p}%"></div></div>`;
         }
-        let dateHtml = '';
         if(card.dueDate) {
             const diff = (new Date(card.dueDate).setHours(0,0,0,0) - new Date().setHours(0,0,0,0))/(1000*60*60*24);
             const cls = diff<0?'bg-red-500 text-white':(diff<=1?'bg-yellow-400 text-slate-800':'bg-transparent text-slate-500');
@@ -488,23 +359,18 @@ function initializeApp() {
             try {
                 if(slid!==lid) {
                     const snap = await getDoc(doc(db,'boards',currentBoardId,'lists',slid,'cards',cid));
-                    if(snap.exists()) { 
-                        const data = snap.data();
-                        await addDoc(collection(db,'boards',currentBoardId,'lists',lid,'cards'),{...data, position:Date.now()}); 
-                        await deleteDoc(snap.ref); 
-                        logActivity('moved_card', 'card', cid, { cardTitle: data.title, fromList: slid, toList: lid });
-                        // Actualizar Índice (Simulado eliminando y re-cargando sería costoso, mejor confiar en next reload)
-                    }
+                    if(snap.exists()) { await addDoc(collection(db,'boards',currentBoardId,'lists',lid,'cards'),{...snap.data(),position:Date.now()}); await deleteDoc(snap.ref); logActivity('moved_card', 'card', cid, { cardTitle: snap.data().title, fromList: slid, toList: lid }); }
                 } else await updateDoc(doc(db,'boards',currentBoardId,'lists',slid,'cards',cid),{position:Date.now()});
             } catch(er){console.error(er);}
         });
     }
 
-function openCardModal(lid, cid=null, data=null) {
+    // ========================================
+    // MODAL DE TARJETA (REPARADO)
+    // ========================================
+    function openCardModal(lid, cid=null, data=null) {
         currentCardData = { lid, cid, data };
-        
-        // Resetear estados visuales
-        checklistHideCompleted = false; 
+        checklistHideCompleted = false;
 
         document.getElementById('card-title-input').value = data?.title||'';
         document.getElementById('card-description-input').value = data?.description||'';
@@ -522,18 +388,52 @@ function openCardModal(lid, cid=null, data=null) {
         renderLabelsInModal();
         renderAssignedMembersInput();
 
-        // CARGAR COMENTARIOS (Nuevo)
+        // CARGAR COMENTARIOS (REPARADO)
         if(cid) {
             loadComments(lid, cid);
         } else {
-            document.getElementById('comments-list').innerHTML = ''; // Limpiar si es nueva tarjeta
+            const listDiv = document.getElementById('comments-list');
+            if(listDiv) listDiv.innerHTML = '';
         }
 
         cardModal.classList.remove('hidden'); cardModal.style.display='flex';
         lucide.createIcons();
     }
 
-    // SIDEBAR ACTIONS
+    // COMENTARIOS (Función que faltaba)
+    function loadComments(lid, cid) {
+        if (unsubscribeComments) unsubscribeComments();
+        const listDiv = document.getElementById('comments-list');
+        if (!listDiv) return; // Protección
+
+        unsubscribeComments = onSnapshot(query(collection(db, 'boards', currentBoardId, 'lists', lid, 'cards', cid, 'comments'), orderBy('createdAt', 'desc')), (snap) => {
+            listDiv.innerHTML = '';
+            if (snap.empty) { listDiv.innerHTML = '<p class="text-xs text-slate-400 italic pl-2">No hay comentarios aún.</p>'; return; }
+            snap.forEach(doc => {
+                const c = doc.data();
+                const div = document.createElement('div'); div.className = 'flex gap-3 items-start mb-3';
+                div.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-700 shrink-0">${(c.userName||'U').charAt(0).toUpperCase()}</div>
+                    <div class="flex-1 min-w-0"><div class="flex items-baseline gap-2"><span class="text-sm font-bold text-[#172B4D]">${c.userName}</span><span class="text-xs text-slate-500">${timeAgo(c.createdAt?.toDate())}</span></div><div class="p-2 bg-white border border-slate-200 rounded-lg shadow-sm mt-1 text-sm text-slate-800 break-words">${c.text}</div></div>
+                `;
+                listDiv.appendChild(div);
+            });
+        });
+    }
+
+    document.getElementById('add-comment-btn')?.addEventListener('click', async () => {
+        const inp = document.getElementById('comment-input'); const t=inp.value.trim();
+        if(!t || !currentCardData.cid) return;
+        try {
+            await addDoc(collection(db, 'boards', currentBoardId, 'lists', currentCardData.lid, 'cards', currentCardData.cid, 'comments'), {
+                text: t, userId: currentUser.uid, userName: currentUser.displayName||currentUser.email, createdAt: serverTimestamp()
+            });
+            logActivity('added_comment', 'card', currentCardData.cid, { cardTitle: currentCardData.data.title, commentSnippet: t.substring(0,15)+'...' });
+            inp.value = '';
+        } catch(e) { console.error(e); }
+    });
+
+    // --- UTILS ---
     document.getElementById('card-labels-btn')?.addEventListener('click', () => { labelsModal.classList.remove('hidden'); labelsModal.style.display='flex'; });
     document.getElementById('cancel-labels-btn')?.addEventListener('click', () => closeModal('labels-modal'));
     document.querySelectorAll('.label-checkbox').forEach(cb => cb.addEventListener('change', (e) => {
@@ -593,6 +493,7 @@ function openCardModal(lid, cid=null, data=null) {
         } catch(e) { console.error(e); alert("Error al invitar"); }
     });
 
+    // ACTIVIDAD
     async function logActivity(action, targetType, targetId, details) {
         try { await addDoc(collection(db, 'activity_logs'), { boardId: currentBoardId, userId: currentUser.uid, userName: currentUser.displayName, action, targetType, targetId, details, timestamp: serverTimestamp() }); } catch(e){console.error(e);}
     }
@@ -617,6 +518,7 @@ function openCardModal(lid, cid=null, data=null) {
     document.getElementById('toggle-members-btn')?.addEventListener('click', () => { membersPanel.classList.toggle('hidden'); activityPanel.classList.add('hidden'); });
     document.getElementById('close-members-btn')?.addEventListener('click', () => membersPanel.classList.add('hidden'));
 
+    // NOTIFICACIONES
     function loadNotifications() {
         if(unsubscribeNotifications) unsubscribeNotifications();
         unsubscribeNotifications = onSnapshot(query(collection(db, 'notifications'), where('userId', '==', currentUser.uid), orderBy('createdAt', 'desc')), (snap) => {
@@ -650,57 +552,18 @@ function openCardModal(lid, cid=null, data=null) {
     notifBtn?.addEventListener('click', (e) => { e.stopPropagation(); notifDropdown.classList.toggle('hidden'); });
     document.addEventListener('click', (e) => { if(!notifBtn.contains(e.target) && !notifDropdown.contains(e.target)) notifDropdown.classList.add('hidden'); });
 
-function renderChecklist() {
-        const c = document.getElementById('checklist-items'); 
-        c.innerHTML='';
-        
-        // Filtrar si el modo ocultar está activo
-        const itemsToShow = checklistHideCompleted 
-            ? currentChecklist.filter(i => !i.completed) 
-            : currentChecklist;
-
-        itemsToShow.forEach((i,x)=>{
-            // Nota: Usamos el índice real 'realIndex' para borrar/editar correctamente del array original
-            const realIndex = currentChecklist.indexOf(i);
-            
-            const d = document.createElement('div'); d.className='checklist-item group flex items-center gap-2 mb-1';
-            d.innerHTML=`
-                <input type="checkbox" ${i.completed?'checked':''} class="cursor-pointer rounded border-slate-300">
-                <span class="flex-1 text-sm ${i.completed?'line-through text-slate-400':''} transition-all">${i.text}</span>
-                <button class="delete-item-btn opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
-            `;
-            
-            d.querySelector('input').addEventListener('change', e => {
-                currentChecklist[realIndex].completed = e.target.checked; 
-                renderChecklist(); // Re-renderizar para actualizar barra progreso y filtros
-            });
-            d.querySelector('.delete-item-btn').addEventListener('click', () => {
-                currentChecklist.splice(realIndex, 1); 
-                renderChecklist();
-            });
+    // RENDER INTERNOS
+    function renderChecklist() {
+        const c = document.getElementById('checklist-items'); c.innerHTML='';
+        currentChecklist.forEach((i,x)=>{
+            const d = document.createElement('div'); d.className='checklist-item group';
+            d.innerHTML=`<input type="checkbox" ${i.completed?'checked':''} class="cursor-pointer"><span class="flex-1 text-sm ${i.completed?'line-through text-slate-400':''}">${i.text}</span><button class="delete-item-btn"><i data-lucide="trash-2" class="w-3 h-3"></i></button>`;
+            d.querySelector('input').addEventListener('change',e=>{i.completed=e.target.checked; renderChecklist();});
+            d.querySelector('.delete-item-btn').addEventListener('click',()=>{currentChecklist.splice(x,1); renderChecklist();});
             c.appendChild(d);
         });
-
-        // Actualizar barra y textos
-        const total = currentChecklist.length;
-        const completed = currentChecklist.filter(i=>i.completed).length;
-        const p = document.getElementById('checklist-progress'); 
-        
-        if(p) p.innerText = total ? Math.round((completed/total)*100)+'%' : '0%';
-        
-        // Actualizar botón de "Ocultar completados"
-        const hideBtn = document.getElementById('hide-checklist-btn');
-        if(hideBtn) {
-             hideBtn.innerHTML = checklistHideCompleted ? '<i data-lucide="eye" class="w-3 h-3"></i> Mostrar' : '<i data-lucide="eye-off" class="w-3 h-3"></i> Ocultar';
-        }
-        if(window.lucide) lucide.createIcons();
+        const p = document.getElementById('checklist-progress'); if(p) p.innerText = currentChecklist.length?Math.round((currentChecklist.filter(i=>i.completed).length/currentChecklist.length)*100)+'%':'0%';
     }
-
-    // LISTENER NUEVO: Botón Ocultar/Mostrar Checklist
-    document.getElementById('hide-checklist-btn')?.addEventListener('click', () => {
-        checklistHideCompleted = !checklistHideCompleted;
-        renderChecklist();
-    });
 
     function renderAttachments() {
         const c = document.getElementById('attachments-list'); c.innerHTML='';
@@ -718,6 +581,7 @@ function renderChecklist() {
     document.querySelectorAll('.cover-color').forEach(b => b.addEventListener('click', () => { currentCardCover={color:b.dataset.color, mode:'color', url:null}; closeModal('card-cover-modal'); }));
     document.getElementById('remove-cover-btn')?.addEventListener('click', () => { currentCardCover={color:null}; closeModal('card-cover-modal'); });
 
+    // GUARDAR Y SALIR (CON ACTUALIZACIÓN DE ÍNDICE)
     document.getElementById('save-card-btn')?.addEventListener('click', async () => {
         const title = document.getElementById('card-title-input').value.trim(); if(!title) return;
         const payload = { title, description: document.getElementById('card-description-input').value.trim(), dueDate: document.getElementById('card-due-date-input').value, checklist: currentChecklist, cover: currentCardCover, attachments: currentAttachments, labels: currentCardLabels, assignedTo: currentCardMembers, updatedAt: serverTimestamp() };
@@ -725,13 +589,13 @@ function renderChecklist() {
             await updateDoc(doc(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards',currentCardData.cid), payload);
             logActivity('updated_card', 'card', currentCardData.cid, { cardTitle: title });
             // Actualizar Índice Local
-            const idx = allSearchCache.findIndex(x => x.id === currentCardData.cid);
-            if(idx >= 0) { allSearchCache[idx].title = title; allSearchCache[idx].description = payload.description; }
+            const idx = globalSearchIndex.cards.findIndex(x => x.id === currentCardData.cid);
+            if(idx >= 0) { globalSearchIndex.cards[idx].title = title; globalSearchIndex.cards[idx].description = payload.description; }
         } else {
             const ref = await addDoc(collection(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards'), {...payload, position:Date.now(), createdAt:serverTimestamp()});
             logActivity('created_card', 'card', ref.id, { cardTitle: title });
             // Añadir al Índice
-            allSearchCache.push({ id: ref.id, type: 'card', title, description: payload.description, listId: currentCardData.lid, boardId: currentBoardId, boardTitle: currentBoardData.title, listName: '...' });
+            globalSearchIndex.cards.push({ id: ref.id, type: 'card', title, description: payload.description, listId: currentCardData.lid, boardId: currentBoardId, boardTitle: currentBoardData.title, listName: '...' });
         }
         closeModal('card-modal');
     });
@@ -739,101 +603,45 @@ function renderChecklist() {
     document.getElementById('delete-card-btn')?.addEventListener('click', async()=>{if(confirm('¿Borrar?')){
         await deleteDoc(doc(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards',currentCardData.cid)); 
         logActivity('deleted_card', 'card', currentCardData.cid, { cardTitle: currentCardData.data.title }); 
-        allSearchCache = allSearchCache.filter(x => x.id !== currentCardData.cid); // Remover del índice
+        globalSearchIndex.cards = globalSearchIndex.cards.filter(x => x.id !== currentCardData.cid); // Remover del índice
         closeModal('card-modal');
     }});
 
-// Reemplaza TU función closeModal por ESTA:
-function closeModal(id) {
-    const m = document.getElementById(id);
-    if (m) {
-        // 1. Ocultar visualmente (Tu lógica original)
-        m.classList.add('hidden');
-        m.style.display = 'none';
-
-        // 2. LÓGICA NUEVA: Limpieza de conexiones (Garbage Collection)
-        // Si lo que cerramos es la tarjeta, dejamos de escuchar comentarios
-        if (id === 'card-modal' && unsubscribeComments) {
-            unsubscribeComments(); // Cortar conexión con Firebase
-            unsubscribeComments = null; // Limpiar variable
+    // CIERRE MODAL UNIFICADO
+    function closeModal(id) {
+        const m = document.getElementById(id);
+        if (m) {
+            m.classList.add('hidden'); m.style.display = 'none';
+            if (id === 'card-modal' && unsubscribeComments) { unsubscribeComments(); unsubscribeComments = null; }
         }
     }
-}
+
+    document.querySelectorAll('[id^="cancel-"]').forEach(b => b.addEventListener('click',e=>closeModal(e.target.closest('.fixed').id)));
+    document.getElementById('create-board-btn').addEventListener('click',()=>{boardModal.classList.remove('hidden');boardModal.style.display='flex'});
+    document.getElementById('add-list-btn').addEventListener('click',()=>{listModal.classList.remove('hidden');listModal.style.display='flex'});
+    document.getElementById('save-list-btn').addEventListener('click',async()=>{
+        const v=document.getElementById('list-name-input').value.trim(); if(v){
+            const ref = await addDoc(collection(db,'boards',currentBoardId,'lists'),{name:v,position:Date.now(),createdAt:serverTimestamp()}); 
+            logActivity('created_list', 'list', null, { listName: v }); 
+            globalSearchIndex.lists.push({ id: ref.id, type: 'list', title: v, boardId: currentBoardId, boardTitle: currentBoardData.title });
+            closeModal('list-modal'); document.getElementById('list-name-input').value='';
+        }
+    });
     document.getElementById('save-board-btn').addEventListener('click',async()=>{
         const v=document.getElementById('board-name-input').value.trim(); if(v){
             const ref = await addDoc(collection(db,'boards'),{title:v,ownerId:currentUser.uid,memberEmails:[currentUser.email],members:{[currentUser.uid]:{email:currentUser.email,name:currentUser.displayName||'User',role:'owner'}},createdAt:serverTimestamp()}); 
-            allSearchCache.push({ id: ref.id, type: 'board', title: v });
+            globalSearchIndex.boards.push({ id: ref.id, type: 'board', title: v });
             closeModal('board-modal');
         }
     });
     document.getElementById('back-to-boards-btn').addEventListener('click', ()=>{boardView.style.display='none'; document.querySelector('.boards-section').style.display='block'; if(unsubscribeLists) unsubscribeLists(); if(unsubscribeActivity) unsubscribeActivity(); currentBoardId=null;});
 
-    // NUEVO: Cargar Comentarios en Tiempo Real
-    function loadComments(lid, cid) {
-        if (unsubscribeComments) unsubscribeComments(); // Limpiar anterior
-        const listDiv = document.getElementById('comments-list');
-        
-        const q = query(
-            collection(db, 'boards', currentBoardId, 'lists', lid, 'cards', cid, 'comments'),
-            orderBy('createdAt', 'desc')
-        );
-
-        unsubscribeComments = onSnapshot(q, (snap) => {
-            listDiv.innerHTML = '';
-            if (snap.empty) {
-                listDiv.innerHTML = '<p class="text-xs text-slate-400 italic pl-2">No hay comentarios aún.</p>';
-                return;
-            }
-
-            snap.forEach(doc => {
-                const comm = doc.data();
-                const timeString = comm.createdAt ? timeAgo(comm.createdAt.toDate()) : '...';
-                
-                const commentEl = document.createElement('div');
-                commentEl.className = 'flex gap-3 items-start mb-3';
-                commentEl.innerHTML = `
-                    <div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center text-xs font-bold text-slate-700 dark:text-slate-200 shrink-0">
-                        ${(comm.userName || 'U').charAt(0).toUpperCase()}
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-baseline gap-2">
-                            <span class="text-sm font-bold text-[#172B4D] dark:text-slate-200">${comm.userName}</span>
-                            <span class="text-xs text-slate-500">${timeString}</span>
-                        </div>
-                        <div class="p-2 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg shadow-sm mt-1 text-sm text-slate-800 dark:text-slate-100 break-words">
-                            ${comm.text}
-                        </div>
-                    </div>
-                `;
-                listDiv.appendChild(commentEl);
-            });
+    // ATAJOS
+    function initGlobalShortcuts() {
+        document.addEventListener('keydown', (e) => {
+            if (e.target.matches('input, textarea')) return;
+            if (e.key === '/') { e.preventDefault(); searchInput.focus(); }
+            if (e.key === 'Escape') document.querySelectorAll('.fixed').forEach(m => { if(!m.classList.contains('hidden')) closeModal(m.id); });
         });
     }
-
-    // NUEVO: Listener para Guardar Comentario
-    document.getElementById('add-comment-btn').addEventListener('click', async () => {
-        const input = document.getElementById('comment-input');
-        const text = input.value.trim();
-        
-        if (!text || !currentCardData.cid) return;
-
-        try {
-            await addDoc(collection(db, 'boards', currentBoardId, 'lists', currentCardData.lid, 'cards', currentCardData.cid, 'comments'), {
-                text: text,
-                userId: currentUser.uid,
-                userName: currentUser.displayName || currentUser.email,
-                createdAt: serverTimestamp()
-            });
-
-            logActivity('added_comment', 'card', currentCardData.cid, { 
-                cardTitle: currentCardData.data.title,
-                commentSnippet: text.substring(0, 15) + '...'
-            });
-
-            input.value = '';
-        } catch (error) {
-            console.error("Error al comentar:", error);
-        }
-    });
-    initGlobalShortcuts();
 }
