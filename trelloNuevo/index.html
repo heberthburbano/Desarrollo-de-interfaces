@@ -2,7 +2,7 @@
 <html lang="es" class="light">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Trello Clone 2025</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -24,9 +24,7 @@
     </script>
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
     <script src="https://unpkg.com/lucide@latest"></script>
-    
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 h-screen w-screen overflow-hidden flex flex-col transition-colors duration-200 text-slate-900 dark:text-slate-100">
@@ -148,8 +146,13 @@
                 </div>
                 
                 <div class="flex items-center gap-2">
-                    <div id="members-preview" class="flex -space-x-1 mr-2">
-                        </div>
+                    <div id="members-preview" class="flex -space-x-1 mr-2"></div>
+                    
+                    <button id="bg-btn-manual" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-[3px] text-sm font-bold transition flex items-center gap-2" onclick="window.openBackgroundPicker()">
+                        <i data-lucide="image" class="w-4 h-4"></i> 
+                        <span class="hidden sm:inline">Fondo</span>
+                    </button>
+
                     <button id="invite-member-btn" class="bg-slate-100 hover:bg-white text-slate-800 px-3 py-1.5 rounded-[3px] text-sm font-medium transition flex items-center gap-2 shadow-sm">
                         <i data-lucide="user-plus" class="w-4 h-4"></i> Compartir
                     </button>
@@ -232,14 +235,10 @@
 
     <div id="card-modal" class="hidden fixed inset-0 bg-black/60 z-[70] flex items-center justify-center overflow-y-auto py-10">
         <div class="bg-white dark:bg-slate-800 rounded-lg shadow-2xl w-full max-w-3xl min-h-[500px] flex flex-col md:flex-row relative">
-            
             <div class="flex-1 p-8 overflow-y-auto">
                 <h2 id="card-modal-title" class="text-xs font-bold text-slate-500 uppercase mb-4 tracking-wider flex items-center gap-2"><i data-lucide="credit-card" class="w-3 h-3"></i> Tarjeta</h2>
-                
                 <input type="text" id="card-title-input" class="w-full text-xl font-bold mb-4 bg-transparent border-none focus:ring-2 focus:ring-blue-500 rounded p-1 dark:text-white text-slate-800" placeholder="Título de la tarjeta">
-                
                 <div id="card-labels-display" class="flex flex-wrap gap-2 mb-4 hidden"></div>
-
                 <div class="grid grid-cols-2 gap-4 mb-6">
                     <div>
                         <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Miembros</label>
@@ -250,7 +249,6 @@
                         <input type="date" id="card-due-date-input" class="w-full bg-slate-100 dark:bg-slate-700 p-2 rounded text-sm border-none">
                     </div>
                 </div>
-
                 <div class="mb-6">
                     <div class="flex items-center gap-2 mb-2 text-slate-700 dark:text-slate-200">
                         <i data-lucide="align-left" class="w-4 h-4"></i>
@@ -258,7 +256,6 @@
                     </div>
                     <textarea id="card-description-input" rows="4" placeholder="Añadir una descripción más detallada..." class="w-full p-3 bg-slate-100 dark:bg-slate-700 rounded border-none focus:ring-2 focus:ring-blue-500 text-sm dark:text-white"></textarea>
                 </div>
-
                 <div id="card-checklist-section" class="mb-6">
                     <div class="flex items-center justify-between mb-2 text-slate-700 dark:text-slate-200">
                         <div class="flex items-center gap-2">
@@ -276,7 +273,6 @@
                         <button id="add-checklist-item-btn" class="bg-slate-200 hover:bg-slate-300 px-3 py-1 rounded text-sm">Añadir</button>
                     </div>
                 </div>
-
                 <div class="mb-6">
                     <div class="flex items-center gap-2 mb-2 text-slate-700 dark:text-slate-200">
                         <i data-lucide="paperclip" class="w-4 h-4"></i>
@@ -284,7 +280,6 @@
                     </div>
                     <div id="attachments-list" class="pl-6 space-y-2"></div>
                 </div>
-
                 <div id="card-comments-section" class="pt-4 border-t border-slate-200 dark:border-slate-700">
                     <div class="flex items-center gap-2 mb-4 text-slate-700 dark:text-slate-200">
                         <i data-lucide="message-square" class="w-4 h-4"></i>
@@ -300,7 +295,6 @@
                     <div id="comments-list" class="space-y-3 pl-10"></div>
                 </div>
             </div>
-
             <div class="w-full md:w-48 bg-slate-50 dark:bg-slate-900 p-4 border-l border-slate-200 dark:border-slate-700 flex flex-col gap-2">
                 <h3 class="text-xs font-bold text-slate-500 uppercase mb-1">Añadir a la tarjeta</h3>
                 <button id="card-labels-btn" class="sidebar-btn"><i data-lucide="tag" class="w-3 h-3"></i> Etiquetas</button>
@@ -308,10 +302,8 @@
                 <button id="card-due-date-btn" class="sidebar-btn"><i data-lucide="clock" class="w-3 h-3"></i> Fechas</button>
                 <button id="attach-file-btn" class="sidebar-btn"><i data-lucide="paperclip" class="w-3 h-3"></i> Adjunto</button>
                 <button id="card-cover-btn" class="sidebar-btn"><i data-lucide="image" class="w-3 h-3"></i> Portada</button>
-
                 <h3 class="text-xs font-bold text-slate-500 uppercase mb-1 mt-4">Acciones</h3>
                 <button id="delete-card-btn" class="sidebar-btn bg-red-50 text-red-700 hover:bg-red-100"><i data-lucide="trash-2" class="w-3 h-3"></i> Eliminar</button>
-
                 <div class="mt-auto pt-4 flex flex-col gap-2">
                     <button id="save-card-btn" class="w-full py-2 bg-[#0052CC] text-white rounded hover:bg-blue-700 font-medium text-sm">Guardar</button>
                     <button id="cancel-card-btn" class="w-full py-2 text-slate-500 hover:bg-slate-200 rounded text-sm">Cerrar</button>
