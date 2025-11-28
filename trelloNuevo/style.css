@@ -803,6 +803,7 @@ html, body {
 
 /* IMPORTANTE: Esta sección debe estar al final del archivo para sobrescribir Tailwind */
 
+/* ===== MODO CLARO ===== */
 /* Sobrescribir cualquier clase de background de Tailwind en nav/header */
 nav[class*="bg-"],
 header[class*="bg-"],
@@ -810,6 +811,7 @@ nav,
 header {
     background-color: hsl(270, 2.9%, 91.3%) !important;
     --tw-bg-opacity: 1 !important;
+    color: #172B4D !important;
 }
 
 /* Asegurar que el color se aplica específicamente a elementos con clases de Tailwind cyan/blue */
@@ -821,6 +823,7 @@ nav.bg-cyan-700,
 header.bg-cyan-700 {
     background-color: hsl(270, 2.9%, 91.3%) !important;
     --tw-bg-opacity: 1 !important;
+    color: #172B4D !important;
 }
 
 /* Aplicar también a la clase específica trello-nav */
@@ -829,5 +832,69 @@ nav.trello-nav,
 header.trello-nav {
     background-color: hsl(270, 2.9%, 91.3%) !important;
     --tw-bg-opacity: 1 !important;
+    color: #172B4D !important;
 }
 
+/* Texto e iconos dentro del nav/header en modo claro */
+nav *,
+header *,
+nav[class*="bg-"] *,
+header[class*="bg-"] * {
+    color: #172B4D !important;
+}
+
+/* Iconos SVG en modo claro */
+nav svg,
+header svg,
+nav i,
+header i {
+    color: #42526E !important;
+    fill: #42526E !important;
+}
+
+/* ===== MODO OSCURO ===== */
+/* Fondo oscuro para nav/header en modo dark */
+.dark nav[class*="bg-"],
+.dark header[class*="bg-"],
+.dark nav,
+.dark header {
+    background-color: #1D2125 !important;
+    --tw-bg-opacity: 1 !important;
+    color: #9FADBC !important;
+}
+
+.dark .bg-cyan-700,
+.dark .bg-cyan-600,
+.dark .bg-blue-700,
+.dark .bg-blue-600,
+.dark nav.bg-cyan-700,
+.dark header.bg-cyan-700 {
+    background-color: #1D2125 !important;
+    --tw-bg-opacity: 1 !important;
+    color: #9FADBC !important;
+}
+
+.dark .trello-nav,
+.dark nav.trello-nav,
+.dark header.trello-nav {
+    background-color: #1D2125 !important;
+    --tw-bg-opacity: 1 !important;
+    color: #9FADBC !important;
+}
+
+/* Texto e iconos dentro del nav/header en modo oscuro */
+.dark nav *,
+.dark header *,
+.dark nav[class*="bg-"] *,
+.dark header[class*="bg-"] * {
+    color: #9FADBC !important;
+}
+
+/* Iconos SVG en modo oscuro */
+.dark nav svg,
+.dark header svg,
+.dark nav i,
+.dark header i {
+    color: #9FADBC !important;
+    fill: #9FADBC !important;
+}
