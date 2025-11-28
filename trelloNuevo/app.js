@@ -7,7 +7,7 @@ import {
 document.addEventListener('DOMContentLoaded', initializeApp);
 
 function initializeApp() {
-    console.log('🚀 Inicializando Trello Clone (Versión Final Completa)...');
+    console.log('🚀 Inicializando Trello Clone (Versión Final Completa + Emojis)...');
 
     // ========================================
     // 1. ESTADO GLOBAL
@@ -61,32 +61,6 @@ function initializeApp() {
     // 2. HELPERS Y UTILIDADES
     // ========================================
     
-    // Inyectar Botón Emoji al arrancar
-    // (Lo hacemos aquí para asegurar que exista siempre)
-    setTimeout(() => {
-        const coverModalContent = document.querySelector('#card-cover-modal > div');
-        const removeBtn = document.getElementById('remove-cover-btn');
-        if (coverModalContent && removeBtn && !document.getElementById('emoji-btn-injected')) {
-            const emojiBtn = document.createElement('button');
-            emojiBtn.id = 'emoji-btn-injected';
-            emojiBtn.className = "w-full text-xs py-1 mt-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-white rounded mb-2 font-medium";
-            emojiBtn.innerText = "😊 Usar Emoji";
-            emojiBtn.type = "button"; // Prevenir submit
-            
-            emojiBtn.onclick = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                // Usamos un prompt nativo seguro
-                const emoji = prompt("Introduce un emoji (Win+. o Cmd+Ctrl+Espacio):", "⚡");
-                if(emoji) {
-                    currentCardCover = { color: null, mode: 'color', url: null, emoji: emoji }; 
-                    closeModal('card-cover-modal');
-                }
-            };
-            coverModalContent.insertBefore(emojiBtn, removeBtn);
-        }
-    }, 1000); // Pequeño delay para asegurar que el DOM cargó
-
     // Tiempo relativo
     function timeAgo(date) {
         if (!date) return 'justo ahora';
@@ -97,21 +71,6 @@ function initializeApp() {
             if (count >= 1) return `hace ${count} ${key}${count > 1 ? 's' : ''}`;
         }
         return "hace unos segundos";
-    }
-
-    // Atajos de Teclado
-    function initGlobalShortcuts() {
-        document.addEventListener('keydown', (e) => {
-            if (e.target.matches('input, textarea')) return;
-            if (e.key === '/') { e.preventDefault(); searchInput.focus(); }
-            if (e.key === 'Escape') document.querySelectorAll('.fixed').forEach(m => { if(!m.classList.contains('hidden')) closeModal(m.id); });
-            // Atajo 'N' para nueva tarjeta
-            if ((e.key === 'n' || e.key === 'N') && currentBoardId && !boardView.classList.contains('hidden')) {
-                e.preventDefault();
-                const firstList = document.querySelector('.list');
-                if (firstList) openCardModal(firstList.dataset.listId);
-            }
-        });
     }
 
     // Modo Oscuro
@@ -128,8 +87,15 @@ function initializeApp() {
     initDarkMode();
 
     // Permisos
-    const PERMISSIONS = { owner: {createList:true, editCard:true}, editor: {createList:true, editCard:true}, viewer: {createList:false, editCard:false} };
-    function hasPermission(a) { return currentUserRole && PERMISSIONS[currentUserRole]?.[a]; }
+    const PERMISSIONS = { 
+        owner: { createList: true, editCard: true, createCard: true }, 
+        editor: { createList: true, editCard: true, createCard: true }, 
+        viewer: { createList: false, editCard: false, createCard: false } 
+    };
+    function hasPermission(a) { 
+        if (!currentUserRole) return false;
+        return PERMISSIONS[currentUserRole]?.[a] || false; 
+    }
 
     // ========================================
     // 3. INICIO Y AUTH
@@ -151,7 +117,7 @@ function initializeApp() {
     // ========================================
     async function buildGlobalIndex() {
         console.log("🔍 Indexando contenido...");
-        allSearchCache = []; // Usamos array plano como en tu código original
+        allSearchCache = []; 
         try {
             const qBoards = query(collection(db, 'boards'), where('memberEmails', 'array-contains', currentUser.email));
             const snapBoards = await getDocs(qBoards);
@@ -163,12 +129,13 @@ function initializeApp() {
                 // Tablero
                 allSearchCache.push({ id: bId, type: 'board', title: b.title, score: 0 });
 
-                // Listas y Tarjetas
+                // Listas
                 const snapLists = await getDocs(query(collection(db, 'boards', bId, 'lists')));
                 for (const listDoc of snapLists.docs) {
                     const l = listDoc.data();
                     allSearchCache.push({ id: listDoc.id, type: 'list', title: l.name, boardId: bId, boardTitle: b.title, score: 0 });
 
+                    // Tarjetas
                     const snapCards = await getDocs(query(collection(db, 'boards', bId, 'lists', listDoc.id, 'cards')));
                     snapCards.forEach(cardDoc => {
                         const c = cardDoc.data();
@@ -216,7 +183,6 @@ function initializeApp() {
             renderSearchResults(results.slice(0, 10), term);
         });
 
-        // Navegación teclado en búsqueda
         searchInput?.addEventListener('keydown', (e) => {
             const items = document.querySelectorAll('.search-result-item');
             if (items.length === 0) return;
@@ -341,11 +307,21 @@ function initializeApp() {
     }
 
     async function openBoard(id, data) {
-        currentBoardId = id; currentBoardData = data; 
-        currentUserRole = data.members?.[currentUser.uid]?.role||'viewer';
+        currentBoardId = id; 
+        currentBoardData = data; 
+        
+        const memberData = data.members?.[currentUser.uid];
+        currentUserRole = memberData ? memberData.role : 'viewer';
+        
         document.getElementById('board-title').textContent = data.title;
         renderBoardMembers(data.members);
-        document.querySelector('.boards-section').style.display='none'; boardView.classList.remove('hidden'); boardView.style.display='flex';
+        
+        // OCULTAR UI GLOBAL
+        document.getElementById('create-board-btn').classList.add('hidden');
+        document.querySelector('.boards-section').style.display='none'; 
+        boardView.classList.remove('hidden'); 
+        boardView.style.display='flex';
+        
         loadLists(id);
         loadActivity(id);
     }
@@ -378,13 +354,41 @@ function initializeApp() {
     }
 
     function createListElement(lid, data) {
-        const w = document.createElement('div'); w.className = 'list-wrapper';
-        const d = document.createElement('div'); d.className = 'list'; d.dataset.listId = lid;
-        d.innerHTML = `<div class="list-header group"><h3 class="truncate text-sm font-semibold text-[#172B4D] dark:text-white">${data.name}</h3>${hasPermission('createList')?`<button class="del-list opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-600"><i data-lucide="more-horizontal" class="w-4 h-4"></i></button>`:''}</div><div class="cards-container custom-scrollbar min-h-[10px]" data-list-id="${lid}"></div>${hasPermission('createCard')?`<div class="p-2"><button class="add-card w-full text-left p-2 text-slate-600 hover:bg-slate-200/50 rounded flex items-center gap-2 text-sm"><i data-lucide="plus" class="w-4 h-4"></i> Añadir tarjeta</button></div>`:''}`;
-        d.querySelector('.del-list')?.addEventListener('click', async()=>{if(confirm('¿Borrar lista?')) await deleteDoc(doc(db,'boards',currentBoardId,'lists',lid))});
-        d.querySelector('.add-card')?.addEventListener('click', ()=>openCardModal(lid));
+        const w = document.createElement('div'); 
+        w.className = 'list-wrapper';
+        const d = document.createElement('div'); 
+        d.className = 'list'; 
+        d.dataset.listId = lid;
+
+        d.innerHTML = `
+            <div class="list-header group flex justify-between items-center p-2">
+                <h3 class="truncate text-sm font-semibold text-[#172B4D] dark:text-white px-2">${data.name}</h3>
+                ${hasPermission('createList') ? 
+                    `<button class="del-list opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-600 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>` : ''}
+            </div>
+            <div class="cards-container custom-scrollbar min-h-[10px]" data-list-id="${lid}"></div>
+            ${hasPermission('createCard') ? 
+                `<div class="p-2">
+                    <button class="add-card w-full text-left py-1.5 px-2 text-slate-600 hover:bg-slate-200/50 dark:text-slate-400 dark:hover:bg-slate-700 rounded flex items-center gap-2 text-sm transition">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Añadir tarjeta
+                    </button>
+                </div>` : ''}
+        `;
+
+        d.querySelector('.del-list')?.addEventListener('click', async()=>{
+            if(confirm('¿Borrar lista?')) await deleteDoc(doc(db,'boards',currentBoardId,'lists',lid))
+        });
+        
+        const addCardBtn = d.querySelector('.add-card');
+        if (addCardBtn) {
+            addCardBtn.addEventListener('click', () => openCardModal(lid));
+        }
+
         setupDropZone(d.querySelector('.cards-container'), lid);
-        w.appendChild(d); return w;
+        w.appendChild(d); 
+        return w;
     }
 
     // ========================================
@@ -412,7 +416,6 @@ function initializeApp() {
         } else if(card.cover?.url) {
             coverHtml = `<div class="card-cover-image" style="background-image: url('${card.cover.url}')"></div>`;
         } else if(card.cover?.emoji) {
-            // AQUÍ PINTAMOS EL EMOJI (Faltaba esto en tu código original)
             coverHtml = `<div class="h-[32px] bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-2xl rounded-t mb-2 select-none">${card.cover.emoji}</div>`;
         } else if(card.cover?.color) {
             coverHtml = `<div class="card-cover ${card.cover.color}"></div>`;
@@ -588,7 +591,36 @@ function initializeApp() {
     document.getElementById('card-checklist-btn')?.addEventListener('click', () => { document.getElementById('new-checklist-item-input').focus(); });
     document.getElementById('card-due-date-btn')?.addEventListener('click', () => { document.getElementById('card-due-date-input').showPicker?.() || document.getElementById('card-due-date-input').focus(); });
     document.getElementById('attach-file-btn')?.addEventListener('click', () => { const u=prompt("URL:"); if(u) { const i=u.match(/\.(jpeg|jpg|png|webp)/); currentAttachments.push({name:i?'Imagen':'Enlace', url:u, type:i?'image':'link', addedAt:new Date().toISOString()}); renderAttachments(); }});
-    document.getElementById('card-cover-btn')?.addEventListener('click', () => { coverModal.classList.remove('hidden'); coverModal.style.display='flex'; });
+    
+    // --- LÓGICA PORTADAS Y EMOJIS (Inyección) ---
+    document.getElementById('card-cover-btn')?.addEventListener('click', () => { 
+        coverModal.classList.remove('hidden'); 
+        coverModal.style.display='flex'; 
+
+        const coverModalContent = document.querySelector('#card-cover-modal > div');
+        const removeBtn = document.getElementById('remove-cover-btn');
+        
+        if (coverModalContent && removeBtn && !document.getElementById('emoji-btn-injected')) {
+            const emojiBtn = document.createElement('button');
+            emojiBtn.id = 'emoji-btn-injected';
+            emojiBtn.className = "w-full text-xs py-1 mt-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-white rounded mb-2 font-medium";
+            emojiBtn.innerText = "😊 Usar Emoji";
+            emojiBtn.type = "button";
+            
+            emojiBtn.onclick = (e) => {
+                e.preventDefault(); e.stopPropagation();
+                const emoji = prompt("Introduce un emoji (Win+. o Cmd+Ctrl+Espacio):", "⚡");
+                if(emoji) {
+                    currentCardCover = { color: null, mode: 'color', url: null, emoji: emoji }; 
+                    closeModal('card-cover-modal');
+                }
+            };
+            coverModalContent.insertBefore(emojiBtn, removeBtn);
+        }
+    });
+
+    document.querySelectorAll('.cover-color').forEach(b => b.addEventListener('click', () => { currentCardCover={color:b.dataset.color, mode:'color', url:null}; closeModal('card-cover-modal'); }));
+    document.getElementById('remove-cover-btn')?.addEventListener('click', () => { currentCardCover={color:null}; closeModal('card-cover-modal'); });
 
     // INVITACIONES
     document.getElementById('invite-member-btn')?.addEventListener('click', () => { inviteModal.classList.remove('hidden'); inviteModal.style.display='flex'; });
@@ -705,7 +737,6 @@ function initializeApp() {
         const hideBtn = document.getElementById('hide-checklist-btn');
         if(hideBtn) {
              hideBtn.innerHTML = checklistHideCompleted ? '<i data-lucide="eye" class="w-3 h-3"></i> Mostrar' : '<i data-lucide="eye-off" class="w-3 h-3"></i> Ocultar';
-             // Evitamos duplicar listener limpiando antes (o usando un flag global, pero aquí es simple)
              hideBtn.onclick = () => { checklistHideCompleted = !checklistHideCompleted; renderChecklist(); };
         }
         if(window.lucide) lucide.createIcons();
@@ -724,7 +755,6 @@ function initializeApp() {
     }
 
     document.getElementById('add-checklist-item-btn')?.addEventListener('click', () => { const inp = document.getElementById('new-checklist-item-input'); if(inp.value.trim()){ currentChecklist.push({text:inp.value.trim(), completed:false}); inp.value=''; renderChecklist(); } });
-    document.querySelectorAll('.cover-color').forEach(b => b.addEventListener('click', () => { currentCardCover={color:b.dataset.color, mode:'color', url:null}; closeModal('card-cover-modal'); }));
     document.getElementById('remove-cover-btn')?.addEventListener('click', () => { currentCardCover={color:null}; closeModal('card-cover-modal'); });
 
     document.getElementById('save-card-btn')?.addEventListener('click', async () => {
@@ -733,7 +763,6 @@ function initializeApp() {
         if(currentCardData.cid) {
             await updateDoc(doc(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards',currentCardData.cid), payload);
             logActivity('updated_card', 'card', currentCardData.cid, { cardTitle: title });
-            // Update Cache
             const idx = allSearchCache.findIndex(x => x.id === currentCardData.cid);
             if(idx >= 0) { allSearchCache[idx].title = title; allSearchCache[idx].description = payload.description; }
         } else {
@@ -778,5 +807,32 @@ function initializeApp() {
             closeModal('board-modal');
         }
     });
-    document.getElementById('back-to-boards-btn').addEventListener('click', ()=>{boardView.style.display='none'; document.querySelector('.boards-section').style.display='block'; if(unsubscribeLists) unsubscribeLists(); if(unsubscribeActivity) unsubscribeActivity(); currentBoardId=null;});
+    
+    // BOTÓN VOLVER (Corregido para mostrar UI Global)
+    document.getElementById('back-to-boards-btn').addEventListener('click', ()=>{
+        boardView.style.display='none'; 
+        document.querySelector('.boards-section').style.display='block'; 
+        // Mostrar botón crear tablero de nuevo
+        document.getElementById('create-board-btn').classList.remove('hidden');
+        
+        if(unsubscribeLists) unsubscribeLists(); 
+        if(unsubscribeActivity) unsubscribeActivity(); 
+        currentBoardId=null;
+    });
+
+    // Iniciar Atajos al final
+    function initGlobalShortcuts() {
+        document.addEventListener('keydown', (e) => {
+            if (e.target.matches('input, textarea')) return;
+            if (e.key === '/') { e.preventDefault(); searchInput.focus(); }
+            if (e.key === 'Escape') document.querySelectorAll('.fixed').forEach(m => { if(!m.classList.contains('hidden')) closeModal(m.id); });
+            // Atajo 'N'
+            if ((e.key === 'n' || e.key === 'N') && currentBoardId && !boardView.classList.contains('hidden')) {
+                e.preventDefault();
+                const firstList = document.querySelector('.list');
+                if (firstList) openCardModal(firstList.dataset.listId);
+            }
+        });
+    }
+    initGlobalShortcuts();
 }
