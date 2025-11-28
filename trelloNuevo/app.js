@@ -110,28 +110,47 @@ function initializeApp() {
         return PERMISSIONS[currentUserRole]?.[a] || false; 
     }
     
-    // --- NUEVO: LÓGICA DE SELECCIÓN DE FONDO ---
+// --- NUEVO: LÓGICA DE SELECCIÓN DE FONDO (MEJORADA) ---
     function openBackgroundPicker() {
         let bgModal = document.getElementById('bg-picker-modal');
+        
+        // Si no existe, lo creamos con el nuevo diseño (Input URL + Grid)
         if (!bgModal) {
             bgModal = document.createElement('div');
             bgModal.id = 'bg-picker-modal';
-            bgModal.className = 'fixed inset-0 bg-black/60 z-[90] flex items-center justify-center';
+            // Añadimos clase 'fixed' para que el atajo ESC funcione automáticamente
+            bgModal.className = 'fixed inset-0 bg-black/60 z-[90] flex items-center justify-center hidden';
+            
             bgModal.innerHTML = `
-                <div class="bg-white dark:bg-slate-800 rounded-lg shadow-2xl w-96 p-4 max-h-[80vh] overflow-y-auto">
-                    <div class="flex justify-between items-center mb-4">
+                <div class="bg-white dark:bg-slate-800 rounded-lg shadow-2xl w-96 p-4 max-h-[85vh] overflow-y-auto flex flex-col">
+                    <div class="flex justify-between items-center mb-4 shrink-0">
                         <h3 class="font-bold text-slate-700 dark:text-white">Cambiar fondo</h3>
-                        <button id="close-bg-modal" class="text-slate-500 hover:bg-slate-100 rounded p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
+                        <button id="close-bg-modal" class="text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded p-1 transition">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
                     </div>
-                    <div class="grid grid-cols-2 gap-2" id="bg-grid"></div>
+                    
+                    <div class="mb-4 border-b border-slate-200 dark:border-slate-700 pb-4">
+                        <label class="text-xs font-bold text-slate-500 uppercase block mb-2">Imagen de Internet</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="custom-bg-input" placeholder="Pega aquí la URL de la imagen..." 
+                                class="flex-1 p-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none dark:text-white transition">
+                            <button id="apply-custom-bg" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium transition">Usar</button>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1">Ej: Unsplash, Imgur, Google Images...</p>
+                    </div>
+
+                    <label class="text-xs font-bold text-slate-500 uppercase block mb-2">Galería Trello</label>
+                    <div class="grid grid-cols-2 gap-2 overflow-y-auto" id="bg-grid"></div>
                 </div>
             `;
             document.body.appendChild(bgModal);
             
+            // 1. Renderizar galería
             const grid = bgModal.querySelector('#bg-grid');
             BACKGROUNDS.forEach(bg => {
                 const opt = document.createElement('div');
-                opt.className = 'bg-picker-option';
+                opt.className = 'bg-picker-option h-20 w-full rounded-lg bg-cover bg-center cursor-pointer hover:opacity-90 hover:scale-[1.02] transition shadow-sm border border-transparent hover:border-blue-500';
                 if(bg.type === 'image') opt.style.backgroundImage = `url('${bg.thumb}')`;
                 else opt.style.backgroundColor = bg.val;
                 
@@ -139,18 +158,42 @@ function initializeApp() {
                 grid.appendChild(opt);
             });
 
-            bgModal.querySelector('#close-bg-modal').onclick = () => bgModal.classList.add('hidden');
+            // 2. Configurar botón de cierre (Usamos la función global closeModal)
+            bgModal.querySelector('#close-bg-modal').onclick = () => closeModal('bg-picker-modal');
+
+            // 3. Configurar botón de URL personalizada
+            bgModal.querySelector('#apply-custom-bg').onclick = () => {
+                const input = document.getElementById('custom-bg-input');
+                const url = input.value.trim();
+                if(url) {
+                    // Aplicar fondo personalizado
+                    changeBoardBackground({ type: 'image', url: url });
+                    input.value = ''; 
+                } else {
+                    alert("Por favor escribe una URL válida");
+                    input.focus();
+                }
+            };
+
             if(window.lucide) lucide.createIcons();
         }
+        
+        // Mostrar modal
         bgModal.classList.remove('hidden');
         bgModal.style.display = 'flex';
+        
+        // Enfocar input para mayor comodidad
+        setTimeout(() => {
+            const input = document.getElementById('custom-bg-input');
+            if(input) input.focus();
+        }, 50);
     }
 
     async function changeBoardBackground(bg) {
         if (!currentBoardId) return;
         const container = document.querySelector('.board-view-container');
         
-        // Aplicar visualmente al instante
+        // Aplicar visualmente al instante (Optimistic UI)
         if (bg.type === 'image') {
             container.style.backgroundImage = `url('${bg.url}')`;
             container.style.backgroundColor = 'transparent';
@@ -164,11 +207,11 @@ function initializeApp() {
             await updateDoc(doc(db, 'boards', currentBoardId), { 
                 background: bg.type === 'image' ? bg.url : bg.val 
             });
-            document.getElementById('bg-picker-modal').classList.add('hidden');
+            closeModal('bg-picker-modal'); // Usamos la función global de cierre
         } catch (e) { console.error("Error guardando fondo", e); }
     }
     
-    // Exponer globalmente para el HTML
+    // Exponer globalmente para que el botón del HTML funcione
     window.openBackgroundPicker = openBackgroundPicker;
 
     // ========================================
