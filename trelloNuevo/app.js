@@ -712,9 +712,20 @@ function initializeApp() {
         });
     }
 
-    function createCardElement(cid, lid, card) {
+function createCardElement(cid, lid, card) {
         const d = document.createElement('div'); d.className = 'list-card group relative';
         d.draggable = hasPermission('editCard'); d.dataset.cardId = cid; d.dataset.listId = lid;
+
+        // ============================================================
+        // 1. NUEVO: INYECCIÓN DE DATOS PARA EL FILTRO
+        // ============================================================
+        // Guardamos los nombres de etiquetas y IDs de miembros en el DOM
+        // para poder filtrar rápido sin volver a consultar la base de datos.
+        const labelString = card.labels?.map(l => l.name).join(',') || '';
+        const memberString = card.assignedTo?.join(',') || '';
+        d.dataset.labels = labelString;
+        d.dataset.members = memberString;
+        // ============================================================
 
         let coverHtml = '', fullClass = '';
         
@@ -725,7 +736,6 @@ function initializeApp() {
         } else if(card.cover?.url) {
             coverHtml = `<div class="card-cover-image" style="background-image: url('${card.cover.url}')"></div>`;
         } else if(card.cover?.emoji) {
-            // AQUÍ PINTAMOS EL EMOJI
             coverHtml = `<div class="h-[32px] bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-2xl rounded-t mb-2 select-none">${card.cover.emoji}</div>`;
         } else if(card.cover?.color) {
             coverHtml = `<div class="card-cover ${card.cover.color}"></div>`;
@@ -767,6 +777,17 @@ function initializeApp() {
             openCardModal(lid, cid, card);
         });
         if(d.draggable) { d.addEventListener('dragstart', handleDragStart); d.addEventListener('dragend', handleDragEnd); }
+        
+        // ============================================================
+        // 2. NUEVO: APLICAR FILTRO AL CREAR
+        // ============================================================
+        // Si ya hay un filtro activo y llega una tarjeta nueva (o se edita),
+        // verificamos si debe mostrarse o nacer oculta.
+        if (typeof activeFilters !== 'undefined' && (activeFilters.labels.length > 0 || activeFilters.members.length > 0)) {
+             applyFiltersToCard(d);
+        }
+        // ============================================================
+
         return d;
     }
 
@@ -1144,4 +1165,268 @@ function initializeApp() {
         });
     }
     initGlobalShortcuts();
+
+    // ========================================
+    // 9. SISTEMA DE FILTROS (NUEVO)
+    // ========================================
+    let activeFilters = { labels: [], members: [] };
+
+    // Abrir/Cerrar Menú
+    document.getElementById('filter-btn')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const popover = document.getElementById('filter-popover');
+        if (popover.classList.contains('hidden')) {
+            renderFilterMenu();
+            popover.classList.remove('hidden');
+        } else {
+            popover.classList.add('hidden');
+        }
+    });
+
+    document.getElementById('close-filter-btn')?.addEventListener('click', () => {
+        document.getElementById('filter-popover').classList.add('hidden');
+    });
+
+    document.getElementById('clear-filters-btn')?.addEventListener('click', () => {
+        activeFilters = { labels: [], members: [] };
+        updateFilterState();
+    });
+
+    function renderFilterMenu() {
+        // 1. Render Labels (Colores fijos definidos en style.css o etiquetas usadas)
+        const labelsContainer = document.getElementById('filter-labels-list');
+        labelsContainer.innerHTML = '';
+        
+        // Lista estándar de etiquetas de Trello
+        const standardLabels = [
+            { name: 'urgente', color: 'bg-red-100 text-red-700', labelClass: 'bg-red-500' },
+            { name: 'diseño', color: 'bg-purple-100 text-purple-700', labelClass: 'bg-purple-500' },
+            { name: 'dev', color: 'bg-green-100 text-green-700', labelClass: 'bg-green-500' }
+            // Puedes añadir más si tu app soporta más
+        ];
+
+        standardLabels.forEach(l => {
+            const isChecked = activeFilters.labels.includes(l.name);
+            const row = document.createElement('label');
+            row.className = 'flex items-center gap-3 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 p-2 rounded -mx-2';
+            row.innerHTML = `
+                <input type="checkbox" class="filter-checkbox rounded border-slate-300 text-blue-600 focus:ring-blue-500" 
+                    value="${l.name}" data-type="label" ${isChecked ? 'checked' : ''}>
+                <span class="w-full h-8 rounded ${l.labelClass} text-white text-xs font-bold flex items-center px-2 capitalize shadow-sm">
+                    ${l.name}
+                    ${isChecked ? '<i data-lucide="check" class="ml-auto w-4 h-4"></i>' : ''}
+                </span>
+            `;
+            row.querySelector('input').addEventListener('change', (e) => toggleFilter('labels', l.name, e.target.checked));
+            labelsContainer.appendChild(row);
+        });
+
+        // 2. Render Members
+        const membersContainer = document.getElementById('filter-members-list');
+        membersContainer.innerHTML = '';
+        
+        if (currentBoardData && currentBoardData.members) {
+            Object.entries(currentBoardData.members).forEach(([uid, m]) => {
+                const isChecked = activeFilters.members.includes(uid);
+                const row = document.createElement('label');
+                row.className = 'flex items-center gap-3 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 p-2 rounded -mx-2';
+                row.innerHTML = `
+                    <input type="checkbox" class="filter-checkbox rounded border-slate-300" 
+                        value="${uid}" data-type="member" ${isChecked ? 'checked' : ''}>
+                    <div class="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-700 border border-slate-300">
+                        ${m.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span class="text-sm text-slate-700 dark:text-slate-300 truncate flex-1">${m.name}</span>
+                    ${currentUser.uid === uid ? '<span class="text-xs text-slate-400">(Yo)</span>' : ''}
+                `;
+                row.querySelector('input').addEventListener('change', (e) => toggleFilter('members', uid, e.target.checked));
+                membersContainer.appendChild(row);
+            });
+        }
+        if(window.lucide) lucide.createIcons();
+    }
+
+    function toggleFilter(type, value, isChecked) {
+        if (isChecked) {
+            activeFilters[type].push(value);
+        } else {
+            activeFilters[type] = activeFilters[type].filter(v => v !== value);
+        }
+        updateFilterState();
+        // Re-render menu to show checks inside colored bars if needed
+        renderFilterMenu(); 
+    }
+
+    function updateFilterState() {
+        const totalFilters = activeFilters.labels.length + activeFilters.members.length;
+        const btn = document.getElementById('filter-btn');
+        const badge = document.getElementById('filter-badge');
+        const clearBtn = document.getElementById('clear-filters-btn');
+
+        // UI Botón Principal
+        if (totalFilters > 0) {
+            btn.classList.add('bg-white', 'text-blue-700'); // Resaltar botón
+            btn.classList.remove('bg-white/20', 'text-white');
+            badge.textContent = totalFilters;
+            badge.classList.remove('hidden');
+            clearBtn.disabled = false;
+        } else {
+            btn.classList.remove('bg-white', 'text-blue-700');
+            btn.classList.add('bg-white/20', 'text-white');
+            badge.classList.add('hidden');
+            clearBtn.disabled = true;
+        }
+
+        // Aplicar filtros al DOM
+        document.querySelectorAll('.list-card').forEach(card => applyFiltersToCard(card));
+    }
+
+    function applyFiltersToCard(card) {
+        // Lógica de "OR" dentro de categorías, "AND" entre categorías (Standard Trello logic)
+        // Pero para simplificar haremos "OR" general o "AND" estricto.
+        // Trello usa: Si seleccionas varias etiquetas, muestra tarjetas que tengan AL MENOS UNA.
+        // Si seleccionas etiqueta Y miembro, debe cumplir AMBOS.
+        
+        const cardLabels = card.dataset.labels ? card.dataset.labels.split(',') : [];
+        const cardMembers = card.dataset.members ? card.dataset.members.split(',') : [];
+
+        // 1. Check Labels (Si hay filtros activos)
+        let labelMatch = true;
+        if (activeFilters.labels.length > 0) {
+            labelMatch = activeFilters.labels.some(l => cardLabels.includes(l));
+        }
+
+        // 2. Check Members (Si hay filtros activos)
+        let memberMatch = true;
+        if (activeFilters.members.length > 0) {
+            // Caso especial: Tarjetas sin miembros asignados
+            if (activeFilters.members.includes('no-members') && cardMembers.length === 0 && cardMembers[0] === "") memberMatch = true;
+            else memberMatch = activeFilters.members.some(m => cardMembers.includes(m));
+        }
+
+        const isVisible = labelMatch && memberMatch;
+
+        if (isVisible) {
+            card.classList.remove('hidden');
+        } else {
+            card.classList.add('hidden');
+        }
+    }
+
+    // ========================================
+    // 10. GESTIÓN DE MIEMBROS (ADMINISTRACIÓN)
+    // ========================================
+
+    // Listener para abrir el panel y cargar la lista
+    document.getElementById('toggle-members-btn')?.addEventListener('click', () => {
+        const panel = document.getElementById('members-panel');
+        const activity = document.getElementById('activity-panel');
+        
+        if (panel.classList.contains('hidden')) {
+            renderMembersPanel(); // <--- Función nueva
+            panel.classList.remove('hidden');
+            activity.classList.add('hidden'); // Cierra actividad si está abierta
+        } else {
+            panel.classList.add('hidden');
+        }
+    });
+
+    document.getElementById('close-members-btn')?.addEventListener('click', () => {
+        document.getElementById('members-panel').classList.add('hidden');
+    });
+
+    function renderMembersPanel() {
+        const container = document.getElementById('members-list');
+        if (!container || !currentBoardData) return;
+
+        container.innerHTML = '';
+
+        // Convertir objeto de miembros a array para ordenar (Owner primero)
+        const membersArr = Object.entries(currentBoardData.members).map(([uid, data]) => ({ uid, ...data }));
+        
+        // Ordenar: Owner arriba, luego alfabético
+        membersArr.sort((a, b) => {
+            if (a.role === 'owner') return -1;
+            if (b.role === 'owner') return 1;
+            return a.name.localeCompare(b.name);
+        });
+
+        membersArr.forEach(m => {
+            const isMe = m.uid === currentUser.uid;
+            const isOwner = m.role === 'owner';
+            const iAmOwner = currentBoardData.ownerId === currentUser.uid;
+            
+            // Determinar si puedo expulsar a este usuario
+            // Regla: Soy el dueño, NO soy yo mismo, y el objetivo NO es otro dueño (futuro)
+            const canRemove = iAmOwner && !isMe;
+
+            const div = document.createElement('div');
+            div.className = 'flex items-center gap-3 p-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded transition group';
+            
+            div.innerHTML = `
+                <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-700 border border-slate-300 shrink-0">
+                    ${m.name.charAt(0).toUpperCase()}
+                </div>
+                <div class="flex-1 min-w-0 overflow-hidden">
+                    <div class="flex items-center gap-2">
+                        <p class="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">${m.name} ${isMe ? '(Tú)' : ''}</p>
+                        ${isOwner ? '<span class="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 rounded font-bold" title="Administrador">👑</span>' : ''}
+                    </div>
+                    <p class="text-xs text-slate-500 truncate">${m.email}</p>
+                </div>
+                ${canRemove ? `
+                    <button class="remove-member-btn opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-600 p-1.5 rounded hover:bg-red-50 transition" title="Expulsar del tablero">
+                        <i data-lucide="user-x" class="w-4 h-4"></i>
+                    </button>
+                ` : ''}
+            `;
+
+            // Lógica del botón expulsar
+            if (canRemove) {
+                div.querySelector('.remove-member-btn').addEventListener('click', () => removeMemberFromBoard(m));
+            }
+
+            container.appendChild(div);
+        });
+        
+        if(window.lucide) lucide.createIcons();
+    }
+
+    async function removeMemberFromBoard(member) {
+        if (!confirm(`¿Estás seguro de que quieres expulsar a ${member.name} del tablero?`)) return;
+
+        try {
+            // 1. Referencia al tablero
+            const boardRef = doc(db, 'boards', currentBoardId);
+
+            // 2. Preparar la actualización: Eliminar del mapa 'members' y del array 'memberEmails'
+            // Nota: Para eliminar una clave de un Map en Firestore usamos deleteField()
+            // Pero necesitamos importarlo. Si no quieres cambiar imports, 
+            // leemos, modificamos el objeto y reescribimos (menos eficiente pero seguro con tu setup actual).
+            
+            // Vamos a usar la estrategia de leer y escribir que ya tenemos en memoria 'currentBoardData'
+            // para no complicar los imports con 'deleteField'.
+            
+            const newMembers = { ...currentBoardData.members };
+            delete newMembers[member.uid]; // Borramos la clave
+
+            await updateDoc(boardRef, {
+                members: newMembers,
+                memberEmails: arrayRemove(member.email) // Esto ya lo importamos en el paso anterior
+            });
+
+            // 3. Log de actividad
+            logActivity('removed_member', 'board', currentBoardId, { 
+                memberName: member.name, 
+                memberEmail: member.email 
+            });
+
+            // 4. Actualización UI (Optimista) se maneja sola por el onSnapshot del tablero
+            alert(`${member.name} ha sido expulsado.`);
+
+        } catch (e) {
+            console.error("Error al expulsar:", e);
+            alert("Hubo un error al intentar expulsar al usuario.");
+        }
+    }
 }
