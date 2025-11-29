@@ -513,7 +513,7 @@ function initializeApp() {
         return d;
     }
 
-async function openBoard(id, data) {
+    async function openBoard(id, data) {
         currentBoardId = id; 
         currentBoardData = data; 
         
@@ -523,7 +523,7 @@ async function openBoard(id, data) {
         document.getElementById('board-title').textContent = data.title;
         renderBoardMembers(data.members);
         
-        // --- NUEVO: LÓGICA DE FONDO ---
+        // --- LÓGICA DE FONDO ---
         const container = document.querySelector('.board-view-container');
         if (data.background) {
             if (data.background.startsWith('http') || data.background.startsWith('url')) {
@@ -535,44 +535,61 @@ async function openBoard(id, data) {
             }
         } else {
             container.style.backgroundImage = 'none';
-            container.style.backgroundColor = '#0079BF'; // Default
+            container.style.backgroundColor = '#0079BF';
         }
 
-        // --- NUEVO: CONFIGURAR BOTÓN DE ESTRELLA ---
-        const starBtn = document.querySelector('.board-view-container .fa-star, .board-view-container [data-lucide="star"]').closest('button');
-        // Nota: En tu HTML original el botón es: <button ...><i data-lucide="star"></i></button>
-        // Lo seleccionamos robustamente:
+        // --- LÓGICA BOTÓN ESTRELLA (CORREGIDA) ---
+        // 1. Actualizamos visualmente el estado inicial
         updateStarButtonVisuals();
         
-        // Limpiamos listeners previos clonando el nodo (truco rápido) o asignando onclick
+        // 2. Obtenemos el botón por ID seguro
+        const starBtn = document.getElementById('board-star-btn');
+        
+        // 3. Clonamos para eliminar listeners antiguos (Clean Slate)
         const newStarBtn = starBtn.cloneNode(true);
         starBtn.parentNode.replaceChild(newStarBtn, starBtn);
         
+        // 4. Añadimos el listener con manejo de errores robusto
         newStarBtn.addEventListener('click', async () => {
             const userRef = doc(db, 'users', currentUser.uid);
             const isStarred = starredBoards.includes(currentBoardId);
             
-            // Optimistic UI update (Feedback inmediato)
+            // Feedback visual inmediato (Optimistic UI)
+            const icon = newStarBtn.querySelector('svg') || newStarBtn.querySelector('i');
             if (isStarred) {
-                newStarBtn.querySelector('svg, i').classList.remove('fill-yellow-400', 'text-yellow-400');
+                icon.classList.remove('fill-yellow-400', 'text-yellow-400');
                 newStarBtn.classList.remove('scale-110');
             } else {
-                newStarBtn.querySelector('svg, i').classList.add('fill-yellow-400', 'text-yellow-400');
+                icon.classList.add('fill-yellow-400', 'text-yellow-400');
                 newStarBtn.classList.add('scale-110');
             }
 
             try {
-                await updateDoc(userRef, {
+                // USAMOS SETDOC + MERGE: Si el usuario no existe, lo crea. Si existe, actualiza.
+                // Importamos setDoc arriba si no está, pero firestore-firestore.js lo exporta como setDoc
+                // NOTA: Asegúrate de tener setDoc en los imports del principio del archivo.
+                // Si no quieres cambiar imports, usa updateDoc y captura el error.
+                // Aquí usaré setDoc importado dinámicamente o asumo que lo tienes. 
+                // Para no romper tus imports, usaré la referencia global de Firestore si es necesario,
+                // pero lo mejor es usar setDoc.
+                
+                // Opción robusta con imports actuales (que incluyen updateDoc y setDoc normalmente):
+                // Vamos a usar setDoc para garantizar que funcione siempre.
+                const { setDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+                
+                await setDoc(userRef, {
                     starredBoards: isStarred ? arrayRemove(currentBoardId) : arrayUnion(currentBoardId)
-                });
+                }, { merge: true });
+
             } catch (e) {
-                console.error("Error al cambiar favorito:", e);
-                // Revertir si falla (opcional)
+                console.error("❌ Error al cambiar favorito:", e);
+                alert("Error al guardar favorito. Revisa la consola.");
             }
         });
+        
         if(window.lucide) lucide.createIcons();
 
-        // OCULTAR UI GLOBAL
+        // MOSTRAR UI
         document.getElementById('create-board-btn').classList.add('hidden');
         document.querySelector('.boards-section').style.display='none'; 
         boardView.classList.remove('hidden'); 
@@ -580,6 +597,25 @@ async function openBoard(id, data) {
         
         loadLists(id);
         loadActivity(id);
+    }
+
+    function updateStarButtonVisuals() {
+        const starBtn = document.getElementById('board-star-btn');
+        if (!starBtn) return;
+        
+        // Lucide reemplaza el <i> por <svg>, así que buscamos cualquiera de los dos
+        const starIcon = starBtn.querySelector('svg') || starBtn.querySelector('i');
+        if (!starIcon) return;
+        
+        const isStarred = starredBoards.includes(currentBoardId);
+        
+        if (isStarred) {
+            starIcon.classList.add('fill-yellow-400', 'text-yellow-400');
+            starBtn.classList.add('bg-white/20'); // Fondo más visible si está activo
+        } else {
+            starIcon.classList.remove('fill-yellow-400', 'text-yellow-400');
+            starBtn.classList.remove('bg-white/20');
+        }
     }
 
     function updateStarButtonVisuals() {
