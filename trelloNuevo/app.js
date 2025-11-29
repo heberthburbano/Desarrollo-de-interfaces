@@ -1,7 +1,7 @@
 import { auth, db } from './firebase-config.js';
 import { 
     collection, addDoc, doc, updateDoc, deleteDoc, query, where, onSnapshot, 
-    orderBy, serverTimestamp, getDoc, getDocs, arrayUnion
+    orderBy, serverTimestamp, getDoc, getDocs, arrayUnion, arrayRemove
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
 document.addEventListener('DOMContentLoaded', initializeApp);
@@ -16,6 +16,8 @@ function initializeApp() {
     let currentBoardId = null;
     let currentBoardData = null;
     let currentUserRole = null;
+    let starredBoards = [];
+    let boardsCache = [];
     
     // --- NUEVO: COLECCIÓN DE FONDOS ---
     const BACKGROUNDS = [
@@ -214,15 +216,32 @@ function initializeApp() {
     // Exponer globalmente para que el botón del HTML funcione
     window.openBackgroundPicker = openBackgroundPicker;
 
-    // ========================================
-    // 3. INICIO Y AUTH
-    // ========================================
-    window.addEventListener('user-authenticated', (e) => {
+         // ========================================
+         // 3. INICIO Y AUTH
+         // ========================================
+         window.addEventListener('user-authenticated', (e) => {
         currentUser = e.detail.user;
         const av = document.getElementById('user-avatar');
         if(av) av.textContent = (currentUser.displayName||currentUser.email).charAt(0).toUpperCase();
         
-        loadBoards();
+        // Listener de Usuario (Favoritos)
+        onSnapshot(doc(db, 'users', currentUser.uid), (docSnap) => {
+            if (docSnap.exists()) {
+                const userData = docSnap.data();
+                starredBoards = userData.starredBoards || []; // Actualizamos variable global
+                
+                // 1. Si estamos en el Dashboard: Repintamos los tableros al instante
+                if (!currentBoardId) {
+                    renderBoards(); 
+                }
+                // 2. Si estamos dentro de un tablero: Solo actualizamos el icono
+                else {
+                    updateStarButtonVisuals();
+                }
+            }
+        });
+
+        loadBoards(); // Inicia la escucha de tableros
         loadNotifications();
         buildGlobalIndex(); 
         initSearchListeners();
@@ -402,13 +421,72 @@ function initializeApp() {
     // ========================================
     // 5. TABLEROS Y LISTAS
     // ========================================
+    // Función dedicada a pintar el Dashboard
+    function renderBoards() {
+        if (!boardsContainer) return;
+        
+        boardsContainer.innerHTML = '';
+        boardsContainer.className = 'flex flex-col gap-8'; // Estructura vertical
+
+        if (boardsCache.length === 0) {
+            boardsContainer.innerHTML = `<div class="col-span-full text-center py-10 text-slate-500">Sin tableros. <b onclick="document.getElementById('create-board-btn').click()" class="cursor-pointer text-blue-600">Crear uno</b></div>`;
+            return;
+        }
+
+        // Separar tableros en memoria
+        const starredDocs = [];
+        const normalDocs = [];
+
+        boardsCache.forEach(item => {
+            if (starredBoards.includes(item.id)) {
+                starredDocs.push(item);
+            }
+            normalDocs.push(item);
+        });
+
+        // 1. Renderizar Sección Favoritos
+        if (starredDocs.length > 0) {
+            const starSection = document.createElement('div');
+            starSection.innerHTML = `
+                <h3 class="font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
+                    <i data-lucide="star" class="w-4 h-4 fill-yellow-400 text-yellow-400"></i> Tableros destacados
+                </h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="starred-grid"></div>
+            `;
+            boardsContainer.appendChild(starSection);
+            const starGrid = starSection.querySelector('#starred-grid');
+            starredDocs.forEach(item => starGrid.appendChild(createBoardCard(item.id, item.data)));
+        }
+
+        // 2. Renderizar Sección Principal
+        const mainSection = document.createElement('div');
+        mainSection.innerHTML = `
+            <h3 class="font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
+                <i data-lucide="briefcase" class="w-4 h-4"></i> Tus espacios de trabajo
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="main-grid"></div>
+        `;
+        boardsContainer.appendChild(mainSection);
+        const mainGrid = mainSection.querySelector('#main-grid');
+        normalDocs.forEach(item => mainGrid.appendChild(createBoardCard(item.id, item.data)));
+
+        if(window.lucide) lucide.createIcons();
+    }
+
     function loadBoards() {
         if(unsubscribeBoards) unsubscribeBoards();
+        
+        // Solo escuchamos datos, no pintamos aquí directamente
         unsubscribeBoards = onSnapshot(query(collection(db, 'boards'), where('memberEmails', 'array-contains', currentUser.email)), (snap) => {
-            boardsContainer.innerHTML = '';
-            if(snap.empty) { boardsContainer.innerHTML = `<div class="col-span-full text-center py-10 text-slate-500">Sin tableros. <b onclick="document.getElementById('create-board-btn').click()" class="cursor-pointer text-blue-600">Crear uno</b></div>`; return; }
-            snap.forEach(doc => boardsContainer.appendChild(createBoardCard(doc.id, doc.data())));
-            if(window.lucide) lucide.createIcons();
+            
+            // Actualizamos la caché
+            boardsCache = [];
+            snap.forEach(doc => {
+                boardsCache.push({ id: doc.id, data: doc.data() });
+            });
+
+            // Llamamos al pintor
+            renderBoards();
         });
     }
 
@@ -435,7 +513,7 @@ function initializeApp() {
         return d;
     }
 
-    async function openBoard(id, data) {
+async function openBoard(id, data) {
         currentBoardId = id; 
         currentBoardData = data; 
         
@@ -445,7 +523,7 @@ function initializeApp() {
         document.getElementById('board-title').textContent = data.title;
         renderBoardMembers(data.members);
         
-        // --- NUEVO: APLICAR FONDO AL ABRIR ---
+        // --- NUEVO: LÓGICA DE FONDO ---
         const container = document.querySelector('.board-view-container');
         if (data.background) {
             if (data.background.startsWith('http') || data.background.startsWith('url')) {
@@ -460,6 +538,40 @@ function initializeApp() {
             container.style.backgroundColor = '#0079BF'; // Default
         }
 
+        // --- NUEVO: CONFIGURAR BOTÓN DE ESTRELLA ---
+        const starBtn = document.querySelector('.board-view-container .fa-star, .board-view-container [data-lucide="star"]').closest('button');
+        // Nota: En tu HTML original el botón es: <button ...><i data-lucide="star"></i></button>
+        // Lo seleccionamos robustamente:
+        updateStarButtonVisuals();
+        
+        // Limpiamos listeners previos clonando el nodo (truco rápido) o asignando onclick
+        const newStarBtn = starBtn.cloneNode(true);
+        starBtn.parentNode.replaceChild(newStarBtn, starBtn);
+        
+        newStarBtn.addEventListener('click', async () => {
+            const userRef = doc(db, 'users', currentUser.uid);
+            const isStarred = starredBoards.includes(currentBoardId);
+            
+            // Optimistic UI update (Feedback inmediato)
+            if (isStarred) {
+                newStarBtn.querySelector('svg, i').classList.remove('fill-yellow-400', 'text-yellow-400');
+                newStarBtn.classList.remove('scale-110');
+            } else {
+                newStarBtn.querySelector('svg, i').classList.add('fill-yellow-400', 'text-yellow-400');
+                newStarBtn.classList.add('scale-110');
+            }
+
+            try {
+                await updateDoc(userRef, {
+                    starredBoards: isStarred ? arrayRemove(currentBoardId) : arrayUnion(currentBoardId)
+                });
+            } catch (e) {
+                console.error("Error al cambiar favorito:", e);
+                // Revertir si falla (opcional)
+            }
+        });
+        if(window.lucide) lucide.createIcons();
+
         // OCULTAR UI GLOBAL
         document.getElementById('create-board-btn').classList.add('hidden');
         document.querySelector('.boards-section').style.display='none'; 
@@ -468,6 +580,23 @@ function initializeApp() {
         
         loadLists(id);
         loadActivity(id);
+    }
+
+    function updateStarButtonVisuals() {
+        // Busca el botón de estrella en el header del tablero
+        const starIcon = document.querySelector('.board-view-container [data-lucide="star"]');
+        if (!starIcon) return;
+        
+        const isStarred = starredBoards.includes(currentBoardId);
+        
+        if (isStarred) {
+            starIcon.classList.add('fill-yellow-400', 'text-yellow-400');
+            // Efecto visual extra
+            starIcon.parentElement.classList.add('bg-white/20');
+        } else {
+            starIcon.classList.remove('fill-yellow-400', 'text-yellow-400');
+            starIcon.parentElement.classList.remove('bg-white/20');
+        }
     }
 
     function renderBoardMembers(members) {

@@ -1,4 +1,4 @@
-/* style.css - Ingeniería visual Modern Trello 2025 (Versión Final: Header Sólido) */
+/* style.css - Ingeniería visual Modern Trello 2025 (Versión Optimizada) */
 
 /* ========================================= */
 /* 0. VARIABLES DINÁMICAS (SISTEMA ATLASSIAN) */
@@ -6,16 +6,16 @@
 :root {
     /* Color N30 Solicitado (Fondo Barra y Listas) */
     --dynamic-background: hsl(270, 2.9%, 91.3%);
-
+    
     /* Texto Oscuro Principal */
     --dynamic-text: #172B4D;
     --dynamic-text-transparent: hsla(218, 54%, 19.6%, 0.16);
-
+    
     /* Botones Header (Sobre fondo claro) */
     --dynamic-button-primary: rgba(9, 30, 66, 0.08); /* Gris suave */
     --dynamic-button-hovered: rgba(9, 30, 66, 0.14); /* Gris un poco más oscuro */
     --dynamic-button-text: #172B4D;
-
+    
     /* Inputs */
     --dynamic-input-bg: #FFFFFF;
     --dynamic-input-border: #DFE1E6;
@@ -27,23 +27,24 @@
     --dynamic-background: #1D2125;
     --dynamic-text: #9FADBC;
     --dynamic-text-transparent: rgba(255, 255, 255, 0.4);
-
+    
     --dynamic-button-primary: rgba(255, 255, 255, 0.12); 
     --dynamic-button-hovered: rgba(255, 255, 255, 0.2);
     --dynamic-button-text: #FFFFFF;
-
+    
     --dynamic-input-bg: #22272B;
     --dynamic-input-border: #454F59;
     --dynamic-icon: #9FADBC;
 }
 
-/* CLASES DE UTILIDAD PARA LA NAV (NUEVO) */
+/* CLASES DE UTILIDAD PARA LA NAV (OPTIMIZADO) */
 .trello-nav {
     /* Usamos el color N30 sólido solicitado */
     background-color: var(--dynamic-background) !important;
     color: var(--dynamic-text) !important;
     border-bottom: 1px solid rgba(0,0,0,0.08);
-    backdrop-filter: none; /* Quitamos el blur porque es color sólido */
+    /* MEJORA: Quitamos blur innecesario para rendimiento */
+    backdrop-filter: none; 
     transition: background-color 0.2s ease, color 0.2s ease;
 }
 
@@ -65,6 +66,17 @@
 }
 .trello-search-input::placeholder {
     color: var(--dynamic-text-transparent);
+}
+
+/* MEJORA: Focus exacto de Trello */
+.trello-search-input:focus {
+    border-color: #0079BF !important;
+    box-shadow: 0 0 0 2px rgba(0, 121, 191, 0.2) !important; /* Anillo sutil pero definido */
+    outline: none !important;
+}
+.dark .trello-search-input:focus {
+    border-color: #579DFF !important;
+    box-shadow: 0 0 0 2px rgba(87, 157, 255, 0.2) !important;
 }
 
 /* ========================================= */
@@ -713,7 +725,7 @@ html, body {
     color: #172B4D;
 }
 
-/* CORRECCIÓN: Botón "Añadir tarjeta" en modo oscuro */
+/* Botón "Añadir tarjeta" en modo oscuro */
 .dark .add-card {
     color: #94a3b8; 
 }
@@ -741,19 +753,18 @@ html, body {
 /* ========================================= */
 /* 10. ADAPTACIÓN MÓVIL (Snap Scrolling) */
 /* ========================================= */
-
 @media (max-width: 768px) {
     /* 1. CAMBIO DE GRID A CARRUSEL */
     .board-canvas {
         /* En móvil, la lista ocupa el 85% del ancho para ver un poco de la siguiente */
         grid-auto-columns: 85vw; 
-
+        
         /* Espacio visual a la derecha para 'affordance' */
         padding-right: 15vw; 
-
+        
         /* FÍSICA MAGNÉTICA: Obliga a detenerse exactamente en una lista */
         scroll-snap-type: x mandatory; 
-
+        
         /* Mayor separación entre listas en móvil */
         gap: 16px; 
     }
@@ -762,7 +773,7 @@ html, body {
     .list-wrapper {
         /* Punto de anclaje: la lista siempre se centra al soltar el dedo */
         scroll-snap-align: center;
-
+        
         /* Margen de seguridad para que no se pegue al borde izquierdo */
         scroll-margin-inline: 16px; 
     }
@@ -784,13 +795,13 @@ html, body {
     .board-view-container #invite-member-btn span {
         display: none;
     }
-
+    
     /* Convertir botón "Compartir" en solo icono */
     .board-view-container #invite-member-btn {
         padding: 8px;
         background-color: rgba(255, 255, 255, 0.2);
     }
-
+    
     /* Ocultar barra lateral si se quedó abierta */
     .sidebar-active {
         display: none;
@@ -843,13 +854,13 @@ header[class*="bg-"] * {
     color: #172B4D !important;
 }
 
-/* Iconos SVG en modo claro */
-nav svg,
-header svg,
-nav i,
-header i {
+/* MEJORA: Solo pintar iconos de interfaz, respetar otros SVGs (como logos o avatares) */
+nav button svg,
+header button svg,
+nav .relative svg { /* El icono de la lupa */
     color: #42526E !important;
-    fill: #42526E !important;
+    fill: transparent !important; /* Lucide usa stroke, no fill normalmente */
+    stroke: #42526E !important;
 }
 
 /* ===== MODO OSCURO ===== */
@@ -890,11 +901,66 @@ header i {
     color: #9FADBC !important;
 }
 
-/* Iconos SVG en modo oscuro */
-.dark nav svg,
-.dark header svg,
-.dark nav i,
-.dark header i {
+.dark nav button svg,
+.dark header button svg,
+.dark nav .relative svg {
     color: #9FADBC !important;
-    fill: #9FADBC !important;
+    stroke: #9FADBC !important;
+}
+
+
+/* ========================================= */
+/* 12. ESTILOS PARA BARRA DE BÚSQUEDA - SOLO MODO CLARO */
+/* ========================================= */
+
+/* Barra de búsqueda en MODO CLARO - mejor visibilidad */
+nav input,
+header input {
+    background-color: #FFFFFF !important;
+    border: 2px solid #DFE1E6 !important;
+    color: #172B4D !important;
+    --tw-bg-opacity: 1 !important;
+    --tw-border-opacity: 1 !important;
+    --tw-text-opacity: 1 !important;
+}
+
+/* Placeholder visible en modo claro */
+nav input::placeholder,
+header input::placeholder {
+    color: #6B778C !important;
+    opacity: 1 !important;
+    --tw-placeholder-opacity: 1 !important;
+}
+
+/* Hover en modo claro */
+nav input:hover,
+header input:hover {
+    border-color: #B3BAC5 !important;
+}
+
+/* Focus en modo claro */
+nav input:focus,
+header input:focus {
+    border-color: #0079BF !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(0, 121, 191, 0.15) !important;
+    --tw-ring-shadow: none !important;
+    --tw-ring-offset-shadow: none !important;
+}
+
+/* Sobrescribir clases específicas de Tailwind solo en modo claro */
+nav input[class*="bg-"],
+header input[class*="bg-"] {
+    background-color: #FFFFFF !important;
+}
+
+nav input[class*="border-"],
+header input[class*="border-"] {
+    border-color: #DFE1E6 !important;
+    border-width: 2px !important;
+}
+
+nav input[class*="text-"],
+header input[class*="text-"] {
+    color: #172B4D !important;
 }
