@@ -1,13 +1,13 @@
 import { auth, db } from './firebase-config.js';
 import { 
     collection, addDoc, doc, updateDoc, deleteDoc, query, where, onSnapshot, 
-    orderBy, serverTimestamp, getDoc, getDocs, arrayUnion, arrayRemove
+    orderBy, serverTimestamp, getDoc, getDocs, arrayUnion, arrayRemove, setDoc 
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
 document.addEventListener('DOMContentLoaded', initializeApp);
 
 function initializeApp() {
-    console.log('🚀 Inicializando Trello Clone (Versión Final Completa + Fondos + Emojis)...');
+    console.log('🚀 Inicializando Trello Clone (Versión Final Integrada)...');
 
     // ========================================
     // 1. ESTADO GLOBAL
@@ -16,25 +16,12 @@ function initializeApp() {
     let currentBoardId = null;
     let currentBoardData = null;
     let currentUserRole = null;
+    
     let starredBoards = [];
     let boardsCache = [];
     
-    // --- NUEVO: COLECCIÓN DE FONDOS ---
-    const BACKGROUNDS = [
-        { type: 'image', thumb: 'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=150&q=80', url: 'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=1920&q=80', name: 'Naturaleza' },
-        { type: 'image', thumb: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=150&q=80', url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1920&q=80', name: 'Montañas' },
-        { type: 'image', thumb: 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=150&q=80', url: 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=1920&q=80', name: 'Islandia' },
-        { type: 'image', thumb: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=150&q=80', url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1920&q=80', name: 'Yosemite' },
-        { type: 'color', val: '#0079BF', name: 'Azul Trello' },
-        { type: 'color', val: '#D29034', name: 'Naranja' },
-        { type: 'color', val: '#519839', name: 'Verde' },
-        { type: 'color', val: '#B04632', name: 'Rojo' },
-        { type: 'color', val: '#89609E', name: 'Morado' },
-    ];
-
-    // Caché de Búsqueda
-    let allSearchCache = []; 
-    let selectedResultIndex = -1;
+    // Estado Filtros
+    let activeFilters = { labels: [], members: [] };
 
     // Estado Edición (Modal)
     let currentCardData = null; 
@@ -71,12 +58,27 @@ function initializeApp() {
     const notifDropdown = document.getElementById('notifications-dropdown');
     const notifList = document.getElementById('notifications-list');
     const notifBadge = document.getElementById('notifications-badge');
+    
+    // Colección de Fondos
+    const BACKGROUNDS = [
+        { type: 'image', thumb: 'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=150&q=80', url: 'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=1920&q=80', name: 'Naturaleza' },
+        { type: 'image', thumb: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=150&q=80', url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1920&q=80', name: 'Montañas' },
+        { type: 'image', thumb: 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=150&q=80', url: 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=1920&q=80', name: 'Islandia' },
+        { type: 'image', thumb: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=150&q=80', url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1920&q=80', name: 'Yosemite' },
+        { type: 'color', val: '#0079BF', name: 'Azul Trello' },
+        { type: 'color', val: '#D29034', name: 'Naranja' },
+        { type: 'color', val: '#519839', name: 'Verde' },
+        { type: 'color', val: '#B04632', name: 'Rojo' },
+        { type: 'color', val: '#89609E', name: 'Morado' },
+    ];
+
+    // Caché de Búsqueda
+    let allSearchCache = []; 
+    let selectedResultIndex = -1;
 
     // ========================================
     // 2. HELPERS Y UTILIDADES
     // ========================================
-    
-    // Tiempo relativo
     function timeAgo(date) {
         if (!date) return 'justo ahora';
         const seconds = Math.floor((new Date() - date) / 1000);
@@ -88,7 +90,6 @@ function initializeApp() {
         return "hace unos segundos";
     }
 
-    // Modo Oscuro
     function initDarkMode() {
         const t = document.getElementById('dark-mode-toggle');
         const h = document.documentElement;
@@ -101,7 +102,6 @@ function initializeApp() {
     }
     initDarkMode();
 
-    // Permisos
     const PERMISSIONS = { 
         owner: { createList: true, editCard: true, createCard: true }, 
         editor: { createList: true, editCard: true, createCard: true }, 
@@ -112,90 +112,54 @@ function initializeApp() {
         return PERMISSIONS[currentUserRole]?.[a] || false; 
     }
     
-// --- NUEVO: LÓGICA DE SELECCIÓN DE FONDO (MEJORADA) ---
+    // Modal de Fondo
     function openBackgroundPicker() {
         let bgModal = document.getElementById('bg-picker-modal');
-        
-        // Si no existe, lo creamos con el nuevo diseño (Input URL + Grid)
         if (!bgModal) {
             bgModal = document.createElement('div');
             bgModal.id = 'bg-picker-modal';
-            // Añadimos clase 'fixed' para que el atajo ESC funcione automáticamente
             bgModal.className = 'fixed inset-0 bg-black/60 z-[90] flex items-center justify-center hidden';
-            
             bgModal.innerHTML = `
                 <div class="bg-white dark:bg-slate-800 rounded-lg shadow-2xl w-96 p-4 max-h-[85vh] overflow-y-auto flex flex-col">
                     <div class="flex justify-between items-center mb-4 shrink-0">
                         <h3 class="font-bold text-slate-700 dark:text-white">Cambiar fondo</h3>
-                        <button id="close-bg-modal" class="text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded p-1 transition">
-                            <i data-lucide="x" class="w-5 h-5"></i>
-                        </button>
+                        <button id="close-bg-modal" class="text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded p-1 transition"><i data-lucide="x" class="w-5 h-5"></i></button>
                     </div>
-                    
                     <div class="mb-4 border-b border-slate-200 dark:border-slate-700 pb-4">
                         <label class="text-xs font-bold text-slate-500 uppercase block mb-2">Imagen de Internet</label>
                         <div class="flex gap-2">
-                            <input type="text" id="custom-bg-input" placeholder="Pega aquí la URL de la imagen..." 
-                                class="flex-1 p-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none dark:text-white transition">
-                            <button id="apply-custom-bg" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium transition">Usar</button>
+                            <input type="text" id="custom-bg-input" placeholder="Pega aquí la URL..." class="flex-1 p-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded text-sm outline-none dark:text-white">
+                            <button id="apply-custom-bg" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium">Usar</button>
                         </div>
-                        <p class="text-[10px] text-slate-400 mt-1">Ej: Unsplash, Imgur, Google Images...</p>
                     </div>
-
                     <label class="text-xs font-bold text-slate-500 uppercase block mb-2">Galería Trello</label>
                     <div class="grid grid-cols-2 gap-2 overflow-y-auto" id="bg-grid"></div>
-                </div>
-            `;
+                </div>`;
             document.body.appendChild(bgModal);
             
-            // 1. Renderizar galería
             const grid = bgModal.querySelector('#bg-grid');
             BACKGROUNDS.forEach(bg => {
                 const opt = document.createElement('div');
                 opt.className = 'bg-picker-option h-20 w-full rounded-lg bg-cover bg-center cursor-pointer hover:opacity-90 hover:scale-[1.02] transition shadow-sm border border-transparent hover:border-blue-500';
                 if(bg.type === 'image') opt.style.backgroundImage = `url('${bg.thumb}')`;
                 else opt.style.backgroundColor = bg.val;
-                
                 opt.onclick = () => changeBoardBackground(bg);
                 grid.appendChild(opt);
             });
-
-            // 2. Configurar botón de cierre (Usamos la función global closeModal)
             bgModal.querySelector('#close-bg-modal').onclick = () => closeModal('bg-picker-modal');
-
-            // 3. Configurar botón de URL personalizada
             bgModal.querySelector('#apply-custom-bg').onclick = () => {
-                const input = document.getElementById('custom-bg-input');
-                const url = input.value.trim();
-                if(url) {
-                    // Aplicar fondo personalizado
-                    changeBoardBackground({ type: 'image', url: url });
-                    input.value = ''; 
-                } else {
-                    alert("Por favor escribe una URL válida");
-                    input.focus();
-                }
+                const url = document.getElementById('custom-bg-input').value.trim();
+                if(url) { changeBoardBackground({ type: 'image', url: url }); document.getElementById('custom-bg-input').value = ''; }
             };
-
             if(window.lucide) lucide.createIcons();
         }
-        
-        // Mostrar modal
-        bgModal.classList.remove('hidden');
-        bgModal.style.display = 'flex';
-        
-        // Enfocar input para mayor comodidad
-        setTimeout(() => {
-            const input = document.getElementById('custom-bg-input');
-            if(input) input.focus();
-        }, 50);
+        bgModal.classList.remove('hidden'); bgModal.style.display = 'flex';
     }
+    window.openBackgroundPicker = openBackgroundPicker;
 
     async function changeBoardBackground(bg) {
         if (!currentBoardId) return;
         const container = document.querySelector('.board-view-container');
-        
-        // Aplicar visualmente al instante (Optimistic UI)
         if (bg.type === 'image') {
             container.style.backgroundImage = `url('${bg.url}')`;
             container.style.backgroundColor = 'transparent';
@@ -203,23 +167,16 @@ function initializeApp() {
             container.style.backgroundImage = 'none';
             container.style.backgroundColor = bg.val;
         }
-
-        // Guardar en Firebase
         try {
-            await updateDoc(doc(db, 'boards', currentBoardId), { 
-                background: bg.type === 'image' ? bg.url : bg.val 
-            });
-            closeModal('bg-picker-modal'); // Usamos la función global de cierre
+            await updateDoc(doc(db, 'boards', currentBoardId), { background: bg.type === 'image' ? bg.url : bg.val });
+            closeModal('bg-picker-modal');
         } catch (e) { console.error("Error guardando fondo", e); }
     }
-    
-    // Exponer globalmente para que el botón del HTML funcione
-    window.openBackgroundPicker = openBackgroundPicker;
 
-         // ========================================
-         // 3. INICIO Y AUTH
-         // ========================================
-         window.addEventListener('user-authenticated', (e) => {
+    // ========================================
+    // 3. INICIO Y AUTH
+    // ========================================
+    window.addEventListener('user-authenticated', (e) => {
         currentUser = e.detail.user;
         const av = document.getElementById('user-avatar');
         if(av) av.textContent = (currentUser.displayName||currentUser.email).charAt(0).toUpperCase();
@@ -228,20 +185,13 @@ function initializeApp() {
         onSnapshot(doc(db, 'users', currentUser.uid), (docSnap) => {
             if (docSnap.exists()) {
                 const userData = docSnap.data();
-                starredBoards = userData.starredBoards || []; // Actualizamos variable global
-                
-                // 1. Si estamos en el Dashboard: Repintamos los tableros al instante
-                if (!currentBoardId) {
-                    renderBoards(); 
-                }
-                // 2. Si estamos dentro de un tablero: Solo actualizamos el icono
-                else {
-                    updateStarButtonVisuals();
-                }
+                starredBoards = userData.starredBoards || []; 
+                if (!currentBoardId) renderBoards(); 
+                else updateStarButtonVisuals();
             }
         });
 
-        loadBoards(); // Inicia la escucha de tableros
+        loadBoards(); 
         loadNotifications();
         buildGlobalIndex(); 
         initSearchListeners();
@@ -261,29 +211,19 @@ function initializeApp() {
             const promises = snapBoards.docs.map(async (boardDoc) => {
                 const b = boardDoc.data();
                 const bId = boardDoc.id;
-                
-                // Tablero
                 allSearchCache.push({ id: bId, type: 'board', title: b.title, score: 0 });
-
-                // Listas
                 const snapLists = await getDocs(query(collection(db, 'boards', bId, 'lists')));
                 for (const listDoc of snapLists.docs) {
                     const l = listDoc.data();
                     allSearchCache.push({ id: listDoc.id, type: 'list', title: l.name, boardId: bId, boardTitle: b.title, score: 0 });
-
-                    // Tarjetas
                     const snapCards = await getDocs(query(collection(db, 'boards', bId, 'lists', listDoc.id, 'cards')));
                     snapCards.forEach(cardDoc => {
                         const c = cardDoc.data();
-                        allSearchCache.push({
-                            id: cardDoc.id, type: 'card', title: c.title, description: c.description||'',
-                            listId: listDoc.id, listName: l.name, boardId: bId, boardTitle: b.title, score: 0
-                        });
+                        allSearchCache.push({ id: cardDoc.id, type: 'card', title: c.title, description: c.description||'', listId: listDoc.id, listName: l.name, boardId: bId, boardTitle: b.title, score: 0 });
                     });
                 }
             });
             await Promise.all(promises);
-            console.log(`✅ Indexado: ${allSearchCache.length} elementos.`);
         } catch (e) { console.error("Error indexando:", e); }
     }
 
@@ -306,39 +246,22 @@ function initializeApp() {
         searchInput?.addEventListener('input', (e) => {
             const term = e.target.value.trim().toLowerCase();
             if(term.length < 2) { searchResults.classList.add('hidden'); selectedResultIndex = -1; return; }
-            
-            const results = allSearchCache
-                .map(item => {
-                    const titleScore = calculateScore(item.title, term);
-                    const descScore = item.description ? calculateScore(item.description, term) : 0;
-                    return { ...item, score: Math.max(titleScore, descScore) };
-                })
-                .filter(item => item.score > 0)
-                .sort((a, b) => b.score - a.score);
-
+            const results = allSearchCache.map(item => {
+                const titleScore = calculateScore(item.title, term);
+                const descScore = item.description ? calculateScore(item.description, term) : 0;
+                return { ...item, score: Math.max(titleScore, descScore) };
+            }).filter(item => item.score > 0).sort((a, b) => b.score - a.score);
             renderSearchResults(results.slice(0, 10), term);
         });
 
         searchInput?.addEventListener('keydown', (e) => {
             const items = document.querySelectorAll('.search-result-item');
             if (items.length === 0) return;
-            
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                selectedResultIndex = Math.min(selectedResultIndex + 1, items.length - 1);
-                updateSelection(items);
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                selectedResultIndex = Math.max(selectedResultIndex - 1, 0);
-                updateSelection(items);
-            } else if (e.key === 'Enter') {
-                e.preventDefault();
-                if (selectedResultIndex >= 0) items[selectedResultIndex].click();
-            } else if (e.key === 'Escape') {
-                searchResults.classList.add('hidden');
-            }
+            if (e.key === 'ArrowDown') { e.preventDefault(); selectedResultIndex = Math.min(selectedResultIndex + 1, items.length - 1); updateSelection(items); } 
+            else if (e.key === 'ArrowUp') { e.preventDefault(); selectedResultIndex = Math.max(selectedResultIndex - 1, 0); updateSelection(items); } 
+            else if (e.key === 'Enter') { e.preventDefault(); if (selectedResultIndex >= 0) items[selectedResultIndex].click(); } 
+            else if (e.key === 'Escape') { searchResults.classList.add('hidden'); }
         });
-
         document.addEventListener('click', (e) => { 
             if(!searchInput.contains(e.target) && !searchResults.contains(e.target)) searchResults.classList.add('hidden'); 
         });
@@ -346,44 +269,30 @@ function initializeApp() {
 
     function updateSelection(items) {
         items.forEach((item, index) => {
-            if (index === selectedResultIndex) {
-                item.classList.add('keyboard-selected');
-                item.scrollIntoView({ block: 'nearest' });
-            } else {
-                item.classList.remove('keyboard-selected');
-            }
+            if (index === selectedResultIndex) { item.classList.add('keyboard-selected'); item.scrollIntoView({ block: 'nearest' }); } 
+            else { item.classList.remove('keyboard-selected'); }
         });
     }
 
     function renderSearchResults(results, term) {
         searchResultsList.innerHTML = '';
         selectedResultIndex = -1;
-
         if(results.length === 0) { 
             searchResultsList.innerHTML = '<p class="p-4 text-sm text-slate-500 text-center">No se encontraron resultados.</p>'; 
             searchResults.classList.remove('hidden');
             return;
         }
-
         results.forEach((res, index) => {
             const div = document.createElement('div');
             div.className = 'search-result-item';
             div.dataset.index = index;
-
             const titleHtml = highlightText(res.title, term);
-            
-            if (res.type === 'board') {
-                div.innerHTML = `<div class="flex items-center gap-2 mb-1"><span class="result-type-badge result-type-board">Tablero</span><span class="text-sm font-bold text-slate-800">${titleHtml}</span></div>`;
-            } else if (res.type === 'list') {
-                div.innerHTML = `<div class="flex items-center gap-2 mb-1"><span class="result-type-badge result-type-list">Lista</span><span class="text-sm font-bold text-slate-800">${titleHtml}</span></div><div class="result-breadcrumbs"><span>En: <strong>${res.boardTitle}</strong></span></div>`;
-            } else if (res.type === 'card') {
-                div.innerHTML = `<div class="flex items-center gap-2 mb-1"><span class="result-type-badge result-type-card">Tarjeta</span><span class="text-sm font-bold text-slate-800">${titleHtml}</span></div><div class="result-breadcrumbs"><span>${res.boardTitle}</span><i data-lucide="chevron-right" class="w-3 h-3"></i><span>${res.listName}</span></div>`;
-            }
-
+            if (res.type === 'board') div.innerHTML = `<div class="flex items-center gap-2 mb-1"><span class="result-type-badge result-type-board">Tablero</span><span class="text-sm font-bold text-slate-800">${titleHtml}</span></div>`;
+            else if (res.type === 'list') div.innerHTML = `<div class="flex items-center gap-2 mb-1"><span class="result-type-badge result-type-list">Lista</span><span class="text-sm font-bold text-slate-800">${titleHtml}</span></div><div class="result-breadcrumbs"><span>En: <strong>${res.boardTitle}</strong></span></div>`;
+            else if (res.type === 'card') div.innerHTML = `<div class="flex items-center gap-2 mb-1"><span class="result-type-badge result-type-card">Tarjeta</span><span class="text-sm font-bold text-slate-800">${titleHtml}</span></div><div class="result-breadcrumbs"><span>${res.boardTitle}</span><i data-lucide="chevron-right" class="w-3 h-3"></i><span>${res.listName}</span></div>`;
             div.addEventListener('click', () => handleSearchResultClick(res));
             searchResultsList.appendChild(div);
         });
-
         searchResults.classList.remove('hidden');
         if(window.lucide) lucide.createIcons();
     }
@@ -391,16 +300,13 @@ function initializeApp() {
     async function handleSearchResultClick(res) {
         searchResults.classList.add('hidden');
         searchInput.value = '';
-
         if (currentBoardId !== res.boardId && res.boardId) {
             const bSnap = await getDoc(doc(db, 'boards', res.boardId));
             if (bSnap.exists()) {
                 await openBoard(res.boardId, bSnap.data());
                 setTimeout(() => focusTarget(res), 800); 
             }
-        } else {
-            focusTarget(res);
-        }
+        } else { focusTarget(res); }
     }
 
     async function focusTarget(res) {
@@ -421,51 +327,33 @@ function initializeApp() {
     // ========================================
     // 5. TABLEROS Y LISTAS
     // ========================================
-    // Función dedicada a pintar el Dashboard
     function renderBoards() {
         if (!boardsContainer) return;
-        
         boardsContainer.innerHTML = '';
-        boardsContainer.className = 'flex flex-col gap-8'; // Estructura vertical
+        boardsContainer.className = 'flex flex-col gap-8'; 
 
         if (boardsCache.length === 0) {
             boardsContainer.innerHTML = `<div class="col-span-full text-center py-10 text-slate-500">Sin tableros. <b onclick="document.getElementById('create-board-btn').click()" class="cursor-pointer text-blue-600">Crear uno</b></div>`;
             return;
         }
 
-        // Separar tableros en memoria
         const starredDocs = [];
         const normalDocs = [];
-
         boardsCache.forEach(item => {
-            if (starredBoards.includes(item.id)) {
-                starredDocs.push(item);
-            }
+            if (starredBoards.includes(item.id)) starredDocs.push(item);
             normalDocs.push(item);
         });
 
-        // 1. Renderizar Sección Favoritos
         if (starredDocs.length > 0) {
             const starSection = document.createElement('div');
-            starSection.innerHTML = `
-                <h3 class="font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
-                    <i data-lucide="star" class="w-4 h-4 fill-yellow-400 text-yellow-400"></i> Tableros destacados
-                </h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="starred-grid"></div>
-            `;
+            starSection.innerHTML = `<h3 class="font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2"><i data-lucide="star" class="w-4 h-4 fill-yellow-400 text-yellow-400"></i> Tableros destacados</h3><div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="starred-grid"></div>`;
             boardsContainer.appendChild(starSection);
             const starGrid = starSection.querySelector('#starred-grid');
             starredDocs.forEach(item => starGrid.appendChild(createBoardCard(item.id, item.data)));
         }
 
-        // 2. Renderizar Sección Principal
         const mainSection = document.createElement('div');
-        mainSection.innerHTML = `
-            <h3 class="font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
-                <i data-lucide="briefcase" class="w-4 h-4"></i> Tus espacios de trabajo
-            </h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="main-grid"></div>
-        `;
+        mainSection.innerHTML = `<h3 class="font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2"><i data-lucide="briefcase" class="w-4 h-4"></i> Tus espacios de trabajo</h3><div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="main-grid"></div>`;
         boardsContainer.appendChild(mainSection);
         const mainGrid = mainSection.querySelector('#main-grid');
         normalDocs.forEach(item => mainGrid.appendChild(createBoardCard(item.id, item.data)));
@@ -475,17 +363,9 @@ function initializeApp() {
 
     function loadBoards() {
         if(unsubscribeBoards) unsubscribeBoards();
-        
-        // Solo escuchamos datos, no pintamos aquí directamente
         unsubscribeBoards = onSnapshot(query(collection(db, 'boards'), where('memberEmails', 'array-contains', currentUser.email)), (snap) => {
-            
-            // Actualizamos la caché
             boardsCache = [];
-            snap.forEach(doc => {
-                boardsCache.push({ id: doc.id, data: doc.data() });
-            });
-
-            // Llamamos al pintor
+            snap.forEach(doc => { boardsCache.push({ id: doc.id, data: doc.data() }); });
             renderBoards();
         });
     }
@@ -493,8 +373,6 @@ function initializeApp() {
     function createBoardCard(id, board) {
         const d = document.createElement('div');
         d.className = 'bg-white dark:bg-slate-800 p-4 rounded shadow hover:shadow-lg transition cursor-pointer h-32 flex flex-col justify-between border-l-4 border-[#0079BF] relative group';
-        
-        // --- NUEVO: MOSTRAR FONDO EN MINIATURA ---
         if(board.background && board.background.startsWith('http')) {
             d.style.backgroundImage = `url(${board.background})`;
             d.style.backgroundSize = 'cover';
@@ -507,7 +385,6 @@ function initializeApp() {
         } else {
             d.innerHTML = `<h3 class="font-bold text-slate-800 dark:text-white truncate">${board.title}</h3><div class="flex justify-between items-end"><span class="text-xs text-slate-500"><i data-lucide="users" class="w-3 h-3 inline"></i> ${Object.keys(board.members||{}).length}</span>${board.ownerId===currentUser.uid?`<button class="del-btn opacity-0 group-hover:opacity-100 text-red-500 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`:''}</div>`;
         }
-        
         d.addEventListener('click', (e) => !e.target.closest('.del-btn') && openBoard(id, board));
         d.querySelector('.del-btn')?.addEventListener('click', async (e) => { e.stopPropagation(); if(confirm('¿Borrar?')) await deleteDoc(doc(db, 'boards', id)); });
         return d;
@@ -516,14 +393,11 @@ function initializeApp() {
     async function openBoard(id, data) {
         currentBoardId = id; 
         currentBoardData = data; 
-        
         const memberData = data.members?.[currentUser.uid];
         currentUserRole = memberData ? memberData.role : 'viewer';
-        
         document.getElementById('board-title').textContent = data.title;
         renderBoardMembers(data.members);
         
-        // --- LÓGICA DE FONDO ---
         const container = document.querySelector('.board-view-container');
         if (data.background) {
             if (data.background.startsWith('http') || data.background.startsWith('url')) {
@@ -538,63 +412,26 @@ function initializeApp() {
             container.style.backgroundColor = '#0079BF';
         }
 
-        // --- LÓGICA BOTÓN ESTRELLA (CORREGIDA) ---
-        // 1. Actualizamos visualmente el estado inicial
+        // LÓGICA ESTRELLA
         updateStarButtonVisuals();
-        
-        // 2. Obtenemos el botón por ID seguro
         const starBtn = document.getElementById('board-star-btn');
-        
-        // 3. Clonamos para eliminar listeners antiguos (Clean Slate)
         const newStarBtn = starBtn.cloneNode(true);
         starBtn.parentNode.replaceChild(newStarBtn, starBtn);
-        
-        // 4. Añadimos el listener con manejo de errores robusto
         newStarBtn.addEventListener('click', async () => {
             const userRef = doc(db, 'users', currentUser.uid);
             const isStarred = starredBoards.includes(currentBoardId);
-            
-            // Feedback visual inmediato (Optimistic UI)
             const icon = newStarBtn.querySelector('svg') || newStarBtn.querySelector('i');
-            if (isStarred) {
-                icon.classList.remove('fill-yellow-400', 'text-yellow-400');
-                newStarBtn.classList.remove('scale-110');
-            } else {
-                icon.classList.add('fill-yellow-400', 'text-yellow-400');
-                newStarBtn.classList.add('scale-110');
-            }
-
-            try {
-                // USAMOS SETDOC + MERGE: Si el usuario no existe, lo crea. Si existe, actualiza.
-                // Importamos setDoc arriba si no está, pero firestore-firestore.js lo exporta como setDoc
-                // NOTA: Asegúrate de tener setDoc en los imports del principio del archivo.
-                // Si no quieres cambiar imports, usa updateDoc y captura el error.
-                // Aquí usaré setDoc importado dinámicamente o asumo que lo tienes. 
-                // Para no romper tus imports, usaré la referencia global de Firestore si es necesario,
-                // pero lo mejor es usar setDoc.
-                
-                // Opción robusta con imports actuales (que incluyen updateDoc y setDoc normalmente):
-                // Vamos a usar setDoc para garantizar que funcione siempre.
-                const { setDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
-                
-                await setDoc(userRef, {
-                    starredBoards: isStarred ? arrayRemove(currentBoardId) : arrayUnion(currentBoardId)
-                }, { merge: true });
-
-            } catch (e) {
-                console.error("❌ Error al cambiar favorito:", e);
-                alert("Error al guardar favorito. Revisa la consola.");
-            }
+            if (isStarred) { icon.classList.remove('fill-yellow-400', 'text-yellow-400'); newStarBtn.classList.remove('scale-110'); } 
+            else { icon.classList.add('fill-yellow-400', 'text-yellow-400'); newStarBtn.classList.add('scale-110'); }
+            try { await setDoc(userRef, { starredBoards: isStarred ? arrayRemove(currentBoardId) : arrayUnion(currentBoardId) }, { merge: true }); } 
+            catch (e) { console.error("Error favorito:", e); }
         });
-        
-        if(window.lucide) lucide.createIcons();
 
-        // MOSTRAR UI
+        if(window.lucide) lucide.createIcons();
         document.getElementById('create-board-btn').classList.add('hidden');
         document.querySelector('.boards-section').style.display='none'; 
         boardView.classList.remove('hidden'); 
         boardView.style.display='flex';
-        
         loadLists(id);
         loadActivity(id);
     }
@@ -602,37 +439,11 @@ function initializeApp() {
     function updateStarButtonVisuals() {
         const starBtn = document.getElementById('board-star-btn');
         if (!starBtn) return;
-        
-        // Lucide reemplaza el <i> por <svg>, así que buscamos cualquiera de los dos
         const starIcon = starBtn.querySelector('svg') || starBtn.querySelector('i');
         if (!starIcon) return;
-        
         const isStarred = starredBoards.includes(currentBoardId);
-        
-        if (isStarred) {
-            starIcon.classList.add('fill-yellow-400', 'text-yellow-400');
-            starBtn.classList.add('bg-white/20'); // Fondo más visible si está activo
-        } else {
-            starIcon.classList.remove('fill-yellow-400', 'text-yellow-400');
-            starBtn.classList.remove('bg-white/20');
-        }
-    }
-
-    function updateStarButtonVisuals() {
-        // Busca el botón de estrella en el header del tablero
-        const starIcon = document.querySelector('.board-view-container [data-lucide="star"]');
-        if (!starIcon) return;
-        
-        const isStarred = starredBoards.includes(currentBoardId);
-        
-        if (isStarred) {
-            starIcon.classList.add('fill-yellow-400', 'text-yellow-400');
-            // Efecto visual extra
-            starIcon.parentElement.classList.add('bg-white/20');
-        } else {
-            starIcon.classList.remove('fill-yellow-400', 'text-yellow-400');
-            starIcon.parentElement.classList.remove('bg-white/20');
-        }
+        if (isStarred) { starIcon.classList.add('fill-yellow-400', 'text-yellow-400'); starBtn.classList.add('bg-white/20'); } 
+        else { starIcon.classList.remove('fill-yellow-400', 'text-yellow-400'); starBtn.classList.remove('bg-white/20'); }
     }
 
     function renderBoardMembers(members) {
@@ -663,46 +474,22 @@ function initializeApp() {
     }
 
     function createListElement(lid, data) {
-        const w = document.createElement('div'); 
-        w.className = 'list-wrapper';
-        const d = document.createElement('div'); 
-        d.className = 'list'; 
-        d.dataset.listId = lid;
-
+        const w = document.createElement('div'); w.className = 'list-wrapper';
+        const d = document.createElement('div'); d.className = 'list'; d.dataset.listId = lid;
         d.innerHTML = `
             <div class="list-header group flex justify-between items-center p-2">
                 <h3 class="truncate text-sm font-semibold text-[#172B4D] dark:text-white px-2">${data.name}</h3>
-                ${hasPermission('createList') ? 
-                    `<button class="del-list opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-600 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                    </button>` : ''}
+                ${hasPermission('createList') ? `<button class="del-list opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-600 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
             </div>
             <div class="cards-container custom-scrollbar min-h-[10px]" data-list-id="${lid}"></div>
-            ${hasPermission('createCard') ? 
-                `<div class="p-2">
-                    <button class="add-card w-full text-left py-1.5 px-2 text-slate-600 hover:bg-slate-200/50 dark:text-slate-400 dark:hover:bg-slate-700 rounded flex items-center gap-2 text-sm transition">
-                        <i data-lucide="plus" class="w-4 h-4"></i> Añadir tarjeta
-                    </button>
-                </div>` : ''}
-        `;
-
-        d.querySelector('.del-list')?.addEventListener('click', async()=>{
-            if(confirm('¿Borrar lista?')) await deleteDoc(doc(db,'boards',currentBoardId,'lists',lid))
-        });
-        
+            ${hasPermission('createCard') ? `<div class="p-2"><button class="add-card w-full text-left py-1.5 px-2 text-slate-600 hover:bg-slate-200/50 dark:text-slate-400 dark:hover:bg-slate-700 rounded flex items-center gap-2 text-sm transition"><i data-lucide="plus" class="w-4 h-4"></i> Añadir tarjeta</button></div>` : ''}`;
+        d.querySelector('.del-list')?.addEventListener('click', async()=>{ if(confirm('¿Borrar lista?')) await deleteDoc(doc(db,'boards',currentBoardId,'lists',lid)) });
         const addCardBtn = d.querySelector('.add-card');
-        if (addCardBtn) {
-            addCardBtn.addEventListener('click', () => openCardModal(lid));
-        }
-
+        if (addCardBtn) addCardBtn.addEventListener('click', () => openCardModal(lid));
         setupDropZone(d.querySelector('.cards-container'), lid);
-        w.appendChild(d); 
-        return w;
+        w.appendChild(d); return w;
     }
 
-    // ========================================
-    // 6. TARJETAS (Render con Emojis)
-    // ========================================
     function loadCards(bid, lid, cont) {
         if(unsubscribeCards[lid]) unsubscribeCards[lid]();
         unsubscribeCards[lid] = onSnapshot(query(collection(db, 'boards', bid, 'lists', lid, 'cards'), orderBy('position')), (snap) => {
@@ -712,34 +499,21 @@ function initializeApp() {
         });
     }
 
-function createCardElement(cid, lid, card) {
+    function createCardElement(cid, lid, card) {
         const d = document.createElement('div'); d.className = 'list-card group relative';
         d.draggable = hasPermission('editCard'); d.dataset.cardId = cid; d.dataset.listId = lid;
-
-        // ============================================================
-        // 1. NUEVO: INYECCIÓN DE DATOS PARA EL FILTRO
-        // ============================================================
-        // Guardamos los nombres de etiquetas y IDs de miembros en el DOM
-        // para poder filtrar rápido sin volver a consultar la base de datos.
+        
+        // Data Attributes para Filtros
         const labelString = card.labels?.map(l => l.name).join(',') || '';
         const memberString = card.assignedTo?.join(',') || '';
         d.dataset.labels = labelString;
         d.dataset.members = memberString;
-        // ============================================================
 
         let coverHtml = '', fullClass = '';
-        
-        // --- LOGICA PORTADAS (Emoji + Color + Imagen) ---
-        if(card.cover?.url && card.cover.mode === 'full') { 
-            fullClass='full-cover'; 
-            d.style.backgroundImage=`url('${card.cover.url}')`; 
-        } else if(card.cover?.url) {
-            coverHtml = `<div class="card-cover-image" style="background-image: url('${card.cover.url}')"></div>`;
-        } else if(card.cover?.emoji) {
-            coverHtml = `<div class="h-[32px] bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-2xl rounded-t mb-2 select-none">${card.cover.emoji}</div>`;
-        } else if(card.cover?.color) {
-            coverHtml = `<div class="card-cover ${card.cover.color}"></div>`;
-        }
+        if(card.cover?.url && card.cover.mode === 'full') { fullClass='full-cover'; d.style.backgroundImage=`url('${card.cover.url}')`; } 
+        else if(card.cover?.url) { coverHtml = `<div class="card-cover-image" style="background-image: url('${card.cover.url}')"></div>`; } 
+        else if(card.cover?.emoji) { coverHtml = `<div class="h-[32px] bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-2xl rounded-t mb-2 select-none">${card.cover.emoji}</div>`; } 
+        else if(card.cover?.color) { coverHtml = `<div class="card-cover ${card.cover.color}"></div>`; }
         if(fullClass) d.classList.add(fullClass);
 
         let labelsHtml = '';
@@ -778,16 +552,9 @@ function createCardElement(cid, lid, card) {
         });
         if(d.draggable) { d.addEventListener('dragstart', handleDragStart); d.addEventListener('dragend', handleDragEnd); }
         
-        // ============================================================
-        // 2. NUEVO: APLICAR FILTRO AL CREAR
-        // ============================================================
-        // Si ya hay un filtro activo y llega una tarjeta nueva (o se edita),
-        // verificamos si debe mostrarse o nacer oculta.
         if (typeof activeFilters !== 'undefined' && (activeFilters.labels.length > 0 || activeFilters.members.length > 0)) {
              applyFiltersToCard(d);
         }
-        // ============================================================
-
         return d;
     }
 
@@ -815,23 +582,19 @@ function createCardElement(cid, lid, card) {
     }
 
     // ========================================
-    // 7. MODAL Y COMENTARIOS
+    // 7. MODALES Y FUNCIONES EXTRA
     // ========================================
     function loadComments(lid, cid) {
         if (unsubscribeComments) unsubscribeComments();
         const listDiv = document.getElementById('comments-list');
-        if (!listDiv) return;
-
         unsubscribeComments = onSnapshot(query(collection(db, 'boards', currentBoardId, 'lists', lid, 'cards', cid, 'comments'), orderBy('createdAt', 'desc')), (snap) => {
+            if(!listDiv) return;
             listDiv.innerHTML = '';
             if (snap.empty) { listDiv.innerHTML = '<p class="text-xs text-slate-400 italic pl-2">No hay comentarios aún.</p>'; return; }
             snap.forEach(doc => {
                 const c = doc.data();
                 const div = document.createElement('div'); div.className = 'flex gap-3 items-start mb-3';
-                div.innerHTML = `
-                    <div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center text-xs font-bold text-slate-700 dark:text-slate-200 shrink-0">${(c.userName||'U').charAt(0).toUpperCase()}</div>
-                    <div class="flex-1 min-w-0"><div class="flex items-baseline gap-2"><span class="text-sm font-bold text-[#172B4D] dark:text-slate-200">${c.userName}</span><span class="text-xs text-slate-500">${timeAgo(c.createdAt?.toDate())}</span></div><div class="p-2 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg shadow-sm mt-1 text-sm text-slate-800 dark:text-slate-100 break-words">${c.text}</div></div>
-                `;
+                div.innerHTML = `<div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center text-xs font-bold text-slate-700 dark:text-slate-200 shrink-0">${(c.userName||'U').charAt(0).toUpperCase()}</div><div class="flex-1 min-w-0"><div class="flex items-baseline gap-2"><span class="text-sm font-bold text-[#172B4D] dark:text-slate-200">${c.userName}</span><span class="text-xs text-slate-500">${timeAgo(c.createdAt?.toDate())}</span></div><div class="p-2 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg shadow-sm mt-1 text-sm text-slate-800 dark:text-slate-100 break-words">${c.text}</div></div>`;
                 listDiv.appendChild(div);
             });
         });
@@ -840,65 +603,30 @@ function createCardElement(cid, lid, card) {
     function openCardModal(lid, cid=null, data=null) {
         currentCardData = { lid, cid, data };
         checklistHideCompleted = false;
-
         document.getElementById('card-title-input').value = data?.title||'';
         document.getElementById('card-description-input').value = data?.description||'';
         document.getElementById('card-due-date-input').value = data?.dueDate||'';
         document.getElementById('card-modal-title').innerHTML = data?'<i data-lucide="credit-card" class="w-3 h-3"></i> Editar':'<i data-lucide="plus" class="w-3 h-3"></i> Nueva';
-        
-        currentChecklist = data?.checklist||[];
-        currentCardCover = data?.cover||{color:null,mode:'banner',url:null};
-        currentAttachments = data?.attachments||[];
-        currentCardLabels = data?.labels||[];
-        currentCardMembers = data?.assignedTo||[]; 
-
-        renderChecklist();
-        renderAttachments();
-        renderLabelsInModal();
-        renderAssignedMembersInput();
-
-        // Cargar Comentarios (Ahora sí definida)
-        if(cid) {
-            loadComments(lid, cid);
-        } else {
-            const listDiv = document.getElementById('comments-list');
-            if(listDiv) listDiv.innerHTML = '';
-        }
-
-        cardModal.classList.remove('hidden'); cardModal.style.display='flex';
-        lucide.createIcons();
+        currentChecklist = data?.checklist||[]; currentCardCover = data?.cover||{color:null,mode:'banner',url:null}; currentAttachments = data?.attachments||[]; currentCardLabels = data?.labels||[]; currentCardMembers = data?.assignedTo||[]; 
+        renderChecklist(); renderAttachments(); renderLabelsInModal(); renderAssignedMembersInput();
+        if(cid) loadComments(lid, cid); else { const listDiv = document.getElementById('comments-list'); if(listDiv) listDiv.innerHTML = ''; }
+        cardModal.classList.remove('hidden'); cardModal.style.display='flex'; lucide.createIcons();
     }
 
-    // Listener para añadir comentarios
     document.getElementById('add-comment-btn')?.addEventListener('click', async () => {
         const inp = document.getElementById('comment-input'); const t=inp.value.trim();
         if(!t || !currentCardData.cid) return;
-        try {
-            await addDoc(collection(db, 'boards', currentBoardId, 'lists', currentCardData.lid, 'cards', currentCardData.cid, 'comments'), {
-                text: t, userId: currentUser.uid, userName: currentUser.displayName||currentUser.email, createdAt: serverTimestamp()
-            });
-            logActivity('added_comment', 'card', currentCardData.cid, { cardTitle: currentCardData.data.title, commentSnippet: t.substring(0,15)+'...' });
-            inp.value = '';
-        } catch(e) { console.error(e); }
+        try { await addDoc(collection(db, 'boards', currentBoardId, 'lists', currentCardData.lid, 'cards', currentCardData.cid, 'comments'), { text: t, userId: currentUser.uid, userName: currentUser.displayName||currentUser.email, createdAt: serverTimestamp() }); logActivity('added_comment', 'card', currentCardData.cid, { cardTitle: currentCardData.data.title, commentSnippet: t.substring(0,15)+'...' }); inp.value = ''; } catch(e) { console.error(e); }
     });
 
-    // ========================================
-    // 8. OTRAS FUNCIONALIDADES (Checklist, Covers, etc)
-    // ========================================
     document.getElementById('card-labels-btn')?.addEventListener('click', () => { labelsModal.classList.remove('hidden'); labelsModal.style.display='flex'; });
     document.getElementById('cancel-labels-btn')?.addEventListener('click', () => closeModal('labels-modal'));
     document.querySelectorAll('.label-checkbox').forEach(cb => cb.addEventListener('change', (e) => {
         const label = { name: e.target.dataset.label, color: e.target.dataset.color };
-        if (e.target.checked) { if (!currentCardLabels.find(l => l.name === label.name)) currentCardLabels.push(label); } 
-        else { currentCardLabels = currentCardLabels.filter(l => l.name !== label.name); }
+        if (e.target.checked) { if (!currentCardLabels.find(l => l.name === label.name)) currentCardLabels.push(label); } else { currentCardLabels = currentCardLabels.filter(l => l.name !== label.name); }
         renderLabelsInModal();
     }));
-
-    function renderLabelsInModal() {
-        const c = document.getElementById('card-labels-display'); c.innerHTML='';
-        if (currentCardLabels.length) c.classList.remove('hidden'); else c.classList.add('hidden');
-        currentCardLabels.forEach(l => { const s = document.createElement('span'); s.className=`px-2 py-1 rounded text-xs font-bold text-white ${l.color.split(' ')[0]}`; s.textContent=l.name; c.appendChild(s); });
-    }
+    function renderLabelsInModal() { const c = document.getElementById('card-labels-display'); c.innerHTML=''; if (currentCardLabels.length) c.classList.remove('hidden'); else c.classList.add('hidden'); currentCardLabels.forEach(l => { const s = document.createElement('span'); s.className=`px-2 py-1 rounded text-xs font-bold text-white ${l.color.split(' ')[0]}`; s.textContent=l.name; c.appendChild(s); }); }
 
     function renderAssignedMembersInput() {
         const input = document.getElementById('card-assigned-input');
@@ -909,11 +637,7 @@ function createCardElement(cid, lid, card) {
             const email = prompt(`Escribe el email para asignar/quitar:\n\n${options}`);
             if(email) {
                 const found = Object.entries(currentBoardData.members).find(([uid, m]) => m.email === email.trim());
-                if(found) {
-                    const [uid] = found;
-                    currentCardMembers = currentCardMembers.includes(uid) ? currentCardMembers.filter(id => id !== uid) : [...currentCardMembers, uid];
-                    renderAssignedMembersInput();
-                } else alert("Miembro no encontrado.");
+                if(found) { const [uid] = found; currentCardMembers = currentCardMembers.includes(uid) ? currentCardMembers.filter(id => id !== uid) : [...currentCardMembers, uid]; renderAssignedMembersInput(); } else alert("Miembro no encontrado.");
             }
         };
     }
@@ -921,38 +645,139 @@ function createCardElement(cid, lid, card) {
     document.getElementById('card-checklist-btn')?.addEventListener('click', () => { document.getElementById('new-checklist-item-input').focus(); });
     document.getElementById('card-due-date-btn')?.addEventListener('click', () => { document.getElementById('card-due-date-input').showPicker?.() || document.getElementById('card-due-date-input').focus(); });
     document.getElementById('attach-file-btn')?.addEventListener('click', () => { const u=prompt("URL:"); if(u) { const i=u.match(/\.(jpeg|jpg|png|webp)/); currentAttachments.push({name:i?'Imagen':'Enlace', url:u, type:i?'image':'link', addedAt:new Date().toISOString()}); renderAttachments(); }});
-    
-    // --- LÓGICA PORTADAS Y EMOJIS (Inyección) ---
     document.getElementById('card-cover-btn')?.addEventListener('click', () => { 
-        coverModal.classList.remove('hidden'); 
-        coverModal.style.display='flex'; 
-
-        const coverModalContent = document.querySelector('#card-cover-modal > div');
-        const removeBtn = document.getElementById('remove-cover-btn');
-        
+        coverModal.classList.remove('hidden'); coverModal.style.display='flex'; 
+        const coverModalContent = document.querySelector('#card-cover-modal > div'); const removeBtn = document.getElementById('remove-cover-btn');
         if (coverModalContent && removeBtn && !document.getElementById('emoji-btn-injected')) {
-            const emojiBtn = document.createElement('button');
-            emojiBtn.id = 'emoji-btn-injected';
-            emojiBtn.className = "w-full text-xs py-1 mt-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-white rounded mb-2 font-medium";
-            emojiBtn.innerText = "😊 Usar Emoji";
-            emojiBtn.type = "button";
-            
-            emojiBtn.onclick = (e) => {
-                e.preventDefault(); e.stopPropagation();
-                const emoji = prompt("Introduce un emoji (Win+. o Cmd+Ctrl+Espacio):", "⚡");
-                if(emoji) {
-                    currentCardCover = { color: null, mode: 'color', url: null, emoji: emoji }; 
-                    closeModal('card-cover-modal');
-                }
-            };
+            const emojiBtn = document.createElement('button'); emojiBtn.id = 'emoji-btn-injected'; emojiBtn.className = "w-full text-xs py-1 mt-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-white rounded mb-2 font-medium"; emojiBtn.innerText = "😊 Usar Emoji"; emojiBtn.type = "button";
+            emojiBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); const emoji = prompt("Emoji:", "⚡"); if(emoji) { currentCardCover = { color: null, mode: 'color', url: null, emoji: emoji }; closeModal('card-cover-modal'); } };
             coverModalContent.insertBefore(emojiBtn, removeBtn);
         }
     });
-
     document.querySelectorAll('.cover-color').forEach(b => b.addEventListener('click', () => { currentCardCover={color:b.dataset.color, mode:'color', url:null}; closeModal('card-cover-modal'); }));
     document.getElementById('remove-cover-btn')?.addEventListener('click', () => { currentCardCover={color:null}; closeModal('card-cover-modal'); });
 
-    // INVITACIONES
+    document.getElementById('save-card-btn')?.addEventListener('click', async () => {
+        const title = document.getElementById('card-title-input').value.trim(); if(!title) return;
+        const payload = { title, description: document.getElementById('card-description-input').value.trim(), dueDate: document.getElementById('card-due-date-input').value, checklist: currentChecklist, cover: currentCardCover, attachments: currentAttachments, labels: currentCardLabels, assignedTo: currentCardMembers, updatedAt: serverTimestamp() };
+        if(currentCardData.cid) { await updateDoc(doc(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards',currentCardData.cid), payload); logActivity('updated_card', 'card', currentCardData.cid, { cardTitle: title }); } 
+        else { const ref = await addDoc(collection(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards'), {...payload, position:Date.now(), createdAt:serverTimestamp()}); logActivity('created_card', 'card', ref.id, { cardTitle: title }); }
+        closeModal('card-modal');
+    });
+    document.getElementById('delete-card-btn')?.addEventListener('click', async()=>{if(confirm('¿Borrar?')){ await deleteDoc(doc(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards',currentCardData.cid)); logActivity('deleted_card', 'card', currentCardData.cid, { cardTitle: currentCardData.data.title }); closeModal('card-modal'); }});
+
+    function renderChecklist() {
+        const c = document.getElementById('checklist-items'); c.innerHTML='';
+        const itemsToShow = checklistHideCompleted ? currentChecklist.filter(i => !i.completed) : currentChecklist;
+        itemsToShow.forEach((i,x)=>{
+            const realIndex = currentChecklist.indexOf(i);
+            const d = document.createElement('div'); d.className='checklist-item group flex items-center gap-2 mb-1';
+            d.innerHTML=`<input type="checkbox" ${i.completed?'checked':''} class="cursor-pointer rounded border-slate-300"><span class="flex-1 text-sm ${i.completed?'line-through text-slate-400':''} transition-all">${i.text}</span><button class="delete-item-btn opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500"><i data-lucide="trash-2" class="w-3 h-3"></i></button>`;
+            d.querySelector('input').addEventListener('change',e=>{ currentChecklist[realIndex].completed=e.target.checked; renderChecklist(); });
+            d.querySelector('.delete-item-btn').addEventListener('click',()=>{ currentChecklist.splice(realIndex,1); renderChecklist(); });
+            c.appendChild(d);
+        });
+        const total = currentChecklist.length; const completed = currentChecklist.filter(i=>i.completed).length;
+        const p = document.getElementById('checklist-progress'); if(p) p.innerText = total ? Math.round((completed/total)*100)+'%' : '0%';
+        const hideBtn = document.getElementById('hide-checklist-btn'); if(hideBtn) { hideBtn.innerHTML = checklistHideCompleted ? '<i data-lucide="eye" class="w-3 h-3"></i> Mostrar' : '<i data-lucide="eye-off" class="w-3 h-3"></i> Ocultar'; hideBtn.onclick = () => { checklistHideCompleted = !checklistHideCompleted; renderChecklist(); }; }
+        if(window.lucide) lucide.createIcons();
+    }
+    function renderAttachments() {
+        const c = document.getElementById('attachments-list'); c.innerHTML='';
+        currentAttachments.forEach((a,x)=>{
+            const d = document.createElement('div'); d.className='attachment-item';
+            d.innerHTML=`<div class="attachment-thumbnail" style="background-image:url('${a.type==='image'?a.url:''}')"></div><div class="flex-1"><p class="text-sm font-bold truncate">${a.name}</p><button class="text-xs text-red-500 del">Eliminar</button>${a.type==='image'?`<button class="text-xs text-blue-500 ml-2 cover">Hacer Portada</button>`:''}</div>`;
+            d.querySelector('.del').addEventListener('click',()=>{currentAttachments.splice(x,1); renderAttachments();});
+            d.querySelector('.cover')?.addEventListener('click',()=>{ currentCardCover={mode:'banner',url:a.url}; alert('Portada puesta'); });
+            c.appendChild(d);
+        });
+        if(window.lucide) lucide.createIcons();
+    }
+    document.getElementById('add-checklist-item-btn')?.addEventListener('click', () => { const inp = document.getElementById('new-checklist-item-input'); if(inp.value.trim()){ currentChecklist.push({text:inp.value.trim(), completed:false}); inp.value=''; renderChecklist(); } });
+
+    // ========================================
+    // 8. PANELES LATERALES (MIEMBROS, ACTIVIDAD)
+    // ========================================
+    // GESTIÓN DE MIEMBROS
+    document.getElementById('toggle-members-btn')?.addEventListener('click', () => {
+        const panel = document.getElementById('members-panel');
+        const activity = document.getElementById('activity-panel');
+        if (panel.classList.contains('hidden')) {
+            renderMembersPanel(); // CARGA DINÁMICA
+            panel.classList.remove('hidden');
+            activity.classList.add('hidden');
+        } else {
+            panel.classList.add('hidden');
+        }
+    });
+    document.getElementById('close-members-btn')?.addEventListener('click', () => document.getElementById('members-panel').classList.add('hidden'));
+
+    function renderMembersPanel() {
+        const container = document.getElementById('members-list');
+        if (!container || !currentBoardData) return;
+        container.innerHTML = '';
+        const membersArr = Object.entries(currentBoardData.members).map(([uid, data]) => ({ uid, ...data }));
+        membersArr.sort((a, b) => { if (a.role === 'owner') return -1; if (b.role === 'owner') return 1; return a.name.localeCompare(b.name); });
+
+        membersArr.forEach(m => {
+            const isMe = m.uid === currentUser.uid;
+            const isOwner = m.role === 'owner';
+            const iAmOwner = currentBoardData.ownerId === currentUser.uid;
+            const canRemove = iAmOwner && !isMe;
+            const div = document.createElement('div');
+            div.className = 'flex items-center gap-3 p-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded transition group';
+            div.innerHTML = `
+                <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-700 border border-slate-300 shrink-0">${m.name.charAt(0).toUpperCase()}</div>
+                <div class="flex-1 min-w-0 overflow-hidden"><div class="flex items-center gap-2"><p class="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">${m.name} ${isMe ? '(Tú)' : ''}</p>${isOwner ? '<span class="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 rounded font-bold">👑</span>' : ''}</div><p class="text-xs text-slate-500 truncate">${m.email}</p></div>
+                ${canRemove ? `<button class="remove-member-btn opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-600 p-1.5 rounded hover:bg-red-50 transition"><i data-lucide="user-x" class="w-4 h-4"></i></button>` : ''}`;
+            if (canRemove) div.querySelector('.remove-member-btn').addEventListener('click', () => removeMemberFromBoard(m));
+            container.appendChild(div);
+        });
+        if(window.lucide) lucide.createIcons();
+    }
+
+    async function removeMemberFromBoard(member) {
+        if (!confirm(`¿Expulsar a ${member.name}?`)) return;
+        try {
+            const boardRef = doc(db, 'boards', currentBoardId);
+            const newMembers = { ...currentBoardData.members };
+            delete newMembers[member.uid];
+            await updateDoc(boardRef, { members: newMembers, memberEmails: arrayRemove(member.email) });
+            logActivity('removed_member', 'board', currentBoardId, { memberName: member.name, memberEmail: member.email });
+            alert('Usuario expulsado.');
+        } catch (e) { console.error(e); alert("Error al expulsar"); }
+    }
+
+    // ACTIVIDAD
+    document.getElementById('toggle-activity-btn')?.addEventListener('click', () => { 
+        const act = document.getElementById('activity-panel'); 
+        const mem = document.getElementById('members-panel');
+        if (act.classList.contains('hidden')) { act.classList.remove('hidden'); mem.classList.add('hidden'); }
+        else { act.classList.add('hidden'); }
+    });
+    document.getElementById('close-activity-btn')?.addEventListener('click', () => document.getElementById('activity-panel').classList.add('hidden'));
+
+    async function logActivity(action, targetType, targetId, details) {
+        try { await addDoc(collection(db, 'activity_logs'), { boardId: currentBoardId, userId: currentUser.uid, userName: currentUser.displayName, action, targetType, targetId, details, timestamp: serverTimestamp() }); } catch(e){console.error(e);}
+    }
+    function loadActivity(boardId) {
+        if(unsubscribeActivity) unsubscribeActivity();
+        unsubscribeActivity = onSnapshot(query(collection(db, 'activity_logs'), where('boardId', '==', boardId), orderBy('timestamp', 'desc')), (snap) => {
+            activityList.innerHTML = '';
+            if(snap.empty) { activityList.innerHTML='<p class="text-center text-sm text-slate-500 p-4">Sin actividad.</p>'; return; }
+            snap.forEach(doc => {
+                const a = doc.data();
+                const div = document.createElement('div'); div.className='activity-item';
+                const msgs = { moved_card: `movió la tarjeta "${a.details.cardTitle}"`, invited_member: `invitó a ${a.details.email}`, created_card: `creó una tarjeta`, deleted_card: `eliminó una tarjeta`, added_comment: `comentó en "${a.details.cardTitle}"`, removed_member: `expulsó a ${a.details.memberName}` };
+                div.innerHTML = `<div class="activity-user">${a.userName}</div><div>${msgs[a.action] || a.action}</div><div class="activity-meta">${new Date(a.timestamp?.toDate()).toLocaleString()}</div>`;
+                activityList.appendChild(div);
+            });
+        });
+    }
+
+    // ========================================
+    // 9. INVITACIONES & NOTIFICACIONES
+    // ========================================
     document.getElementById('invite-member-btn')?.addEventListener('click', () => { inviteModal.classList.remove('hidden'); inviteModal.style.display='flex'; });
     document.getElementById('cancel-invite-btn')?.addEventListener('click', () => closeModal('invite-modal'));
     document.getElementById('send-invite-btn')?.addEventListener('click', async () => {
@@ -963,40 +788,11 @@ function createCardElement(cid, lid, card) {
             const snap = await getDocs(q);
             if(snap.empty) return alert("Usuario no registrado en la app.");
             const uid = snap.docs[0].id;
-            await addDoc(collection(db, 'notifications'), {
-                userId: uid, type: 'board_invitation', boardId: currentBoardId, boardTitle: currentBoardData.title,
-                invitedBy: currentUser.displayName, invitedByEmail: currentUser.email, role: 'editor', read: false, createdAt: serverTimestamp()
-            });
+            await addDoc(collection(db, 'notifications'), { userId: uid, type: 'board_invitation', boardId: currentBoardId, boardTitle: currentBoardData.title, invitedBy: currentUser.displayName, invitedByEmail: currentUser.email, role: 'editor', read: false, createdAt: serverTimestamp() });
             logActivity('invited_member', 'board', currentBoardId, { email });
-            alert("Invitación enviada.");
-            closeModal('invite-modal');
+            alert("Invitación enviada."); closeModal('invite-modal');
         } catch(e) { console.error(e); alert("Error al invitar"); }
     });
-
-    // ACTIVIDAD Y NOTIFICACIONES (Listeners)
-    async function logActivity(action, targetType, targetId, details) {
-        try { await addDoc(collection(db, 'activity_logs'), { boardId: currentBoardId, userId: currentUser.uid, userName: currentUser.displayName, action, targetType, targetId, details, timestamp: serverTimestamp() }); } catch(e){console.error(e);}
-    }
-
-    function loadActivity(boardId) {
-        if(unsubscribeActivity) unsubscribeActivity();
-        unsubscribeActivity = onSnapshot(query(collection(db, 'activity_logs'), where('boardId', '==', boardId), orderBy('timestamp', 'desc')), (snap) => {
-            activityList.innerHTML = '';
-            if(snap.empty) { activityList.innerHTML='<p class="text-center text-sm text-slate-500 p-4">Sin actividad.</p>'; return; }
-            snap.forEach(doc => {
-                const a = doc.data();
-                const div = document.createElement('div'); div.className='activity-item';
-                const msgs = { moved_card: `movió la tarjeta "${a.details.cardTitle}"`, invited_member: `invitó a ${a.details.email}`, created_card: `creó una tarjeta`, deleted_card: `eliminó una tarjeta`, added_comment: `comentó en "${a.details.cardTitle}"` };
-                div.innerHTML = `<div class="activity-user">${a.userName}</div><div>${msgs[a.action] || a.action}</div><div class="activity-meta">${new Date(a.timestamp?.toDate()).toLocaleString()}</div>`;
-                activityList.appendChild(div);
-            });
-        });
-    }
-
-    document.getElementById('toggle-activity-btn')?.addEventListener('click', () => { activityPanel.classList.toggle('hidden'); membersPanel.classList.add('hidden'); });
-    document.getElementById('close-activity-btn')?.addEventListener('click', () => activityPanel.classList.add('hidden'));
-    document.getElementById('toggle-members-btn')?.addEventListener('click', () => { membersPanel.classList.toggle('hidden'); activityPanel.classList.add('hidden'); });
-    document.getElementById('close-members-btn')?.addEventListener('click', () => membersPanel.classList.add('hidden'));
 
     function loadNotifications() {
         if(unsubscribeNotifications) unsubscribeNotifications();
@@ -1018,7 +814,6 @@ function createCardElement(cid, lid, card) {
             });
         });
     }
-
     async function acceptInvitation(notifId, data) {
         try {
             const boardRef = doc(db, 'boards', data.boardId);
@@ -1031,214 +826,34 @@ function createCardElement(cid, lid, card) {
     notifBtn?.addEventListener('click', (e) => { e.stopPropagation(); notifDropdown.classList.toggle('hidden'); });
     document.addEventListener('click', (e) => { if(!notifBtn.contains(e.target) && !notifDropdown.contains(e.target)) notifDropdown.classList.add('hidden'); });
 
-    function renderChecklist() {
-        const c = document.getElementById('checklist-items'); 
-        c.innerHTML='';
-        
-        const itemsToShow = checklistHideCompleted 
-            ? currentChecklist.filter(i => !i.completed) 
-            : currentChecklist;
-
-        itemsToShow.forEach((i,x)=>{
-            const realIndex = currentChecklist.indexOf(i);
-            const d = document.createElement('div'); d.className='checklist-item group flex items-center gap-2 mb-1';
-            d.innerHTML=`
-                <input type="checkbox" ${i.completed?'checked':''} class="cursor-pointer rounded border-slate-300">
-                <span class="flex-1 text-sm ${i.completed?'line-through text-slate-400':''} transition-all">${i.text}</span>
-                <button class="delete-item-btn opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
-            `;
-            d.querySelector('input').addEventListener('change',e=>{
-                currentChecklist[realIndex].completed=e.target.checked; 
-                renderChecklist();
-            });
-            d.querySelector('.delete-item-btn').addEventListener('click',()=>{
-                currentChecklist.splice(realIndex,1); 
-                renderChecklist();
-            });
-            c.appendChild(d);
-        });
-
-        const total = currentChecklist.length;
-        const completed = currentChecklist.filter(i=>i.completed).length;
-        const p = document.getElementById('checklist-progress'); 
-        if(p) p.innerText = total ? Math.round((completed/total)*100)+'%' : '0%';
-        
-        // Listener toggle checklist
-        const hideBtn = document.getElementById('hide-checklist-btn');
-        if(hideBtn) {
-             hideBtn.innerHTML = checklistHideCompleted ? '<i data-lucide="eye" class="w-3 h-3"></i> Mostrar' : '<i data-lucide="eye-off" class="w-3 h-3"></i> Ocultar';
-             hideBtn.onclick = () => { checklistHideCompleted = !checklistHideCompleted; renderChecklist(); };
-        }
-        if(window.lucide) lucide.createIcons();
-    }
-
-    function renderAttachments() {
-        const c = document.getElementById('attachments-list'); c.innerHTML='';
-        currentAttachments.forEach((a,x)=>{
-            const d = document.createElement('div'); d.className='attachment-item';
-            d.innerHTML=`<div class="attachment-thumbnail" style="background-image:url('${a.type==='image'?a.url:''}')"></div><div class="flex-1"><p class="text-sm font-bold truncate">${a.name}</p><button class="text-xs text-red-500 del">Eliminar</button>${a.type==='image'?`<button class="text-xs text-blue-500 ml-2 cover">Hacer Portada</button>`:''}</div>`;
-            d.querySelector('.del').addEventListener('click',()=>{currentAttachments.splice(x,1); renderAttachments();});
-            d.querySelector('.cover')?.addEventListener('click',()=>{ currentCardCover={mode:'banner',url:a.url}; alert('Portada puesta'); });
-            c.appendChild(d);
-        });
-        if(window.lucide) lucide.createIcons();
-    }
-
-    document.getElementById('add-checklist-item-btn')?.addEventListener('click', () => { const inp = document.getElementById('new-checklist-item-input'); if(inp.value.trim()){ currentChecklist.push({text:inp.value.trim(), completed:false}); inp.value=''; renderChecklist(); } });
-    document.getElementById('remove-cover-btn')?.addEventListener('click', () => { currentCardCover={color:null}; closeModal('card-cover-modal'); });
-
-    document.getElementById('save-card-btn')?.addEventListener('click', async () => {
-        const title = document.getElementById('card-title-input').value.trim(); if(!title) return;
-        const payload = { title, description: document.getElementById('card-description-input').value.trim(), dueDate: document.getElementById('card-due-date-input').value, checklist: currentChecklist, cover: currentCardCover, attachments: currentAttachments, labels: currentCardLabels, assignedTo: currentCardMembers, updatedAt: serverTimestamp() };
-        if(currentCardData.cid) {
-            await updateDoc(doc(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards',currentCardData.cid), payload);
-            logActivity('updated_card', 'card', currentCardData.cid, { cardTitle: title });
-            const idx = allSearchCache.findIndex(x => x.id === currentCardData.cid);
-            if(idx >= 0) { allSearchCache[idx].title = title; allSearchCache[idx].description = payload.description; }
-        } else {
-            const ref = await addDoc(collection(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards'), {...payload, position:Date.now(), createdAt:serverTimestamp()});
-            logActivity('created_card', 'card', ref.id, { cardTitle: title });
-            allSearchCache.push({ id: ref.id, type: 'card', title, description: payload.description, listId: currentCardData.lid, boardId: currentBoardId, boardTitle: currentBoardData.title, listName: '...' });
-        }
-        closeModal('card-modal');
-    });
-
-    document.getElementById('delete-card-btn')?.addEventListener('click', async()=>{if(confirm('¿Borrar?')){
-        await deleteDoc(doc(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards',currentCardData.cid)); 
-        logActivity('deleted_card', 'card', currentCardData.cid, { cardTitle: currentCardData.data.title }); 
-        allSearchCache = allSearchCache.filter(x => x.id !== currentCardData.cid); 
-        closeModal('card-modal');
-    }});
-
-    // Función CloseModal Mejorada (Garbage Collection)
-    function closeModal(id) {
-        const m = document.getElementById(id);
-        if (m) {
-            m.classList.add('hidden'); m.style.display = 'none';
-            if (id === 'card-modal' && unsubscribeComments) { unsubscribeComments(); unsubscribeComments = null; }
-        }
-    }
-    document.querySelectorAll('[id^="cancel-"]').forEach(b => b.addEventListener('click',e=>closeModal(e.target.closest('.fixed').id)));
-
-    document.getElementById('create-board-btn').addEventListener('click',()=>{boardModal.classList.remove('hidden');boardModal.style.display='flex'});
-    document.getElementById('add-list-btn').addEventListener('click',()=>{listModal.classList.remove('hidden');listModal.style.display='flex'});
-    document.getElementById('save-list-btn').addEventListener('click',async()=>{
-        const v=document.getElementById('list-name-input').value.trim(); if(v){
-            const ref = await addDoc(collection(db,'boards',currentBoardId,'lists'),{name:v,position:Date.now(),createdAt:serverTimestamp()}); 
-            logActivity('created_list', 'list', null, { listName: v }); 
-            allSearchCache.push({ id: ref.id, type: 'list', title: v, boardId: currentBoardId, boardTitle: currentBoardData.title });
-            closeModal('list-modal'); document.getElementById('list-name-input').value='';
-        }
-    });
-    document.getElementById('save-board-btn').addEventListener('click',async()=>{
-        const v=document.getElementById('board-name-input').value.trim(); if(v){
-            const ref = await addDoc(collection(db,'boards'),{title:v,ownerId:currentUser.uid,memberEmails:[currentUser.email],members:{[currentUser.uid]:{email:currentUser.email,name:currentUser.displayName||'User',role:'owner'}},createdAt:serverTimestamp()}); 
-            allSearchCache.push({ id: ref.id, type: 'board', title: v });
-            closeModal('board-modal');
-        }
-    });
-    
-    // BOTÓN VOLVER (Corregido para mostrar UI Global)
-    document.getElementById('back-to-boards-btn').addEventListener('click', ()=>{
-        boardView.style.display='none'; 
-        document.querySelector('.boards-section').style.display='block'; 
-        // Mostrar botón crear tablero de nuevo
-        document.getElementById('create-board-btn').classList.remove('hidden');
-        
-        if(unsubscribeLists) unsubscribeLists(); 
-        if(unsubscribeActivity) unsubscribeActivity(); 
-        currentBoardId=null;
-    });
-
-    // Iniciar Atajos al final
-    function initGlobalShortcuts() {
-        document.addEventListener('keydown', (e) => {
-            if (e.target.matches('input, textarea')) return;
-            if (e.key === '/') { e.preventDefault(); searchInput.focus(); }
-            if (e.key === 'Escape') document.querySelectorAll('.fixed').forEach(m => { if(!m.classList.contains('hidden')) closeModal(m.id); });
-            // Atajo 'N'
-            if ((e.key === 'n' || e.key === 'N') && currentBoardId && !boardView.classList.contains('hidden')) {
-                e.preventDefault();
-                const firstList = document.querySelector('.list');
-                if (firstList) openCardModal(firstList.dataset.listId);
-            }
-        });
-    }
-    initGlobalShortcuts();
-
     // ========================================
-    // 9. SISTEMA DE FILTROS (NUEVO)
+    // 10. SISTEMA DE FILTROS (FINAL)
     // ========================================
-    let activeFilters = { labels: [], members: [] };
-
-    // Abrir/Cerrar Menú
     document.getElementById('filter-btn')?.addEventListener('click', (e) => {
         e.stopPropagation();
         const popover = document.getElementById('filter-popover');
-        if (popover.classList.contains('hidden')) {
-            renderFilterMenu();
-            popover.classList.remove('hidden');
-        } else {
-            popover.classList.add('hidden');
-        }
+        if (popover.classList.contains('hidden')) { renderFilterMenu(); popover.classList.remove('hidden'); } 
+        else { popover.classList.add('hidden'); }
     });
-
-    document.getElementById('close-filter-btn')?.addEventListener('click', () => {
-        document.getElementById('filter-popover').classList.add('hidden');
-    });
-
-    document.getElementById('clear-filters-btn')?.addEventListener('click', () => {
-        activeFilters = { labels: [], members: [] };
-        updateFilterState();
-    });
+    document.getElementById('close-filter-btn')?.addEventListener('click', () => document.getElementById('filter-popover').classList.add('hidden'));
+    document.getElementById('clear-filters-btn')?.addEventListener('click', () => { activeFilters = { labels: [], members: [] }; updateFilterState(); });
 
     function renderFilterMenu() {
-        // 1. Render Labels (Colores fijos definidos en style.css o etiquetas usadas)
-        const labelsContainer = document.getElementById('filter-labels-list');
-        labelsContainer.innerHTML = '';
-        
-        // Lista estándar de etiquetas de Trello
-        const standardLabels = [
-            { name: 'urgente', color: 'bg-red-100 text-red-700', labelClass: 'bg-red-500' },
-            { name: 'diseño', color: 'bg-purple-100 text-purple-700', labelClass: 'bg-purple-500' },
-            { name: 'dev', color: 'bg-green-100 text-green-700', labelClass: 'bg-green-500' }
-            // Puedes añadir más si tu app soporta más
-        ];
-
+        const labelsContainer = document.getElementById('filter-labels-list'); labelsContainer.innerHTML = '';
+        const standardLabels = [ { name: 'urgente', color: 'bg-red-100 text-red-700', labelClass: 'bg-red-500' }, { name: 'diseño', color: 'bg-purple-100 text-purple-700', labelClass: 'bg-purple-500' }, { name: 'dev', color: 'bg-green-100 text-green-700', labelClass: 'bg-green-500' } ];
         standardLabels.forEach(l => {
             const isChecked = activeFilters.labels.includes(l.name);
-            const row = document.createElement('label');
-            row.className = 'flex items-center gap-3 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 p-2 rounded -mx-2';
-            row.innerHTML = `
-                <input type="checkbox" class="filter-checkbox rounded border-slate-300 text-blue-600 focus:ring-blue-500" 
-                    value="${l.name}" data-type="label" ${isChecked ? 'checked' : ''}>
-                <span class="w-full h-8 rounded ${l.labelClass} text-white text-xs font-bold flex items-center px-2 capitalize shadow-sm">
-                    ${l.name}
-                    ${isChecked ? '<i data-lucide="check" class="ml-auto w-4 h-4"></i>' : ''}
-                </span>
-            `;
+            const row = document.createElement('label'); row.className = 'flex items-center gap-3 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 p-2 rounded -mx-2';
+            row.innerHTML = `<input type="checkbox" class="filter-checkbox rounded border-slate-300 text-blue-600" value="${l.name}" data-type="label" ${isChecked ? 'checked' : ''}><span class="w-full h-8 rounded ${l.labelClass} text-white text-xs font-bold flex items-center px-2 capitalize shadow-sm">${l.name}${isChecked ? '<i data-lucide="check" class="ml-auto w-4 h-4"></i>' : ''}</span>`;
             row.querySelector('input').addEventListener('change', (e) => toggleFilter('labels', l.name, e.target.checked));
             labelsContainer.appendChild(row);
         });
-
-        // 2. Render Members
-        const membersContainer = document.getElementById('filter-members-list');
-        membersContainer.innerHTML = '';
-        
+        const membersContainer = document.getElementById('filter-members-list'); membersContainer.innerHTML = '';
         if (currentBoardData && currentBoardData.members) {
             Object.entries(currentBoardData.members).forEach(([uid, m]) => {
                 const isChecked = activeFilters.members.includes(uid);
-                const row = document.createElement('label');
-                row.className = 'flex items-center gap-3 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 p-2 rounded -mx-2';
-                row.innerHTML = `
-                    <input type="checkbox" class="filter-checkbox rounded border-slate-300" 
-                        value="${uid}" data-type="member" ${isChecked ? 'checked' : ''}>
-                    <div class="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-700 border border-slate-300">
-                        ${m.name.charAt(0).toUpperCase()}
-                    </div>
-                    <span class="text-sm text-slate-700 dark:text-slate-300 truncate flex-1">${m.name}</span>
-                    ${currentUser.uid === uid ? '<span class="text-xs text-slate-400">(Yo)</span>' : ''}
-                `;
+                const row = document.createElement('label'); row.className = 'flex items-center gap-3 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 p-2 rounded -mx-2';
+                row.innerHTML = `<input type="checkbox" class="filter-checkbox rounded border-slate-300" value="${uid}" data-type="member" ${isChecked ? 'checked' : ''}><div class="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-700 border border-slate-300">${m.name.charAt(0).toUpperCase()}</div><span class="text-sm text-slate-700 dark:text-slate-300 truncate flex-1">${m.name}</span>`;
                 row.querySelector('input').addEventListener('change', (e) => toggleFilter('members', uid, e.target.checked));
                 membersContainer.appendChild(row);
             });
@@ -1247,186 +862,107 @@ function createCardElement(cid, lid, card) {
     }
 
     function toggleFilter(type, value, isChecked) {
-        if (isChecked) {
-            activeFilters[type].push(value);
-        } else {
-            activeFilters[type] = activeFilters[type].filter(v => v !== value);
-        }
-        updateFilterState();
-        // Re-render menu to show checks inside colored bars if needed
-        renderFilterMenu(); 
+        if (isChecked) activeFilters[type].push(value); else activeFilters[type] = activeFilters[type].filter(v => v !== value);
+        updateFilterState(); renderFilterMenu();
     }
-
     function updateFilterState() {
-        const totalFilters = activeFilters.labels.length + activeFilters.members.length;
-        const btn = document.getElementById('filter-btn');
-        const badge = document.getElementById('filter-badge');
-        const clearBtn = document.getElementById('clear-filters-btn');
-
-        // UI Botón Principal
-        if (totalFilters > 0) {
-            btn.classList.add('bg-white', 'text-blue-700'); // Resaltar botón
-            btn.classList.remove('bg-white/20', 'text-white');
-            badge.textContent = totalFilters;
-            badge.classList.remove('hidden');
-            clearBtn.disabled = false;
-        } else {
-            btn.classList.remove('bg-white', 'text-blue-700');
-            btn.classList.add('bg-white/20', 'text-white');
-            badge.classList.add('hidden');
-            clearBtn.disabled = true;
-        }
-
-        // Aplicar filtros al DOM
+        const total = activeFilters.labels.length + activeFilters.members.length;
+        const btn = document.getElementById('filter-btn'); const badge = document.getElementById('filter-badge'); const clear = document.getElementById('clear-filters-btn');
+        if (total > 0) { btn.classList.add('bg-white', 'text-blue-700'); btn.classList.remove('bg-white/20', 'text-white'); badge.textContent = total; badge.classList.remove('hidden'); clear.disabled = false; } 
+        else { btn.classList.remove('bg-white', 'text-blue-700'); btn.classList.add('bg-white/20', 'text-white'); badge.classList.add('hidden'); clear.disabled = true; }
         document.querySelectorAll('.list-card').forEach(card => applyFiltersToCard(card));
     }
-
     function applyFiltersToCard(card) {
-        // Lógica de "OR" dentro de categorías, "AND" entre categorías (Standard Trello logic)
-        // Pero para simplificar haremos "OR" general o "AND" estricto.
-        // Trello usa: Si seleccionas varias etiquetas, muestra tarjetas que tengan AL MENOS UNA.
-        // Si seleccionas etiqueta Y miembro, debe cumplir AMBOS.
-        
         const cardLabels = card.dataset.labels ? card.dataset.labels.split(',') : [];
         const cardMembers = card.dataset.members ? card.dataset.members.split(',') : [];
-
-        // 1. Check Labels (Si hay filtros activos)
-        let labelMatch = true;
-        if (activeFilters.labels.length > 0) {
-            labelMatch = activeFilters.labels.some(l => cardLabels.includes(l));
-        }
-
-        // 2. Check Members (Si hay filtros activos)
-        let memberMatch = true;
-        if (activeFilters.members.length > 0) {
-            // Caso especial: Tarjetas sin miembros asignados
-            if (activeFilters.members.includes('no-members') && cardMembers.length === 0 && cardMembers[0] === "") memberMatch = true;
-            else memberMatch = activeFilters.members.some(m => cardMembers.includes(m));
-        }
-
-        const isVisible = labelMatch && memberMatch;
-
-        if (isVisible) {
-            card.classList.remove('hidden');
-        } else {
-            card.classList.add('hidden');
-        }
+        let labelMatch = true; if (activeFilters.labels.length > 0) labelMatch = activeFilters.labels.some(l => cardLabels.includes(l));
+        let memberMatch = true; if (activeFilters.members.length > 0) memberMatch = activeFilters.members.some(m => cardMembers.includes(m));
+        if (labelMatch && memberMatch) card.classList.remove('hidden'); else card.classList.add('hidden');
     }
 
     // ========================================
-    // 10. GESTIÓN DE MIEMBROS (ADMINISTRACIÓN)
+    // 11. BÚSQUEDA GLOBAL
     // ========================================
-
-    // Listener para abrir el panel y cargar la lista
-    document.getElementById('toggle-members-btn')?.addEventListener('click', () => {
-        const panel = document.getElementById('members-panel');
-        const activity = document.getElementById('activity-panel');
-        
-        if (panel.classList.contains('hidden')) {
-            renderMembersPanel(); // <--- Función nueva
-            panel.classList.remove('hidden');
-            activity.classList.add('hidden'); // Cierra actividad si está abierta
-        } else {
-            panel.classList.add('hidden');
-        }
-    });
-
-    document.getElementById('close-members-btn')?.addEventListener('click', () => {
-        document.getElementById('members-panel').classList.add('hidden');
-    });
-
-    function renderMembersPanel() {
-        const container = document.getElementById('members-list');
-        if (!container || !currentBoardData) return;
-
-        container.innerHTML = '';
-
-        // Convertir objeto de miembros a array para ordenar (Owner primero)
-        const membersArr = Object.entries(currentBoardData.members).map(([uid, data]) => ({ uid, ...data }));
-        
-        // Ordenar: Owner arriba, luego alfabético
-        membersArr.sort((a, b) => {
-            if (a.role === 'owner') return -1;
-            if (b.role === 'owner') return 1;
-            return a.name.localeCompare(b.name);
-        });
-
-        membersArr.forEach(m => {
-            const isMe = m.uid === currentUser.uid;
-            const isOwner = m.role === 'owner';
-            const iAmOwner = currentBoardData.ownerId === currentUser.uid;
-            
-            // Determinar si puedo expulsar a este usuario
-            // Regla: Soy el dueño, NO soy yo mismo, y el objetivo NO es otro dueño (futuro)
-            const canRemove = iAmOwner && !isMe;
-
-            const div = document.createElement('div');
-            div.className = 'flex items-center gap-3 p-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded transition group';
-            
-            div.innerHTML = `
-                <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-700 border border-slate-300 shrink-0">
-                    ${m.name.charAt(0).toUpperCase()}
-                </div>
-                <div class="flex-1 min-w-0 overflow-hidden">
-                    <div class="flex items-center gap-2">
-                        <p class="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">${m.name} ${isMe ? '(Tú)' : ''}</p>
-                        ${isOwner ? '<span class="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 rounded font-bold" title="Administrador">👑</span>' : ''}
-                    </div>
-                    <p class="text-xs text-slate-500 truncate">${m.email}</p>
-                </div>
-                ${canRemove ? `
-                    <button class="remove-member-btn opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-600 p-1.5 rounded hover:bg-red-50 transition" title="Expulsar del tablero">
-                        <i data-lucide="user-x" class="w-4 h-4"></i>
-                    </button>
-                ` : ''}
-            `;
-
-            // Lógica del botón expulsar
-            if (canRemove) {
-                div.querySelector('.remove-member-btn').addEventListener('click', () => removeMemberFromBoard(m));
-            }
-
-            container.appendChild(div);
-        });
-        
-        if(window.lucide) lucide.createIcons();
-    }
-
-    async function removeMemberFromBoard(member) {
-        if (!confirm(`¿Estás seguro de que quieres expulsar a ${member.name} del tablero?`)) return;
-
+    async function buildGlobalIndex() {
+        allSearchCache = []; 
         try {
-            // 1. Referencia al tablero
-            const boardRef = doc(db, 'boards', currentBoardId);
-
-            // 2. Preparar la actualización: Eliminar del mapa 'members' y del array 'memberEmails'
-            // Nota: Para eliminar una clave de un Map en Firestore usamos deleteField()
-            // Pero necesitamos importarlo. Si no quieres cambiar imports, 
-            // leemos, modificamos el objeto y reescribimos (menos eficiente pero seguro con tu setup actual).
-            
-            // Vamos a usar la estrategia de leer y escribir que ya tenemos en memoria 'currentBoardData'
-            // para no complicar los imports con 'deleteField'.
-            
-            const newMembers = { ...currentBoardData.members };
-            delete newMembers[member.uid]; // Borramos la clave
-
-            await updateDoc(boardRef, {
-                members: newMembers,
-                memberEmails: arrayRemove(member.email) // Esto ya lo importamos en el paso anterior
+            const qBoards = query(collection(db, 'boards'), where('memberEmails', 'array-contains', currentUser.email));
+            const snapBoards = await getDocs(qBoards);
+            const promises = snapBoards.docs.map(async (boardDoc) => {
+                const b = boardDoc.data(); const bId = boardDoc.id;
+                allSearchCache.push({ id: bId, type: 'board', title: b.title, score: 0 });
+                const snapLists = await getDocs(query(collection(db, 'boards', bId, 'lists')));
+                for (const listDoc of snapLists.docs) {
+                    const l = listDoc.data();
+                    allSearchCache.push({ id: listDoc.id, type: 'list', title: l.name, boardId: bId, boardTitle: b.title, score: 0 });
+                    const snapCards = await getDocs(query(collection(db, 'boards', bId, 'lists', listDoc.id, 'cards')));
+                    snapCards.forEach(cardDoc => {
+                        const c = cardDoc.data();
+                        allSearchCache.push({ id: cardDoc.id, type: 'card', title: c.title, description: c.description||'', listId: listDoc.id, listName: l.name, boardId: bId, boardTitle: b.title, score: 0 });
+                    });
+                }
             });
+            await Promise.all(promises);
+        } catch (e) { console.error("Error indexando:", e); }
+    }
+    function calculateScore(text, searchTerm) { const lowerText = (text || '').toLowerCase(); const lowerTerm = searchTerm.toLowerCase(); if (lowerText === lowerTerm) return 100; if (lowerText.startsWith(lowerTerm)) return 80; if (lowerText.includes(lowerTerm)) return 40; return 0; }
+    function highlightText(text, term) { if (!text) return ''; const regex = new RegExp(`(${term})`, 'gi'); return text.replace(regex, '<span class="search-result-highlight">$1</span>'); }
+    function initSearchListeners() {
+        searchInput?.addEventListener('input', (e) => {
+            const term = e.target.value.trim().toLowerCase(); if(term.length < 2) { searchResults.classList.add('hidden'); selectedResultIndex = -1; return; }
+            const results = allSearchCache.map(item => { const titleScore = calculateScore(item.title, term); const descScore = item.description ? calculateScore(item.description, term) : 0; return { ...item, score: Math.max(titleScore, descScore) }; }).filter(item => item.score > 0).sort((a, b) => b.score - a.score);
+            renderSearchResults(results.slice(0, 10), term);
+        });
+        searchInput?.addEventListener('keydown', (e) => {
+            const items = document.querySelectorAll('.search-result-item'); if (items.length === 0) return;
+            if (e.key === 'ArrowDown') { e.preventDefault(); selectedResultIndex = Math.min(selectedResultIndex + 1, items.length - 1); updateSelection(items); } 
+            else if (e.key === 'ArrowUp') { e.preventDefault(); selectedResultIndex = Math.max(selectedResultIndex - 1, 0); updateSelection(items); } 
+            else if (e.key === 'Enter') { e.preventDefault(); if (selectedResultIndex >= 0) items[selectedResultIndex].click(); } 
+            else if (e.key === 'Escape') searchResults.classList.add('hidden');
+        });
+        document.addEventListener('click', (e) => { if(!searchInput.contains(e.target) && !searchResults.contains(e.target)) searchResults.classList.add('hidden'); });
+    }
+    function updateSelection(items) { items.forEach((item, index) => { if (index === selectedResultIndex) { item.classList.add('keyboard-selected'); item.scrollIntoView({ block: 'nearest' }); } else { item.classList.remove('keyboard-selected'); } }); }
+    function renderSearchResults(results, term) {
+        searchResultsList.innerHTML = ''; selectedResultIndex = -1;
+        if(results.length === 0) { searchResultsList.innerHTML = '<p class="p-4 text-sm text-slate-500 text-center">No se encontraron resultados.</p>'; searchResults.classList.remove('hidden'); return; }
+        results.forEach((res, index) => {
+            const div = document.createElement('div'); div.className = 'search-result-item'; div.dataset.index = index;
+            const titleHtml = highlightText(res.title, term);
+            if (res.type === 'board') div.innerHTML = `<div class="flex items-center gap-2 mb-1"><span class="result-type-badge result-type-board">Tablero</span><span class="text-sm font-bold text-slate-800">${titleHtml}</span></div>`;
+            else if (res.type === 'list') div.innerHTML = `<div class="flex items-center gap-2 mb-1"><span class="result-type-badge result-type-list">Lista</span><span class="text-sm font-bold text-slate-800">${titleHtml}</span></div><div class="result-breadcrumbs"><span>En: <strong>${res.boardTitle}</strong></span></div>`;
+            else if (res.type === 'card') div.innerHTML = `<div class="flex items-center gap-2 mb-1"><span class="result-type-badge result-type-card">Tarjeta</span><span class="text-sm font-bold text-slate-800">${titleHtml}</span></div><div class="result-breadcrumbs"><span>${res.boardTitle}</span><i data-lucide="chevron-right" class="w-3 h-3"></i><span>${res.listName}</span></div>`;
+            div.addEventListener('click', () => handleSearchResultClick(res)); searchResultsList.appendChild(div);
+        });
+        searchResults.classList.remove('hidden'); if(window.lucide) lucide.createIcons();
+    }
+    async function handleSearchResultClick(res) {
+        searchResults.classList.add('hidden'); searchInput.value = '';
+        if (currentBoardId !== res.boardId && res.boardId) { const bSnap = await getDoc(doc(db, 'boards', res.boardId)); if (bSnap.exists()) { await openBoard(res.boardId, bSnap.data()); setTimeout(() => focusTarget(res), 800); } } else { focusTarget(res); }
+    }
+    async function focusTarget(res) {
+        if (res.type === 'board') return; 
+        if (res.type === 'list') { const el = document.querySelector(`[data-list-id="${res.id}"]`); if (el) { el.scrollIntoView({ behavior: 'smooth', inline: 'center' }); el.style.boxShadow = '0 0 0 4px #FFAB00'; setTimeout(() => el.style.boxShadow = '', 2000); } } 
+        else if (res.type === 'card') { const cSnap = await getDoc(doc(db, 'boards', res.boardId, 'lists', res.listId, 'cards', res.id)); if (cSnap.exists()) openCardModal(res.listId, res.id, cSnap.data()); }
+    }
 
-            // 3. Log de actividad
-            logActivity('removed_member', 'board', currentBoardId, { 
-                memberName: member.name, 
-                memberEmail: member.email 
-            });
-
-            // 4. Actualización UI (Optimista) se maneja sola por el onSnapshot del tablero
-            alert(`${member.name} ha sido expulsado.`);
-
-        } catch (e) {
-            console.error("Error al expulsar:", e);
-            alert("Hubo un error al intentar expulsar al usuario.");
-        }
+    // ========================================
+    // 12. UTILIDADES FINALES
+    // ========================================
+    function closeModal(id) { const m = document.getElementById(id); if (m) { m.classList.add('hidden'); m.style.display = 'none'; if (id === 'card-modal' && unsubscribeComments) { unsubscribeComments(); unsubscribeComments = null; } } }
+    document.querySelectorAll('[id^="cancel-"]').forEach(b => b.addEventListener('click',e=>closeModal(e.target.closest('.fixed').id)));
+    document.getElementById('create-board-btn').addEventListener('click',()=>{boardModal.classList.remove('hidden');boardModal.style.display='flex'});
+    document.getElementById('add-list-btn').addEventListener('click',()=>{listModal.classList.remove('hidden');listModal.style.display='flex'});
+    document.getElementById('save-list-btn').addEventListener('click',async()=>{ const v=document.getElementById('list-name-input').value.trim(); if(v){ const ref = await addDoc(collection(db,'boards',currentBoardId,'lists'),{name:v,position:Date.now(),createdAt:serverTimestamp()}); logActivity('created_list', 'list', null, { listName: v }); allSearchCache.push({ id: ref.id, type: 'list', title: v, boardId: currentBoardId, boardTitle: currentBoardData.title }); closeModal('list-modal'); document.getElementById('list-name-input').value=''; } });
+    document.getElementById('save-board-btn').addEventListener('click',async()=>{ const v=document.getElementById('board-name-input').value.trim(); if(v){ const ref = await addDoc(collection(db,'boards'),{title:v,ownerId:currentUser.uid,memberEmails:[currentUser.email],members:{[currentUser.uid]:{email:currentUser.email,name:currentUser.displayName||'User',role:'owner'}},createdAt:serverTimestamp()}); allSearchCache.push({ id: ref.id, type: 'board', title: v }); closeModal('board-modal'); } });
+    document.getElementById('back-to-boards-btn').addEventListener('click', ()=>{ boardView.style.display='none'; document.querySelector('.boards-section').style.display='block'; document.getElementById('create-board-btn').classList.remove('hidden'); if(unsubscribeLists) unsubscribeLists(); if(unsubscribeActivity) unsubscribeActivity(); currentBoardId=null; renderBoards(); });
+    
+    function initGlobalShortcuts() {
+        document.addEventListener('keydown', (e) => {
+            if (e.target.matches('input, textarea')) return;
+            if (e.key === '/') { e.preventDefault(); searchInput.focus(); }
+            if (e.key === 'Escape') document.querySelectorAll('.fixed').forEach(m => { if(!m.classList.contains('hidden')) closeModal(m.id); });
+            if ((e.key === 'n' || e.key === 'N') && currentBoardId && !boardView.classList.contains('hidden')) { e.preventDefault(); const firstList = document.querySelector('.list'); if (firstList) openCardModal(firstList.dataset.listId); }
+        });
     }
 }
