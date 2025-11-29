@@ -160,6 +160,11 @@
                         <span id="filter-badge" class="hidden absolute -top-1 -right-1 bg-green-500 text-white text-[10px] font-bold px-1.5 rounded-full border border-[#0079BF]">0</span>
                     </button>
 
+                    <button id="archive-btn" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-[3px] text-sm font-bold transition flex items-center gap-2">
+                        <i data-lucide="archive" class="w-4 h-4"></i>
+                        <span class="hidden sm:inline">Archivados</span>
+                    </button>
+
                     <button id="invite-member-btn" class="bg-slate-100 hover:bg-white text-slate-800 px-3 py-1.5 rounded-[3px] text-sm font-medium transition flex items-center gap-2 shadow-sm">
                         <i data-lucide="user-plus" class="w-4 h-4"></i> Compartir
                     </button>
@@ -390,6 +395,25 @@
                 <div class="flex justify-between"><span>Cerrar</span> <kbd class="bg-slate-100 px-1 border rounded">Esc</kbd></div>
             </div>
             <button id="close-shortcuts" class="mt-4 w-full bg-blue-600 text-white py-1 rounded">Cerrar</button>
+        </div>
+    </div>
+
+    <div id="archive-modal" class="hidden fixed inset-0 bg-black/60 z-[80] flex items-center justify-center">
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-2xl w-full max-w-lg h-[600px] flex flex-col">
+            <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                <h3 class="font-bold text-slate-700 dark:text-white flex items-center gap-2">
+                    <i data-lucide="archive" class="w-4 h-4"></i> Elementos Archivados
+                </h3>
+                <button id="close-archive-btn" class="text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 p-1 rounded"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            
+            <div class="flex border-b border-slate-200 dark:border-slate-700">
+                <button class="archive-tab active flex-1 py-3 text-sm font-bold text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400" data-tab="cards">Tarjetas</button>
+                <button class="archive-tab flex-1 py-3 text-sm font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200" data-tab="lists">Listas</button>
+            </div>
+
+            <div id="archived-content" class="flex-1 overflow-y-auto p-4 bg-slate-50 dark:bg-slate-900 space-y-2">
+                </div>
         </div>
     </div>
 

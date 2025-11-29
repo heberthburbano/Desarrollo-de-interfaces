@@ -964,3 +964,21 @@ nav input[class*="text-"],
 header input[class*="text-"] {
     color: #172B4D !important;
 }
+
+/* --- NUEVO: CURSORES PARA DRAG TO SCROLL --- */
+.board-canvas {
+    cursor: grab; /* Mano abierta por defecto */
+}
+
+.board-canvas.active {
+    cursor: grabbing !important; /* Mano cerrada al arrastrar */
+    user-select: none; /* Evita seleccionar texto al arrastrar */
+}
+
+/* Asegurar que las listas y tarjetas no hereden el cursor de "Mover fondo" */
+.list, .list-card {
+    cursor: default; 
+}
+.list-card {
+    cursor: pointer; /* O grab si es arrastrable */
+}

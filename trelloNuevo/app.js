@@ -7,7 +7,7 @@ import {
 document.addEventListener('DOMContentLoaded', initializeApp);
 
 function initializeApp() {
-    console.log('🚀 Inicializando Trello Clone (Versión Final Integrada)...');
+    console.log('🚀 Inicializando Trello Clone (Versión PRO: A+B Integrado)...');
 
     // ========================================
     // 1. ESTADO GLOBAL
@@ -17,7 +17,7 @@ function initializeApp() {
     let currentBoardData = null;
     let currentUserRole = null;
     
-    let starredBoards = [];
+    let starredBoards = []; 
     let boardsCache = [];
     
     // Estado Filtros
@@ -32,6 +32,9 @@ function initializeApp() {
     let currentCardMembers = [];
     let checklistHideCompleted = false;
     
+    // Variables Drag & Drop (Listas)
+    let draggedList = null;
+
     // Suscripciones
     let unsubscribeBoards, unsubscribeLists, unsubscribeActivity, unsubscribeNotifications, unsubscribeComments; 
     let unsubscribeCards = {}; 
@@ -40,12 +43,15 @@ function initializeApp() {
     const boardsContainer = document.getElementById('boards-container');
     const boardView = document.getElementById('board-view');
     const listsContainer = document.getElementById('lists-container');
+    
+    // Modales
     const boardModal = document.getElementById('board-modal');
     const listModal = document.getElementById('list-modal');
     const cardModal = document.getElementById('card-modal');
     const coverModal = document.getElementById('card-cover-modal');
     const labelsModal = document.getElementById('labels-modal');
     const inviteModal = document.getElementById('invite-modal');
+    const archiveModal = document.getElementById('archive-modal');
     
     // Paneles & Búsqueda
     const searchInput = document.getElementById('global-search');
@@ -172,6 +178,276 @@ function initializeApp() {
             closeModal('bg-picker-modal');
         } catch (e) { console.error("Error guardando fondo", e); }
     }
+        // ========================================
+    // FUNCIONES DE ACTIVIDAD Y NOTIFICACIONES (CRÍTICAS)
+    // ========================================
+    
+    async function logActivity(action, entityType, entityId, details = {}) {
+        if (!currentBoardId || !currentUser) return;
+        try {
+            await addDoc(collection(db, 'activity_logs'), {
+                boardId: currentBoardId,
+                userId: currentUser.uid,
+                userName: currentUser.displayName || currentUser.email,
+                action: action,
+                entityType: entityType,
+                entityId: entityId,
+                details: details,
+                timestamp: serverTimestamp()
+            });
+        } catch (e) {
+            console.error('Error registrando actividad:', e);
+        }
+    }
+    
+    function loadActivity(boardId) {
+        if(unsubscribeActivity) unsubscribeActivity();
+        unsubscribeActivity = onSnapshot(
+            query(
+                collection(db, 'activity_logs'), 
+                where('boardId', '==', boardId), 
+                orderBy('timestamp', 'desc')
+            ), 
+            (snap) => {
+                activityList.innerHTML = '';
+                if(snap.empty) { 
+                    activityList.innerHTML='<p class="text-center text-sm text-slate-500 p-4">Sin actividad.</p>'; 
+                    return; 
+                }
+                snap.forEach(doc => {
+                    const a = doc.data();
+                    const div = document.createElement('div'); 
+                    div.className='activity-item';
+                    
+                    const msgs = { 
+                        moved_card: `movió la tarjeta "${a.details?.cardTitle || 'sin título'}"`, 
+                        invited_member: `invitó a ${a.details?.email || 'un miembro'}`, 
+                        created_card: `creó una tarjeta`, 
+                        deleted_card: `eliminó una tarjeta`, 
+                        added_comment: `comentó en "${a.details?.cardTitle || 'una tarjeta'}"`,
+                        archived_list: `archivó la lista "${a.details?.listName || 'sin nombre'}"`,
+                        archived_card: `archivó "${a.details?.cardTitle || 'una tarjeta'}"`
+                    };
+                    
+                    div.innerHTML = `
+                        <div class="activity-user">${a.userName || 'Usuario'}</div>
+                        <div>${msgs[a.action] || a.action}</div>
+                        <div class="activity-meta">${a.timestamp ? new Date(a.timestamp.toDate()).toLocaleString() : 'Fecha desconocida'}</div>
+                    `;
+                    activityList.appendChild(div);
+                });
+            }
+        );
+    }
+
+    function loadNotifications() {
+        if(unsubscribeNotifications) unsubscribeNotifications();
+        unsubscribeNotifications = onSnapshot(
+            query(
+                collection(db, 'notifications'), 
+                where('userId', '==', currentUser.uid), 
+                orderBy('createdAt', 'desc')
+            ), 
+            (snap) => {
+                notifList.innerHTML = '';
+                
+                const unread = snap.docs.filter(d => !d.data().read).length;
+                if(unread > 0) { 
+                    notifBadge.classList.remove('hidden'); 
+                    notifBadge.textContent = unread; 
+                } else {
+                    notifBadge.classList.add('hidden');
+                }
+                
+                if(snap.empty) { 
+                    notifList.innerHTML = '<p class="p-4 text-center text-sm text-slate-500">No tienes notificaciones.</p>'; 
+                    return; 
+                }
+                
+                snap.forEach(doc => {
+                    const n = doc.data();
+                    const div = document.createElement('div');
+                    div.className = `p-3 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer ${!n.read ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`;
+                    
+                    if(n.type === 'board_invitation') {
+                        div.innerHTML = `
+                            <div class="text-sm">
+                                <span class="font-bold text-blue-600">${n.invitedBy || 'Alguien'}</span> 
+                                te invitó a 
+                                <span class="font-bold text-slate-800 dark:text-slate-200">${n.boardTitle || 'un tablero'}</span>
+                            </div>
+                            <div class="flex gap-2 mt-2">
+                                <button class="accept-btn px-2 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded transition">Aceptar</button>
+                                <button class="reject-btn px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition">Rechazar</button>
+                            </div>
+                        `;
+                        
+                        div.querySelector('.accept-btn').addEventListener('click', () => acceptInvitation(doc.id, n));
+                        div.querySelector('.reject-btn').addEventListener('click', () => rejectInvitation(doc.id));
+                    } else { 
+                        div.innerHTML = `
+                            <div class="text-sm text-slate-700 dark:text-slate-300">${n.message || 'Nueva notificación'}</div>
+                            <div class="text-xs text-slate-500 mt-1">${n.createdAt ? timeAgo(n.createdAt.toDate()) : ''}</div>
+                        `; 
+                    }
+                    
+                    notifList.appendChild(div);
+                });
+            }
+        );
+    }
+    
+    async function acceptInvitation(notifId, notifData) {
+        try {
+            await updateDoc(doc(db, 'boards', notifData.boardId), {
+                [`members.${currentUser.uid}`]: {
+                    name: currentUser.displayName || currentUser.email,
+                    email: currentUser.email,
+                    role: 'editor'
+                },
+                memberEmails: arrayUnion(currentUser.email)
+            });
+            
+            await deleteDoc(doc(db, 'notifications', notifId));
+            alert('¡Te has unido al tablero!');
+            loadBoards();
+        } catch (e) {
+            console.error('Error aceptando invitación:', e);
+            alert('Error al aceptar la invitación');
+        }
+    }
+    
+    async function rejectInvitation(notifId) {
+        try {
+            await deleteDoc(doc(db, 'notifications', notifId));
+            alert('Invitación rechazada');
+        } catch (e) {
+            console.error('Error rechazando invitación:', e);
+        }
+    }
+
+    // ========================================
+    // PANELES Y TOGGLES (COMPARTIR, ACTIVIDAD, MIEMBROS)
+    // ========================================
+    
+    // Toggle del panel de invitaciones
+    document.getElementById('invite-member-btn')?.addEventListener('click', () => {
+        inviteModal.classList.remove('hidden');
+        inviteModal.style.display = 'flex';
+    });
+    
+    document.getElementById('close-invite-modal')?.addEventListener('click', () => {
+        closeModal('invite-modal');
+    });
+    
+    // Enviar invitación
+    document.getElementById('send-invite-btn')?.addEventListener('click', async () => {
+        const emailInput = document.getElementById('invite-email');
+        const email = emailInput.value.trim();
+        
+        if (!email) {
+            alert('Por favor ingresa un email');
+            return;
+        }
+        
+        if (!currentBoardId || !currentBoardData) {
+            alert('No hay tablero activo');
+            return;
+        }
+        
+        try {
+            // Buscar usuario por email
+            const usersSnap = await getDocs(query(collection(db, 'users'), where('email', '==', email)));
+            
+            if (usersSnap.empty) {
+                alert('Usuario no encontrado. Debe tener una cuenta en la plataforma.');
+                return;
+            }
+            
+            const targetUser = usersSnap.docs[0];
+            const targetUserId = targetUser.id;
+            
+            // Crear notificación
+            await addDoc(collection(db, 'notifications'), {
+                userId: targetUserId,
+                type: 'board_invitation',
+                boardId: currentBoardId,
+                boardTitle: currentBoardData.title,
+                invitedBy: currentUser.displayName || currentUser.email,
+                read: false,
+                createdAt: serverTimestamp()
+            });
+            
+            alert(`Invitación enviada a ${email}`);
+            emailInput.value = '';
+            closeModal('invite-modal');
+            
+            logActivity('invited_member', 'board', currentBoardId, { email: email });
+        } catch (e) {
+            console.error('Error enviando invitación:', e);
+            alert('Error al enviar invitación');
+        }
+    });
+    
+    // Toggle del panel de miembros
+    document.getElementById('members-btn')?.addEventListener('click', () => {
+        const isHidden = membersPanel.classList.contains('hidden');
+        
+        // Cerrar otros paneles
+        activityPanel?.classList.add('hidden');
+        notifDropdown?.classList.add('hidden');
+        
+        if (isHidden) {
+            membersPanel.classList.remove('hidden');
+            membersPanel.style.display = 'block';
+        } else {
+            membersPanel.classList.add('hidden');
+            membersPanel.style.display = 'none';
+        }
+    });
+    
+    document.getElementById('close-members-panel')?.addEventListener('click', () => {
+        membersPanel.classList.add('hidden');
+        membersPanel.style.display = 'none';
+    });
+    
+    document.getElementById('close-activity-panel')?.addEventListener('click', () => {
+        activityPanel.classList.add('hidden');
+        activityPanel.style.display = 'none';
+    });
+    
+    // Toggle de notificaciones
+    notifBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isHidden = notifDropdown.classList.contains('hidden');
+        
+        // Cerrar otros paneles
+        membersPanel?.classList.add('hidden');
+        activityPanel?.classList.add('hidden');
+        
+        if (isHidden) {
+            notifDropdown.classList.remove('hidden');
+            notifDropdown.style.display = 'block';
+        } else {
+            notifDropdown.classList.add('hidden');
+            notifDropdown.style.display = 'none';
+        }
+    });
+    
+    // Cerrar dropdown de notificaciones al hacer click fuera
+    document.addEventListener('click', (e) => {
+        if (!notifBtn?.contains(e.target) && !notifDropdown?.contains(e.target)) {
+            notifDropdown?.classList.add('hidden');
+            if (notifDropdown) notifDropdown.style.display = 'none';
+        }
+    });
+    
+    // Botón de cerrar notificaciones (si existe)
+    document.getElementById('close-notif-dropdown')?.addEventListener('click', () => {
+        notifDropdown.classList.add('hidden');
+        notifDropdown.style.display = 'none';
+    });
+
 
     // ========================================
     // 3. INICIO Y AUTH
@@ -459,13 +735,19 @@ function initializeApp() {
         });
     }
 
+    // ========================================
+    // 6. LISTAS (CON DRAG & DROP Y ARCHIVADO)
+    // ========================================
     function loadLists(bid) {
         if(unsubscribeLists) unsubscribeLists();
         unsubscribeLists = onSnapshot(query(collection(db, 'boards', bid, 'lists'), orderBy('position')), (snap) => {
             Array.from(listsContainer.querySelectorAll('.list-wrapper:not(:last-child)')).forEach(el=>el.remove());
             const btn = listsContainer.lastElementChild;
             snap.forEach(doc => {
-                const el = createListElement(doc.id, doc.data());
+                const data = doc.data();
+                // --- FILTRO ARCHIVADO ---
+                if (data.archived) return; 
+                const el = createListElement(doc.id, data);
                 listsContainer.insertBefore(el, btn);
                 loadCards(bid, doc.id, el.querySelector('.cards-container'));
             });
@@ -474,27 +756,94 @@ function initializeApp() {
     }
 
     function createListElement(lid, data) {
-        const w = document.createElement('div'); w.className = 'list-wrapper';
+        const w = document.createElement('div'); 
+        w.className = 'list-wrapper';
+        
+        // --- HACER LISTA ARRASTRABLE ---
+        if (hasPermission('createList')) {
+            w.draggable = true;
+            w.dataset.listId = lid;
+            w.dataset.position = data.position;
+            w.addEventListener('dragstart', handleListDragStart);
+            w.addEventListener('dragend', handleListDragEnd);
+            w.addEventListener('dragover', handleListDragOver);
+            w.addEventListener('drop', handleListDrop);
+        }
+
         const d = document.createElement('div'); d.className = 'list'; d.dataset.listId = lid;
         d.innerHTML = `
-            <div class="list-header group flex justify-between items-center p-2">
+            <div class="list-header group flex justify-between items-center p-2 cursor-grab active:cursor-grabbing">
                 <h3 class="truncate text-sm font-semibold text-[#172B4D] dark:text-white px-2">${data.name}</h3>
-                ${hasPermission('createList') ? `<button class="del-list opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-600 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+                ${hasPermission('createList') ? 
+                    `<div class="flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                        <button class="archive-list-btn p-1 text-slate-400 hover:text-slate-600 rounded hover:bg-slate-200 dark:hover:bg-slate-700" title="Archivar lista">
+                            <i data-lucide="archive" class="w-4 h-4"></i>
+                        </button>
+                    </div>` : ''}
             </div>
             <div class="cards-container custom-scrollbar min-h-[10px]" data-list-id="${lid}"></div>
             ${hasPermission('createCard') ? `<div class="p-2"><button class="add-card w-full text-left py-1.5 px-2 text-slate-600 hover:bg-slate-200/50 dark:text-slate-400 dark:hover:bg-slate-700 rounded flex items-center gap-2 text-sm transition"><i data-lucide="plus" class="w-4 h-4"></i> Añadir tarjeta</button></div>` : ''}`;
-        d.querySelector('.del-list')?.addEventListener('click', async()=>{ if(confirm('¿Borrar lista?')) await deleteDoc(doc(db,'boards',currentBoardId,'lists',lid)) });
+        
+        // Acción Archivar Lista
+        d.querySelector('.archive-list-btn')?.addEventListener('click', async()=>{ 
+            if(confirm('¿Archivar esta lista?')) {
+                await updateDoc(doc(db,'boards',currentBoardId,'lists',lid), { archived: true });
+                logActivity('archived_list', 'list', lid, { listName: data.name });
+            }
+        });
+        
         const addCardBtn = d.querySelector('.add-card');
         if (addCardBtn) addCardBtn.addEventListener('click', () => openCardModal(lid));
+        
         setupDropZone(d.querySelector('.cards-container'), lid);
-        w.appendChild(d); return w;
+        w.appendChild(d); 
+        return w;
     }
 
+    // --- FUNCIONES DRAG & DROP LISTAS ---
+    function handleListDragStart(e) {
+        if (!e.target.classList.contains('list-wrapper')) return;
+        draggedList = this;
+        e.dataTransfer.setData('type', 'list');
+        setTimeout(() => this.classList.add('opacity-50'), 0);
+    }
+    function handleListDragEnd() {
+        this.classList.remove('opacity-50');
+        draggedList = null;
+    }
+    function handleListDragOver(e) {
+        if (draggedList && e.dataTransfer.types.includes('type')) { 
+            e.preventDefault(); 
+        }
+    }
+    async function handleListDrop(e) {
+        if (!draggedList || draggedList === this) return;
+        e.preventDefault();
+        
+        const fromId = draggedList.dataset.listId;
+        const toId = this.dataset.listId;
+        const fromPos = parseFloat(draggedList.dataset.position);
+        const toPos = parseFloat(this.dataset.position);
+
+        try {
+            await updateDoc(doc(db, 'boards', currentBoardId, 'lists', fromId), { position: toPos });
+            await updateDoc(doc(db, 'boards', currentBoardId, 'lists', toId), { position: fromPos });
+        } catch(e) { console.error("Error reordenando lista", e); }
+    }
+
+    // ========================================
+    // 7. TARJETAS (CON ARCHIVADO)
+    // ========================================
     function loadCards(bid, lid, cont) {
         if(unsubscribeCards[lid]) unsubscribeCards[lid]();
         unsubscribeCards[lid] = onSnapshot(query(collection(db, 'boards', bid, 'lists', lid, 'cards'), orderBy('position')), (snap) => {
             cont.innerHTML = '';
-            snap.forEach(doc => cont.appendChild(createCardElement(doc.id, lid, doc.data())));
+            snap.forEach(doc => {
+                const data = doc.data();
+                // --- FILTRO ARCHIVADO ---
+                if (data.archived) return;
+                cont.appendChild(createCardElement(doc.id, lid, data));
+            });
             if(window.lucide) lucide.createIcons({root:cont});
         });
     }
@@ -503,11 +852,9 @@ function initializeApp() {
         const d = document.createElement('div'); d.className = 'list-card group relative';
         d.draggable = hasPermission('editCard'); d.dataset.cardId = cid; d.dataset.listId = lid;
         
-        // Data Attributes para Filtros
         const labelString = card.labels?.map(l => l.name).join(',') || '';
         const memberString = card.assignedTo?.join(',') || '';
-        d.dataset.labels = labelString;
-        d.dataset.members = memberString;
+        d.dataset.labels = labelString; d.dataset.members = memberString;
 
         let coverHtml = '', fullClass = '';
         if(card.cover?.url && card.cover.mode === 'full') { fullClass='full-cover'; d.style.backgroundImage=`url('${card.cover.url}')`; } 
@@ -516,54 +863,31 @@ function initializeApp() {
         else if(card.cover?.color) { coverHtml = `<div class="card-cover ${card.cover.color}"></div>`; }
         if(fullClass) d.classList.add(fullClass);
 
-        let labelsHtml = '';
-        if(card.labels?.length) labelsHtml = `<div class="flex flex-wrap mb-1 gap-1">${card.labels.map(l=>`<span class="card-label ${l.color}" title="${l.name}"></span>`).join('')}</div>`;
+        let labelsHtml = ''; if(card.labels?.length) labelsHtml = `<div class="flex flex-wrap mb-1 gap-1">${card.labels.map(l=>`<span class="card-label ${l.color}" title="${l.name}"></span>`).join('')}</div>`;
+        let membersHtml = ''; if(card.assignedTo && card.assignedTo.length > 0) { membersHtml = `<div class="card-members">`; card.assignedTo.forEach(uid => { const memberName = currentBoardData.members[uid]?.name || '?'; membersHtml += `<div class="member-avatar" style="width:24px; height:24px; font-size:10px;" title="${memberName}">${memberName.charAt(0).toUpperCase()}</div>`; }); membersHtml += `</div>`; }
+        let checkHtml = ''; if(card.checklist?.length) { const c = card.checklist.filter(i=>i.completed).length, t=card.checklist.length, p=Math.round((c/t)*100); checkHtml = `<div class="flex items-center gap-1.5 text-xs ${c===t?'text-green-600':'text-slate-500'} mt-1"><i data-lucide="check-square" class="w-3 h-3"></i> <span>${c}/${t}</span></div><div class="checklist-progress-bar"><div class="checklist-progress-value ${c===t?'complete':''}" style="width:${p}%"></div></div>`; }
+        let dateHtml = ''; if(card.dueDate) { const diff = (new Date(card.dueDate).setHours(0,0,0,0) - new Date().setHours(0,0,0,0))/(1000*60*60*24); const cls = diff<0?'bg-red-500 text-white':(diff<=1?'bg-yellow-400 text-slate-800':'bg-transparent text-slate-500'); dateHtml = `<div class="due-date-badge ${cls} inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold"><i data-lucide="calendar" class="w-3 h-3"></i><span>${new Date(card.dueDate).toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</span></div>`; }
 
-        let membersHtml = '';
-        if(card.assignedTo && card.assignedTo.length > 0) {
-            membersHtml = `<div class="card-members">`;
-            card.assignedTo.forEach(uid => {
-                const memberName = currentBoardData.members[uid]?.name || '?';
-                membersHtml += `<div class="member-avatar" style="width:24px; height:24px; font-size:10px;" title="${memberName}">${memberName.charAt(0).toUpperCase()}</div>`;
-            });
-            membersHtml += `</div>`;
-        }
-
-        let checkHtml = '';
-        if(card.checklist?.length) {
-            const c = card.checklist.filter(i=>i.completed).length, t=card.checklist.length, p=Math.round((c/t)*100);
-            checkHtml = `<div class="flex items-center gap-1.5 text-xs ${c===t?'text-green-600':'text-slate-500'} mt-1"><i data-lucide="check-square" class="w-3 h-3"></i> <span>${c}/${t}</span></div><div class="checklist-progress-bar"><div class="checklist-progress-value ${c===t?'complete':''}" style="width:${p}%"></div></div>`;
-        }
-        let dateHtml = '';
-        if(card.dueDate) {
-            const diff = (new Date(card.dueDate).setHours(0,0,0,0) - new Date().setHours(0,0,0,0))/(1000*60*60*24);
-            const cls = diff<0?'bg-red-500 text-white':(diff<=1?'bg-yellow-400 text-slate-800':'bg-transparent text-slate-500');
-            dateHtml = `<div class="due-date-badge ${cls} inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold"><i data-lucide="calendar" class="w-3 h-3"></i><span>${new Date(card.dueDate).toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</span></div>`;
-        }
-
-        d.innerHTML = `${coverHtml}${labelsHtml}<span class="block text-sm text-[#172B4D] dark:text-slate-200 mb-1 font-medium card-title">${card.title}</span>
-        <div class="flex flex-wrap gap-2 items-center">${dateHtml}${checkHtml}${card.description?`<i data-lucide="align-left" class="w-3 h-3 text-slate-400 card-description-icon"></i>`:''}${card.attachments?.length?`<i data-lucide="paperclip" class="w-3 h-3 text-slate-400"></i>`:''}</div>
-        ${membersHtml}
-        <button class="edit-btn absolute top-1 right-1 p-1.5 bg-[#f4f5f7]/80 hover:bg-[#ebecf0] rounded opacity-0 group-hover:opacity-100 z-20"><i data-lucide="pencil" class="w-3 h-3 text-[#42526E]"></i></button>`;
-        
-        d.addEventListener('click', (e) => {
-            if(e.target.closest('.card-label')) { e.stopPropagation(); d.querySelectorAll('.card-label').forEach(l=>l.classList.toggle('expanded')); return; }
-            openCardModal(lid, cid, card);
-        });
+        d.innerHTML = `${coverHtml}${labelsHtml}<span class="block text-sm text-[#172B4D] dark:text-slate-200 mb-1 font-medium card-title">${card.title}</span><div class="flex flex-wrap gap-2 items-center">${dateHtml}${checkHtml}${card.description?`<i data-lucide="align-left" class="w-3 h-3 text-slate-400 card-description-icon"></i>`:''}${card.attachments?.length?`<i data-lucide="paperclip" class="w-3 h-3 text-slate-400"></i>`:''}</div>${membersHtml}<button class="edit-btn absolute top-1 right-1 p-1.5 bg-[#f4f5f7]/80 hover:bg-[#ebecf0] rounded opacity-0 group-hover:opacity-100 z-20"><i data-lucide="pencil" class="w-3 h-3 text-[#42526E]"></i></button>`;
+        d.addEventListener('click', (e) => { if(e.target.closest('.card-label')) { e.stopPropagation(); d.querySelectorAll('.card-label').forEach(l=>l.classList.toggle('expanded')); return; } openCardModal(lid, cid, card); });
         if(d.draggable) { d.addEventListener('dragstart', handleDragStart); d.addEventListener('dragend', handleDragEnd); }
-        
-        if (typeof activeFilters !== 'undefined' && (activeFilters.labels.length > 0 || activeFilters.members.length > 0)) {
-             applyFiltersToCard(d);
-        }
+        if (typeof activeFilters !== 'undefined' && (activeFilters.labels.length > 0 || activeFilters.members.length > 0)) applyFiltersToCard(d);
         return d;
     }
 
-    // Drag & Drop
+    // Drag & Drop Cards
     let draggedItem = null;
-    function handleDragStart(e) { draggedItem=this; this.style.transform='rotate(3deg)'; this.classList.add('dragging'); e.dataTransfer.setData('text/plain', JSON.stringify({cid:this.dataset.cardId, slid:this.dataset.listId})); }
+    function handleDragStart(e) { 
+        // CORRECCIÓN PARA EVITAR CONFLICTO CON LISTAS
+        if(e.target.classList.contains('list-wrapper')) return; 
+        draggedItem=this; 
+        this.style.transform='rotate(3deg)'; 
+        this.classList.add('dragging'); 
+        e.dataTransfer.setData('text/plain', JSON.stringify({cid:this.dataset.cardId, slid:this.dataset.listId})); 
+    }
     function handleDragEnd() { this.style.transform='none'; this.classList.remove('dragging'); draggedItem=null; document.querySelectorAll('.drag-over').forEach(e=>e.classList.remove('drag-over')); }
     function setupDropZone(cont, lid) {
-        cont.addEventListener('dragover', e=>{e.preventDefault(); cont.classList.add('drag-over')});
+        cont.addEventListener('dragover', e=>{ if(draggedItem) { e.preventDefault(); cont.classList.add('drag-over'); } });
         cont.addEventListener('dragleave', ()=>cont.classList.remove('drag-over'));
         cont.addEventListener('drop', async e=>{
             e.preventDefault(); cont.classList.remove('drag-over'); if(!draggedItem)return;
@@ -571,18 +895,114 @@ function initializeApp() {
             try {
                 if(slid!==lid) {
                     const snap = await getDoc(doc(db,'boards',currentBoardId,'lists',slid,'cards',cid));
-                    if(snap.exists()) { 
-                        await addDoc(collection(db,'boards',currentBoardId,'lists',lid,'cards'),{...snap.data(), position:Date.now()}); 
-                        await deleteDoc(snap.ref); 
-                        logActivity('moved_card', 'card', cid, { cardTitle: snap.data().title, fromList: slid, toList: lid });
-                    }
+                    if(snap.exists()) { await addDoc(collection(db,'boards',currentBoardId,'lists',lid,'cards'),{...snap.data(), position:Date.now()}); await deleteDoc(snap.ref); logActivity('moved_card', 'card', cid, { cardTitle: snap.data().title, fromList: slid, toList: lid }); }
                 } else await updateDoc(doc(db,'boards',currentBoardId,'lists',slid,'cards',cid),{position:Date.now()});
             } catch(er){console.error(er);}
         });
     }
 
     // ========================================
-    // 7. MODALES Y FUNCIONES EXTRA
+    // 8. GESTIÓN DE ARCHIVOS (MODAL Y LÓGICA) - CORREGIDO
+    // ========================================
+    document.getElementById('archive-btn')?.addEventListener('click', () => {
+        loadArchivedItems('cards'); // Cargar pestaña por defecto
+        const modal = document.getElementById('archive-modal');
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex'; // Forzar flex para centrado
+    });
+
+    // CORRECCIÓN AQUÍ: Usamos la función global closeModal para limpiar estilos inline
+    document.getElementById('close-archive-btn')?.addEventListener('click', () => {
+        closeModal('archive-modal');
+    });
+
+    document.querySelectorAll('.archive-tab').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            // Resetear estilos de tabs
+            document.querySelectorAll('.archive-tab').forEach(b => { 
+                b.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600', 'dark:text-blue-400', 'dark:border-blue-400'); 
+                b.classList.add('text-slate-500', 'dark:text-slate-400'); 
+            });
+            // Activar tab actual
+            e.target.classList.add('text-blue-600', 'border-b-2', 'border-blue-600', 'dark:text-blue-400', 'dark:border-blue-400'); 
+            e.target.classList.remove('text-slate-500', 'dark:text-slate-400');
+            
+            loadArchivedItems(e.target.dataset.tab);
+        });
+    });
+
+    async function loadArchivedItems(type) {
+        const container = document.getElementById('archived-content');
+        container.innerHTML = '<p class="text-center text-slate-400 py-4">Cargando...</p>';
+        
+        let html = '';
+        if (type === 'cards') {
+            // Buscar tarjetas archivadas
+            const listsSnap = await getDocs(collection(db, 'boards', currentBoardId, 'lists'));
+            let found = false;
+            
+            for (const listDoc of listsSnap.docs) {
+                const cardsSnap = await getDocs(query(collection(db, 'boards', currentBoardId, 'lists', listDoc.id, 'cards'), where('archived', '==', true)));
+                cardsSnap.forEach(cardDoc => {
+                    found = true;
+                    const c = cardDoc.data();
+                    const listTitle = allSearchCache.find(x => x.id === listDoc.id)?.title || 'lista desconocida';
+                    
+                    html += `
+                        <div class="bg-white dark:bg-slate-800 p-3 rounded shadow-sm border border-slate-200 dark:border-slate-700 flex justify-between items-center mb-2">
+                            <div class="flex flex-col">
+                                <span class="font-medium text-sm text-slate-700 dark:text-slate-200">${c.title}</span>
+                                <span class="text-xs text-slate-400">Lista original: ${listTitle}</span>
+                            </div>
+                            <div class="flex gap-2 shrink-0">
+                                <button onclick="restoreItem('card', '${listDoc.id}', '${cardDoc.id}')" class="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 px-2 py-1 rounded border border-blue-200 transition">Recuperar</button>
+                                <button onclick="deleteItemForever('card', '${listDoc.id}', '${cardDoc.id}')" class="text-xs bg-red-50 hover:bg-red-100 text-red-700 px-2 py-1 rounded border border-red-200 transition">Eliminar</button>
+                            </div>
+                        </div>`;
+                });
+            }
+            if(!found) html = '<div class="flex flex-col items-center justify-center h-full text-slate-400"><i data-lucide="inbox" class="w-8 h-8 mb-2 opacity-50"></i><p class="text-sm">No hay tarjetas archivadas</p></div>';
+        } else {
+            // Buscar listas archivadas
+            const listsSnap = await getDocs(query(collection(db, 'boards', currentBoardId, 'lists'), where('archived', '==', true)));
+            if (listsSnap.empty) {
+                html = '<div class="flex flex-col items-center justify-center h-full text-slate-400"><i data-lucide="inbox" class="w-8 h-8 mb-2 opacity-50"></i><p class="text-sm">No hay listas archivadas</p></div>';
+            } else {
+                listsSnap.forEach(doc => {
+                    const l = doc.data();
+                    html += `
+                        <div class="bg-white dark:bg-slate-800 p-3 rounded shadow-sm border border-slate-200 dark:border-slate-700 flex justify-between items-center mb-2">
+                            <span class="font-medium text-sm text-slate-700 dark:text-slate-200">${l.name}</span>
+                            <div class="flex gap-2 shrink-0">
+                                <button onclick="restoreItem('list', null, '${doc.id}')" class="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 px-2 py-1 rounded border border-blue-200 transition">Recuperar</button>
+                                <button onclick="deleteItemForever('list', null, '${doc.id}')" class="text-xs bg-red-50 hover:bg-red-100 text-red-700 px-2 py-1 rounded border border-red-200 transition">Eliminar</button>
+                            </div>
+                        </div>`;
+                });
+            }
+        }
+        container.innerHTML = html;
+        if(window.lucide) lucide.createIcons();
+    }
+
+    window.restoreItem = async (type, lid, id) => {
+        try {
+            if (type === 'card') await updateDoc(doc(db, 'boards', currentBoardId, 'lists', lid, 'cards', id), { archived: false });
+            else await updateDoc(doc(db, 'boards', currentBoardId, 'lists', id), { archived: false });
+            loadArchivedItems(type === 'card' ? 'cards' : 'lists'); 
+        } catch(e){console.error(e);}
+    };
+    window.deleteItemForever = async (type, lid, id) => {
+        if(!confirm("Esta acción es irreversible. ¿Eliminar para siempre?")) return;
+        try {
+            if (type === 'card') await deleteDoc(doc(db, 'boards', currentBoardId, 'lists', lid, 'cards', id));
+            else await deleteDoc(doc(db, 'boards', currentBoardId, 'lists', id));
+            loadArchivedItems(type === 'card' ? 'cards' : 'lists');
+        } catch(e){console.error(e);}
+    };
+
+    // ========================================
+    // 9. MODALES Y COMENTARIOS
     // ========================================
     function loadComments(lid, cid) {
         if (unsubscribeComments) unsubscribeComments();
@@ -664,7 +1084,15 @@ function initializeApp() {
         else { const ref = await addDoc(collection(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards'), {...payload, position:Date.now(), createdAt:serverTimestamp()}); logActivity('created_card', 'card', ref.id, { cardTitle: title }); }
         closeModal('card-modal');
     });
-    document.getElementById('delete-card-btn')?.addEventListener('click', async()=>{if(confirm('¿Borrar?')){ await deleteDoc(doc(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards',currentCardData.cid)); logActivity('deleted_card', 'card', currentCardData.cid, { cardTitle: currentCardData.data.title }); closeModal('card-modal'); }});
+
+    // MODIFICADO PARA ARCHIVAR EN VEZ DE BORRAR
+    document.getElementById('delete-card-btn')?.addEventListener('click', async()=>{
+        if(confirm('¿Archivar esta tarjeta?')) { 
+            await updateDoc(doc(db,'boards',currentBoardId,'lists',currentCardData.lid,'cards',currentCardData.cid), { archived: true }); 
+            logActivity('archived_card', 'card', currentCardData.cid, { cardTitle: currentCardData.data.title }); 
+            closeModal('card-modal'); 
+        }
+    });
 
     function renderChecklist() {
         const c = document.getElementById('checklist-items'); c.innerHTML='';
@@ -696,138 +1124,7 @@ function initializeApp() {
     document.getElementById('add-checklist-item-btn')?.addEventListener('click', () => { const inp = document.getElementById('new-checklist-item-input'); if(inp.value.trim()){ currentChecklist.push({text:inp.value.trim(), completed:false}); inp.value=''; renderChecklist(); } });
 
     // ========================================
-    // 8. PANELES LATERALES (MIEMBROS, ACTIVIDAD)
-    // ========================================
-    // GESTIÓN DE MIEMBROS
-    document.getElementById('toggle-members-btn')?.addEventListener('click', () => {
-        const panel = document.getElementById('members-panel');
-        const activity = document.getElementById('activity-panel');
-        if (panel.classList.contains('hidden')) {
-            renderMembersPanel(); // CARGA DINÁMICA
-            panel.classList.remove('hidden');
-            activity.classList.add('hidden');
-        } else {
-            panel.classList.add('hidden');
-        }
-    });
-    document.getElementById('close-members-btn')?.addEventListener('click', () => document.getElementById('members-panel').classList.add('hidden'));
-
-    function renderMembersPanel() {
-        const container = document.getElementById('members-list');
-        if (!container || !currentBoardData) return;
-        container.innerHTML = '';
-        const membersArr = Object.entries(currentBoardData.members).map(([uid, data]) => ({ uid, ...data }));
-        membersArr.sort((a, b) => { if (a.role === 'owner') return -1; if (b.role === 'owner') return 1; return a.name.localeCompare(b.name); });
-
-        membersArr.forEach(m => {
-            const isMe = m.uid === currentUser.uid;
-            const isOwner = m.role === 'owner';
-            const iAmOwner = currentBoardData.ownerId === currentUser.uid;
-            const canRemove = iAmOwner && !isMe;
-            const div = document.createElement('div');
-            div.className = 'flex items-center gap-3 p-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded transition group';
-            div.innerHTML = `
-                <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-700 border border-slate-300 shrink-0">${m.name.charAt(0).toUpperCase()}</div>
-                <div class="flex-1 min-w-0 overflow-hidden"><div class="flex items-center gap-2"><p class="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">${m.name} ${isMe ? '(Tú)' : ''}</p>${isOwner ? '<span class="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 rounded font-bold">👑</span>' : ''}</div><p class="text-xs text-slate-500 truncate">${m.email}</p></div>
-                ${canRemove ? `<button class="remove-member-btn opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-600 p-1.5 rounded hover:bg-red-50 transition"><i data-lucide="user-x" class="w-4 h-4"></i></button>` : ''}`;
-            if (canRemove) div.querySelector('.remove-member-btn').addEventListener('click', () => removeMemberFromBoard(m));
-            container.appendChild(div);
-        });
-        if(window.lucide) lucide.createIcons();
-    }
-
-    async function removeMemberFromBoard(member) {
-        if (!confirm(`¿Expulsar a ${member.name}?`)) return;
-        try {
-            const boardRef = doc(db, 'boards', currentBoardId);
-            const newMembers = { ...currentBoardData.members };
-            delete newMembers[member.uid];
-            await updateDoc(boardRef, { members: newMembers, memberEmails: arrayRemove(member.email) });
-            logActivity('removed_member', 'board', currentBoardId, { memberName: member.name, memberEmail: member.email });
-            alert('Usuario expulsado.');
-        } catch (e) { console.error(e); alert("Error al expulsar"); }
-    }
-
-    // ACTIVIDAD
-    document.getElementById('toggle-activity-btn')?.addEventListener('click', () => { 
-        const act = document.getElementById('activity-panel'); 
-        const mem = document.getElementById('members-panel');
-        if (act.classList.contains('hidden')) { act.classList.remove('hidden'); mem.classList.add('hidden'); }
-        else { act.classList.add('hidden'); }
-    });
-    document.getElementById('close-activity-btn')?.addEventListener('click', () => document.getElementById('activity-panel').classList.add('hidden'));
-
-    async function logActivity(action, targetType, targetId, details) {
-        try { await addDoc(collection(db, 'activity_logs'), { boardId: currentBoardId, userId: currentUser.uid, userName: currentUser.displayName, action, targetType, targetId, details, timestamp: serverTimestamp() }); } catch(e){console.error(e);}
-    }
-    function loadActivity(boardId) {
-        if(unsubscribeActivity) unsubscribeActivity();
-        unsubscribeActivity = onSnapshot(query(collection(db, 'activity_logs'), where('boardId', '==', boardId), orderBy('timestamp', 'desc')), (snap) => {
-            activityList.innerHTML = '';
-            if(snap.empty) { activityList.innerHTML='<p class="text-center text-sm text-slate-500 p-4">Sin actividad.</p>'; return; }
-            snap.forEach(doc => {
-                const a = doc.data();
-                const div = document.createElement('div'); div.className='activity-item';
-                const msgs = { moved_card: `movió la tarjeta "${a.details.cardTitle}"`, invited_member: `invitó a ${a.details.email}`, created_card: `creó una tarjeta`, deleted_card: `eliminó una tarjeta`, added_comment: `comentó en "${a.details.cardTitle}"`, removed_member: `expulsó a ${a.details.memberName}` };
-                div.innerHTML = `<div class="activity-user">${a.userName}</div><div>${msgs[a.action] || a.action}</div><div class="activity-meta">${new Date(a.timestamp?.toDate()).toLocaleString()}</div>`;
-                activityList.appendChild(div);
-            });
-        });
-    }
-
-    // ========================================
-    // 9. INVITACIONES & NOTIFICACIONES
-    // ========================================
-    document.getElementById('invite-member-btn')?.addEventListener('click', () => { inviteModal.classList.remove('hidden'); inviteModal.style.display='flex'; });
-    document.getElementById('cancel-invite-btn')?.addEventListener('click', () => closeModal('invite-modal'));
-    document.getElementById('send-invite-btn')?.addEventListener('click', async () => {
-        const email = document.getElementById('invite-email-input').value.trim();
-        if(!email) return alert("Escribe un email");
-        try {
-            const q = query(collection(db, 'users'), where('email', '==', email));
-            const snap = await getDocs(q);
-            if(snap.empty) return alert("Usuario no registrado en la app.");
-            const uid = snap.docs[0].id;
-            await addDoc(collection(db, 'notifications'), { userId: uid, type: 'board_invitation', boardId: currentBoardId, boardTitle: currentBoardData.title, invitedBy: currentUser.displayName, invitedByEmail: currentUser.email, role: 'editor', read: false, createdAt: serverTimestamp() });
-            logActivity('invited_member', 'board', currentBoardId, { email });
-            alert("Invitación enviada."); closeModal('invite-modal');
-        } catch(e) { console.error(e); alert("Error al invitar"); }
-    });
-
-    function loadNotifications() {
-        if(unsubscribeNotifications) unsubscribeNotifications();
-        unsubscribeNotifications = onSnapshot(query(collection(db, 'notifications'), where('userId', '==', currentUser.uid), orderBy('createdAt', 'desc')), (snap) => {
-            notifList.innerHTML = '';
-            const unread = snap.docs.filter(d => !d.data().read).length;
-            if(unread > 0) { notifBadge.classList.remove('hidden'); notifBadge.textContent = unread; } else notifBadge.classList.add('hidden');
-            if(snap.empty) { notifList.innerHTML = '<p class="p-4 text-center text-sm text-slate-500">No tienes notificaciones.</p>'; return; }
-            snap.forEach(doc => {
-                const n = doc.data();
-                const div = document.createElement('div');
-                div.className = `p-3 border-b border-slate-100 hover:bg-slate-50 cursor-pointer ${!n.read?'bg-blue-50':''}`;
-                if(n.type === 'board_invitation') {
-                    div.innerHTML = `<div class="text-sm"><span class="font-bold text-blue-600">${n.invitedBy}</span> te invitó a <span class="font-bold text-slate-800">${n.boardTitle}</span></div><div class="flex gap-2 mt-2"><button class="accept-btn px-2 py-1 bg-green-500 text-white text-xs rounded">Aceptar</button><button class="reject-btn px-2 py-1 bg-red-500 text-white text-xs rounded">Rechazar</button></div>`;
-                    div.querySelector('.accept-btn').addEventListener('click', () => acceptInvitation(doc.id, n));
-                    div.querySelector('.reject-btn').addEventListener('click', () => rejectInvitation(doc.id));
-                } else { div.innerHTML = `<div class="text-sm">${n.message || 'Nueva notificación'}</div>`; }
-                notifList.appendChild(div);
-            });
-        });
-    }
-    async function acceptInvitation(notifId, data) {
-        try {
-            const boardRef = doc(db, 'boards', data.boardId);
-            await updateDoc(boardRef, { [`members.${currentUser.uid}`]: { email: currentUser.email, name: currentUser.displayName || currentUser.email, role: data.role }, memberEmails: arrayUnion(currentUser.email) });
-            await deleteDoc(doc(db, 'notifications', notifId));
-            alert(`¡Te has unido a ${data.boardTitle}!`); loadBoards();
-        } catch(e) { console.error(e); alert("Error al unirse"); }
-    }
-    async function rejectInvitation(notifId) { if(confirm("¿Rechazar invitación?")) await deleteDoc(doc(db, 'notifications', notifId)); }
-    notifBtn?.addEventListener('click', (e) => { e.stopPropagation(); notifDropdown.classList.toggle('hidden'); });
-    document.addEventListener('click', (e) => { if(!notifBtn.contains(e.target) && !notifDropdown.contains(e.target)) notifDropdown.classList.add('hidden'); });
-
-    // ========================================
-    // 10. SISTEMA DE FILTROS (FINAL)
+    // 10. SISTEMA DE FILTROS
     // ========================================
     document.getElementById('filter-btn')?.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -881,69 +1178,55 @@ function initializeApp() {
     }
 
     // ========================================
-    // 11. BÚSQUEDA GLOBAL
+    // 11. GESTIÓN DE MIEMBROS
     // ========================================
-    async function buildGlobalIndex() {
-        allSearchCache = []; 
+    document.getElementById('toggle-members-btn')?.addEventListener('click', () => {
+        const panel = document.getElementById('members-panel');
+        const activity = document.getElementById('activity-panel');
+        if (panel.classList.contains('hidden')) {
+            renderMembersPanel(); // CARGA DINÁMICA
+            panel.classList.remove('hidden');
+            activity.classList.add('hidden');
+        } else {
+            panel.classList.add('hidden');
+        }
+    });
+    document.getElementById('close-members-btn')?.addEventListener('click', () => document.getElementById('members-panel').classList.add('hidden'));
+
+    function renderMembersPanel() {
+        const container = document.getElementById('members-list');
+        if (!container || !currentBoardData) return;
+        container.innerHTML = '';
+        const membersArr = Object.entries(currentBoardData.members).map(([uid, data]) => ({ uid, ...data }));
+        membersArr.sort((a, b) => { if (a.role === 'owner') return -1; if (b.role === 'owner') return 1; return a.name.localeCompare(b.name); });
+
+        membersArr.forEach(m => {
+            const isMe = m.uid === currentUser.uid;
+            const isOwner = m.role === 'owner';
+            const iAmOwner = currentBoardData.ownerId === currentUser.uid;
+            const canRemove = iAmOwner && !isMe;
+            const div = document.createElement('div');
+            div.className = 'flex items-center gap-3 p-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded transition group';
+            div.innerHTML = `
+                <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-700 border border-slate-300 shrink-0">${m.name.charAt(0).toUpperCase()}</div>
+                <div class="flex-1 min-w-0 overflow-hidden"><div class="flex items-center gap-2"><p class="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">${m.name} ${isMe ? '(Tú)' : ''}</p>${isOwner ? '<span class="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 rounded font-bold">👑</span>' : ''}</div><p class="text-xs text-slate-500 truncate">${m.email}</p></div>
+                ${canRemove ? `<button class="remove-member-btn opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-600 p-1.5 rounded hover:bg-red-50 transition"><i data-lucide="user-x" class="w-4 h-4"></i></button>` : ''}`;
+            if (canRemove) div.querySelector('.remove-member-btn').addEventListener('click', () => removeMemberFromBoard(m));
+            container.appendChild(div);
+        });
+        if(window.lucide) lucide.createIcons();
+    }
+
+    async function removeMemberFromBoard(member) {
+        if (!confirm(`¿Expulsar a ${member.name}?`)) return;
         try {
-            const qBoards = query(collection(db, 'boards'), where('memberEmails', 'array-contains', currentUser.email));
-            const snapBoards = await getDocs(qBoards);
-            const promises = snapBoards.docs.map(async (boardDoc) => {
-                const b = boardDoc.data(); const bId = boardDoc.id;
-                allSearchCache.push({ id: bId, type: 'board', title: b.title, score: 0 });
-                const snapLists = await getDocs(query(collection(db, 'boards', bId, 'lists')));
-                for (const listDoc of snapLists.docs) {
-                    const l = listDoc.data();
-                    allSearchCache.push({ id: listDoc.id, type: 'list', title: l.name, boardId: bId, boardTitle: b.title, score: 0 });
-                    const snapCards = await getDocs(query(collection(db, 'boards', bId, 'lists', listDoc.id, 'cards')));
-                    snapCards.forEach(cardDoc => {
-                        const c = cardDoc.data();
-                        allSearchCache.push({ id: cardDoc.id, type: 'card', title: c.title, description: c.description||'', listId: listDoc.id, listName: l.name, boardId: bId, boardTitle: b.title, score: 0 });
-                    });
-                }
-            });
-            await Promise.all(promises);
-        } catch (e) { console.error("Error indexando:", e); }
-    }
-    function calculateScore(text, searchTerm) { const lowerText = (text || '').toLowerCase(); const lowerTerm = searchTerm.toLowerCase(); if (lowerText === lowerTerm) return 100; if (lowerText.startsWith(lowerTerm)) return 80; if (lowerText.includes(lowerTerm)) return 40; return 0; }
-    function highlightText(text, term) { if (!text) return ''; const regex = new RegExp(`(${term})`, 'gi'); return text.replace(regex, '<span class="search-result-highlight">$1</span>'); }
-    function initSearchListeners() {
-        searchInput?.addEventListener('input', (e) => {
-            const term = e.target.value.trim().toLowerCase(); if(term.length < 2) { searchResults.classList.add('hidden'); selectedResultIndex = -1; return; }
-            const results = allSearchCache.map(item => { const titleScore = calculateScore(item.title, term); const descScore = item.description ? calculateScore(item.description, term) : 0; return { ...item, score: Math.max(titleScore, descScore) }; }).filter(item => item.score > 0).sort((a, b) => b.score - a.score);
-            renderSearchResults(results.slice(0, 10), term);
-        });
-        searchInput?.addEventListener('keydown', (e) => {
-            const items = document.querySelectorAll('.search-result-item'); if (items.length === 0) return;
-            if (e.key === 'ArrowDown') { e.preventDefault(); selectedResultIndex = Math.min(selectedResultIndex + 1, items.length - 1); updateSelection(items); } 
-            else if (e.key === 'ArrowUp') { e.preventDefault(); selectedResultIndex = Math.max(selectedResultIndex - 1, 0); updateSelection(items); } 
-            else if (e.key === 'Enter') { e.preventDefault(); if (selectedResultIndex >= 0) items[selectedResultIndex].click(); } 
-            else if (e.key === 'Escape') searchResults.classList.add('hidden');
-        });
-        document.addEventListener('click', (e) => { if(!searchInput.contains(e.target) && !searchResults.contains(e.target)) searchResults.classList.add('hidden'); });
-    }
-    function updateSelection(items) { items.forEach((item, index) => { if (index === selectedResultIndex) { item.classList.add('keyboard-selected'); item.scrollIntoView({ block: 'nearest' }); } else { item.classList.remove('keyboard-selected'); } }); }
-    function renderSearchResults(results, term) {
-        searchResultsList.innerHTML = ''; selectedResultIndex = -1;
-        if(results.length === 0) { searchResultsList.innerHTML = '<p class="p-4 text-sm text-slate-500 text-center">No se encontraron resultados.</p>'; searchResults.classList.remove('hidden'); return; }
-        results.forEach((res, index) => {
-            const div = document.createElement('div'); div.className = 'search-result-item'; div.dataset.index = index;
-            const titleHtml = highlightText(res.title, term);
-            if (res.type === 'board') div.innerHTML = `<div class="flex items-center gap-2 mb-1"><span class="result-type-badge result-type-board">Tablero</span><span class="text-sm font-bold text-slate-800">${titleHtml}</span></div>`;
-            else if (res.type === 'list') div.innerHTML = `<div class="flex items-center gap-2 mb-1"><span class="result-type-badge result-type-list">Lista</span><span class="text-sm font-bold text-slate-800">${titleHtml}</span></div><div class="result-breadcrumbs"><span>En: <strong>${res.boardTitle}</strong></span></div>`;
-            else if (res.type === 'card') div.innerHTML = `<div class="flex items-center gap-2 mb-1"><span class="result-type-badge result-type-card">Tarjeta</span><span class="text-sm font-bold text-slate-800">${titleHtml}</span></div><div class="result-breadcrumbs"><span>${res.boardTitle}</span><i data-lucide="chevron-right" class="w-3 h-3"></i><span>${res.listName}</span></div>`;
-            div.addEventListener('click', () => handleSearchResultClick(res)); searchResultsList.appendChild(div);
-        });
-        searchResults.classList.remove('hidden'); if(window.lucide) lucide.createIcons();
-    }
-    async function handleSearchResultClick(res) {
-        searchResults.classList.add('hidden'); searchInput.value = '';
-        if (currentBoardId !== res.boardId && res.boardId) { const bSnap = await getDoc(doc(db, 'boards', res.boardId)); if (bSnap.exists()) { await openBoard(res.boardId, bSnap.data()); setTimeout(() => focusTarget(res), 800); } } else { focusTarget(res); }
-    }
-    async function focusTarget(res) {
-        if (res.type === 'board') return; 
-        if (res.type === 'list') { const el = document.querySelector(`[data-list-id="${res.id}"]`); if (el) { el.scrollIntoView({ behavior: 'smooth', inline: 'center' }); el.style.boxShadow = '0 0 0 4px #FFAB00'; setTimeout(() => el.style.boxShadow = '', 2000); } } 
-        else if (res.type === 'card') { const cSnap = await getDoc(doc(db, 'boards', res.boardId, 'lists', res.listId, 'cards', res.id)); if (cSnap.exists()) openCardModal(res.listId, res.id, cSnap.data()); }
+            const boardRef = doc(db, 'boards', currentBoardId);
+            const newMembers = { ...currentBoardData.members };
+            delete newMembers[member.uid];
+            await updateDoc(boardRef, { members: newMembers, memberEmails: arrayRemove(member.email) });
+            logActivity('removed_member', 'board', currentBoardId, { memberName: member.name, memberEmail: member.email });
+            alert('Usuario expulsado.');
+        } catch (e) { console.error(e); alert("Error al expulsar"); }
     }
 
     // ========================================
@@ -965,4 +1248,135 @@ function initializeApp() {
             if ((e.key === 'n' || e.key === 'N') && currentBoardId && !boardView.classList.contains('hidden')) { e.preventDefault(); const firstList = document.querySelector('.list'); if (firstList) openCardModal(firstList.dataset.listId); }
         });
     }
-}
+
+    // ========================================
+    // 13. SCROLL LATERAL (DRAG TO SCROLL)
+    // ========================================
+    function initDragToScroll() {
+        const slider = document.getElementById('lists-container');
+        let isDown = false;
+        let startX;
+        let scrollLeft;
+
+        slider.addEventListener('mousedown', (e) => {
+            // CRÍTICO: Solo activar si clicamos en el fondo, NO en una lista o tarjeta
+            // Si clicamos en una tarjeta o lista, dejamos que el Drag&Drop nativo actúe
+            if (e.target.closest('.list') || e.target.closest('.list-card')) return;
+            
+            isDown = true;
+            slider.classList.add('active'); // Cambia cursor a grabbing (CSS)
+            startX = e.pageX - slider.offsetLeft;
+            scrollLeft = slider.scrollLeft;
+        });
+
+        slider.addEventListener('mouseleave', () => {
+            isDown = false;
+            slider.classList.remove('active');
+        });
+
+        slider.addEventListener('mouseup', () => {
+            isDown = false;
+            slider.classList.remove('active');
+        });
+
+        slider.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault(); // Evitar selección de texto
+            const x = e.pageX - slider.offsetLeft;
+            const walk = (x - startX) * 2; // Velocidad del scroll (x2 para que sea fluido)
+            slider.scrollLeft = scrollLeft - walk;
+        });
+    }
+    initDragToScroll(); // Iniciar la lógica
+
+    // ========================================
+    // DELEGACIÓN DE EVENTOS PARA PANELES (IDS CORRECTOS)
+    // ========================================
+    document.body.addEventListener('click', (e) => {
+        // Botón de actividad (ID CORRECTO: toggle-activity-btn)
+        if (e.target.closest('#toggle-activity-btn')) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const panel = document.getElementById('activity-panel');
+            const members = document.getElementById('members-panel');
+            const notif = document.getElementById('notifications-dropdown');
+            
+            if (!panel) return;
+            
+            const isHidden = panel.classList.contains('hidden') || panel.style.display === 'none';
+            
+            // Cerrar otros paneles
+            if (members) {
+                members.classList.add('hidden');
+                members.style.display = 'none';
+            }
+            if (notif) {
+                notif.classList.add('hidden');
+                notif.style.display = 'none';
+            }
+            
+            // Toggle del panel de actividad
+            if (isHidden) {
+                panel.classList.remove('hidden');
+                panel.style.display = 'block';
+            } else {
+                panel.classList.add('hidden');
+                panel.style.display = 'none';
+            }
+        }
+        
+        // Cerrar panel de actividad
+        if (e.target.closest('#close-activity-btn')) {
+            const panel = document.getElementById('activity-panel');
+            if (panel) {
+                panel.classList.add('hidden');
+                panel.style.display = 'none';
+            }
+        }
+        
+        // Botón de miembros (ID CORRECTO: toggle-members-btn)
+        if (e.target.closest('#toggle-members-btn')) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const panel = document.getElementById('members-panel');
+            const activity = document.getElementById('activity-panel');
+            const notif = document.getElementById('notifications-dropdown');
+            
+            if (!panel) return;
+            
+            const isHidden = panel.classList.contains('hidden') || panel.style.display === 'none';
+            
+            // Cerrar otros paneles
+            if (activity) {
+                activity.classList.add('hidden');
+                activity.style.display = 'none';
+            }
+            if (notif) {
+                notif.classList.add('hidden');
+                notif.style.display = 'none';
+            }
+            
+            // Toggle del panel de miembros
+            if (isHidden) {
+                panel.classList.remove('hidden');
+                panel.style.display = 'block';
+            } else {
+                panel.classList.add('hidden');
+                panel.style.display = 'none';
+            }
+        }
+        
+        // Cerrar panel de miembros
+        if (e.target.closest('#close-members-btn')) {
+            const panel = document.getElementById('members-panel');
+            if (panel) {
+                panel.classList.add('hidden');
+                panel.style.display = 'none';
+            }
+        }
+    }, true);
+
+} // ← Este es el cierre de initializeApp
+
