@@ -364,26 +364,72 @@
         </div>
     </div>
 
-    <div id="labels-modal" class="hidden fixed inset-0 z-[80] flex items-center justify-center bg-black/20">
-        <div class="bg-white dark:bg-slate-800 p-4 rounded shadow-xl w-64">
-            <h3 class="text-sm font-bold mb-3 dark:text-white">Etiquetas</h3>
-            <div class="space-y-2 mb-3">
-                <label class="flex items-center gap-2 cursor-pointer p-1 hover:bg-slate-50 rounded">
-                    <input type="checkbox" class="label-checkbox" data-label="urgente" data-color="bg-red-100 text-red-700">
-                    <span class="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded font-bold">Urgente</span>
-                </label>
-                <label class="flex items-center gap-2 cursor-pointer p-1 hover:bg-slate-50 rounded">
-                    <input type="checkbox" class="label-checkbox" data-label="diseño" data-color="bg-purple-100 text-purple-700">
-                    <span class="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded font-bold">Diseño</span>
-                </label>
-                <label class="flex items-center gap-2 cursor-pointer p-1 hover:bg-slate-50 rounded">
-                    <input type="checkbox" class="label-checkbox" data-label="dev" data-color="bg-green-100 text-green-700">
-                    <span class="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded font-bold">Dev</span>
-                </label>
+    <div id="labels-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/60">
+        <div class="bg-white dark:bg-slate-800 p-4 rounded shadow-2xl w-80 max-h-[80vh] flex flex-col relative z-110">
+            <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-200 dark:border-slate-700">
+                <h3 class="text-sm font-bold dark:text-white">Etiquetas</h3>
+                <button id="close-labels-modal" class="text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 p-1 rounded">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
             </div>
-            <button id="cancel-labels-btn" class="w-full text-xs py-1 bg-slate-100 hover:bg-slate-200 rounded">Listo</button>
+            
+            <div class="space-y-2 mb-3 overflow-y-auto flex-1" id="labels-list-container">
+                <!-- Las etiquetas se renderizarán aquí dinámicamente -->
+            </div>
+            
+            <div class="pt-3 border-t border-slate-200 dark:border-slate-700">
+                <button id="create-new-label-btn" class="w-full text-left px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded text-sm font-medium flex items-center gap-2">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    Crear nueva etiqueta
+                </button>
+            </div>
         </div>
     </div>
+
+    <!-- Modal para crear/editar etiqueta -->
+    <div id="label-editor-modal" class="hidden fixed inset-0 z-[110] flex items-center justify-center bg-black/40">
+        <div class="bg-white dark:bg-slate-800 p-4 rounded shadow-xl w-80">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-sm font-bold dark:text-white" id="label-editor-title">Nueva etiqueta</h3>
+                <button id="close-label-editor" class="text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 p-1 rounded">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            
+            <div class="mb-3">
+                <label class="text-xs font-bold text-slate-500 uppercase block mb-2">Nombre</label>
+                <input type="text" id="label-name-input" placeholder="Nombre de la etiqueta" 
+                    class="w-full p-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded text-sm dark:text-white" 
+                    maxlength="20">
+            </div>
+            
+            <div class="mb-4">
+                <label class="text-xs font-bold text-slate-500 uppercase block mb-2">Color</label>
+                <div class="grid grid-cols-5 gap-2" id="label-color-picker">
+                    <div class="label-color-option w-full h-8 rounded cursor-pointer hover:opacity-80 bg-green-500" data-color="bg-green-500" data-text="text-green-700"></div>
+                    <div class="label-color-option w-full h-8 rounded cursor-pointer hover:opacity-80 bg-yellow-500" data-color="bg-yellow-500" data-text="text-yellow-700"></div>
+                    <div class="label-color-option w-full h-8 rounded cursor-pointer hover:opacity-80 bg-orange-500" data-color="bg-orange-500" data-text="text-orange-700"></div>
+                    <div class="label-color-option w-full h-8 rounded cursor-pointer hover:opacity-80 bg-red-500" data-color="bg-red-500" data-text="text-red-700"></div>
+                    <div class="label-color-option w-full h-8 rounded cursor-pointer hover:opacity-80 bg-purple-500" data-color="bg-purple-500" data-text="text-purple-700"></div>
+                    <div class="label-color-option w-full h-8 rounded cursor-pointer hover:opacity-80 bg-blue-500" data-color="bg-blue-500" data-text="text-blue-700"></div>
+                    <div class="label-color-option w-full h-8 rounded cursor-pointer hover:opacity-80 bg-pink-500" data-color="bg-pink-500" data-text="text-pink-700"></div>
+                    <div class="label-color-option w-full h-8 rounded cursor-pointer hover:opacity-80 bg-indigo-500" data-color="bg-indigo-500" data-text="text-indigo-700"></div>
+                    <div class="label-color-option w-full h-8 rounded cursor-pointer hover:opacity-80 bg-teal-500" data-color="bg-teal-500" data-text="text-teal-700"></div>
+                    <div class="label-color-option w-full h-8 rounded cursor-pointer hover:opacity-80 bg-slate-500" data-color="bg-slate-500" data-text="text-slate-700"></div>
+                </div>
+            </div>
+            
+            <div class="flex gap-2">
+                <button id="save-label-btn" class="flex-1 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium text-sm">
+                    Guardar
+                </button>
+                <button id="delete-label-btn" class="hidden px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
 
     <div id="shortcuts-modal" class="hidden fixed inset-0 z-[80] flex items-center justify-center bg-black/50">
         <div class="bg-white dark:bg-slate-800 p-6 rounded shadow-xl max-w-sm w-full dark:text-white">

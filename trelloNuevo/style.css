@@ -982,3 +982,73 @@ header input[class*="text-"] {
 .list-card {
     cursor: pointer; /* O grab si es arrastrable */
 }
+
+/* === MODO OSCURO: RESULTADOS DE BÚSQUEDA === */
+.dark #search-results {
+    background-color: #1e293b !important; /* Slate 800 */
+    border-color: #334155 !important; /* Slate 700 */
+}
+
+.dark .search-result-item {
+    color: #f1f5f9 !important; /* Slate 100 */
+    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .search-result-item:hover {
+    background-color: #334155 !important; /* Slate 700 */
+}
+
+.dark .search-result-item.keyboard-selected {
+    background-color: #1e3a8a !important; /* Blue 900 */
+    border-left-color: #3b82f6 !important; /* Blue 500 */
+}
+
+.dark .search-result-highlight {
+    background-color: #854d0e !important; /* Yellow 900 */
+    color: #fef3c7 !important; /* Yellow 100 */
+}
+
+/* Badges de tipo en modo oscuro */
+.dark .result-type-badge {
+    opacity: 0.9;
+}
+
+.dark .result-type-board {
+    background-color: #0e7490 !important; /* Cyan 700 */
+    color: #cffafe !important; /* Cyan 100 */
+}
+
+.dark .result-type-list {
+    background-color: #854d0e !important; /* Yellow 800 */
+    color: #fef3c7 !important; /* Yellow 100 */
+}
+
+.dark .result-type-card {
+    background-color: #334155 !important; /* Slate 700 */
+    color: #cbd5e1 !important; /* Slate 300 */
+}
+
+/* Breadcrumbs en modo oscuro */
+.dark .result-breadcrumbs {
+    color: #94a3b8 !important; /* Slate 400 */
+}
+
+/* === MODO OSCURO: ACTIVIDAD === */
+.dark .activity-item {
+    color: #f1f5f9 !important; /* Slate 100 */
+    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .activity-user {
+    color: #60a5fa !important; /* Blue 400 */
+}
+
+.dark .activity-meta {
+    color: #94a3b8 !important; /* Slate 400 */
+}
+
+/* Contador de resultados */
+.dark #search-results-count {
+    color: #94a3b8 !important;
+    border-top-color: rgba(255, 255, 255, 0.08) !important;
+}
