@@ -1198,14 +1198,33 @@ function initializeApp() {
     document.getElementById('toggle-members-btn')?.addEventListener('click', () => {
         const panel = document.getElementById('members-panel');
         const activity = document.getElementById('activity-panel');
-        if (panel.classList.contains('hidden')) {
-            renderMembersPanel(); // CARGA DINÁMICA
-            panel.classList.remove('hidden');
+        const notif = document.getElementById('notifications-dropdown');
+        
+        if (!panel) return;
+        
+        const isHidden = panel.classList.contains('hidden') || panel.style.display === 'none';
+        
+        // Cerrar otros paneles
+        if (activity) {
             activity.classList.add('hidden');
+            activity.style.display = 'none';
+        }
+        if (notif) {
+            notif.classList.add('hidden');
+            notif.style.display = 'none';
+        }
+        
+        // Toggle del panel de miembros
+        if (isHidden) {
+            renderMembersPanel(); // ← AGREGAR ESTA LÍNEA
+            panel.classList.remove('hidden');
+            panel.style.display = 'block';
         } else {
             panel.classList.add('hidden');
+            panel.style.display = 'none';
         }
     });
+
     document.getElementById('close-members-btn')?.addEventListener('click', () => document.getElementById('members-panel').classList.add('hidden'));
 
     function renderMembersPanel() {
