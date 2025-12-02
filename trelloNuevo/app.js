@@ -342,7 +342,7 @@ function initializeApp() {
     
     // Enviar invitación
     document.getElementById('send-invite-btn')?.addEventListener('click', async () => {
-        const emailInput = document.getElementById('invite-email');
+        const emailInput = document.getElementById('invite-email-input');
         const email = emailInput.value.trim();
         
         if (!email) {
