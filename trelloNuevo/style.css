@@ -1052,3 +1052,29 @@ header input[class*="text-"] {
     color: #94a3b8 !important;
     border-top-color: rgba(255, 255, 255, 0.08) !important;
 }
+
+/* MEJORA DRAG & DROP - ZONA MÁS GRANDE */
+.cards-container {
+  min-height: 100px !important; /* Zona de drop más grande */
+  padding: 8px !important;
+}
+
+.cards-container.drag-over {
+  background-color: rgba(9, 30, 66, 0.08) !important;
+  border: 2px dashed rgba(0, 121, 191, 0.5) !important;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+/* Lista vacía más visible */
+.cards-container:empty {
+  min-height: 120px !important;
+  background-color: rgba(9, 30, 66, 0.02);
+  border: 2px dashed transparent;
+  border-radius: 8px;
+}
+
+.cards-container:empty.drag-over {
+  border-color: rgba(0, 121, 191, 0.5) !important;
+  background-color: rgba(0, 121, 191, 0.05) !important;
+}

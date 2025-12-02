@@ -1118,13 +1118,26 @@ function initializeApp() {
     }
     function handleListDragEnd() {
         this.classList.remove('opacity-50');
+        this.style.opacity = '';
+        this.style.transform = '';
         draggedList = null;
+        
+        // Limpiar estilos de todas las listas
+        document.querySelectorAll('.list-wrapper').forEach(l => {
+            l.style.opacity = '';
+            l.style.transform = '';
+        });
     }
+
     function handleListDragOver(e) {
-        if (draggedList && e.dataTransfer.types.includes('type')) { 
-            e.preventDefault(); 
+        if(draggedList && e.dataTransfer.types.includes('type')) {
+            e.preventDefault();
+            // Agregar indicador visual
+            this.style.opacity = '0.5';
+            this.style.transform = 'scale(1.02)';
         }
     }
+
     async function handleListDrop(e) {
         if (!draggedList || draggedList === this) return;
         e.preventDefault();
@@ -1179,7 +1192,25 @@ function initializeApp() {
 
         d.innerHTML = `${coverHtml}${labelsHtml}<span class="block text-sm text-[#172B4D] dark:text-slate-200 mb-1 font-medium card-title">${card.title}</span><div class="flex flex-wrap gap-2 items-center">${dateHtml}${checkHtml}${card.description?`<i data-lucide="align-left" class="w-3 h-3 text-slate-400 card-description-icon"></i>`:''}${card.attachments?.length?`<i data-lucide="paperclip" class="w-3 h-3 text-slate-400"></i>`:''}</div>${membersHtml}<button class="edit-btn absolute top-1 right-1 p-1.5 bg-[#f4f5f7]/80 hover:bg-[#ebecf0] rounded opacity-0 group-hover:opacity-100 z-20"><i data-lucide="pencil" class="w-3 h-3 text-[#42526E]"></i></button>`;
         d.addEventListener('click', (e) => { if(e.target.closest('.card-label')) { e.stopPropagation(); d.querySelectorAll('.card-label').forEach(l=>l.classList.toggle('expanded')); return; } openCardModal(lid, cid, card); });
-        if(d.draggable) { d.addEventListener('dragstart', handleDragStart); d.addEventListener('dragend', handleDragEnd); }
+        if(d.draggable) {
+            d.addEventListener('dragstart', function(e) {
+                    if(this.classList.contains('list-wrapper')) return;
+                    draggedItem = this;
+                    this.style.transform = 'rotate(3deg)';
+                    this.classList.add('dragging');
+                    e.dataTransfer.setData('text/plain', JSON.stringify({
+                    cid: this.dataset.cardId, 
+                    slid: this.dataset.listId
+                }));
+        });
+  
+  d.addEventListener('dragend', function() {
+    this.style.transform = 'none';
+    this.classList.remove('dragging');
+    draggedItem = null;
+    document.querySelectorAll('.drag-over').forEach(e => e.classList.remove('drag-over'));
+  });
+}
         if (typeof activeFilters !== 'undefined' && (activeFilters.labels.length > 0 || activeFilters.members.length > 0)) applyFiltersToCard(d);
         return d;
     }
@@ -1194,21 +1225,64 @@ function initializeApp() {
         this.classList.add('dragging'); 
         e.dataTransfer.setData('text/plain', JSON.stringify({cid:this.dataset.cardId, slid:this.dataset.listId})); 
     }
-    function handleDragEnd() { this.style.transform='none'; this.classList.remove('dragging'); draggedItem=null; document.querySelectorAll('.drag-over').forEach(e=>e.classList.remove('drag-over')); }
+
     function setupDropZone(cont, lid) {
-        cont.addEventListener('dragover', e=>{ if(draggedItem) { e.preventDefault(); cont.classList.add('drag-over'); } });
-        cont.addEventListener('dragleave', ()=>cont.classList.remove('drag-over'));
-        cont.addEventListener('drop', async e=>{
-            e.preventDefault(); cont.classList.remove('drag-over'); if(!draggedItem)return;
+        // Aumentar la altura mínima del contenedor
+        cont.style.minHeight = '100px';
+        
+        cont.addEventListener('dragover', (e) => {
+            if(draggedItem) {
+            e.preventDefault();
+            e.stopPropagation();
+            cont.classList.add('drag-over');
+            }
+        });
+        
+        cont.addEventListener('dragleave', (e) => {
+            // Solo quitar si salimos completamente del contenedor
+            if (!cont.contains(e.relatedTarget)) {
+            cont.classList.remove('drag-over');
+            }
+        });
+        
+        cont.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            cont.classList.remove('drag-over');
+            
+            if(!draggedItem) return;
+            
             const {cid, slid} = JSON.parse(e.dataTransfer.getData('text/plain'));
+            
             try {
-                if(slid!==lid) {
-                    const snap = await getDoc(doc(db,'boards',currentBoardId,'lists',slid,'cards',cid));
-                    if(snap.exists()) { await addDoc(collection(db,'boards',currentBoardId,'lists',lid,'cards'),{...snap.data(), position:Date.now()}); await deleteDoc(snap.ref); logActivity('moved_card', 'card', cid, { cardTitle: snap.data().title, fromList: slid, toList: lid }); }
-                } else await updateDoc(doc(db,'boards',currentBoardId,'lists',slid,'cards',cid),{position:Date.now()});
-            } catch(er){console.error(er);}
+            if(slid !== lid) {
+                // Mover a otra lista
+                const snap = await getDoc(doc(db,'boards',currentBoardId,'lists',slid,'cards',cid));
+                if(snap.exists()) {
+                await addDoc(collection(db,'boards',currentBoardId,'lists',lid,'cards'), {
+                    ...snap.data(), 
+                    position: Date.now()
+                });
+                await deleteDoc(snap.ref);
+                logActivity('movedcard', 'card', cid, {
+                    cardTitle: snap.data().title, 
+                    fromList: slid, 
+                    toList: lid
+                });
+                }
+            } else {
+                // Reordenar en la misma lista
+                await updateDoc(doc(db,'boards',currentBoardId,'lists',slid,'cards',cid), {
+                position: Date.now()
+                });
+            }
+            } catch(err) { 
+            console.error('Error en drop:', err); 
+            }
         });
     }
+
+
 
     // ========================================
     // 8. GESTIÓN DE ARCHIVOS (MODAL Y LÓGICA) - CORREGIDO
