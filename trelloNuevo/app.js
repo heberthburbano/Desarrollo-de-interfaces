@@ -340,23 +340,38 @@ function initializeApp() {
         closeModal('invite-modal');
     });
     
-    // Enviar invitación
     document.getElementById('send-invite-btn')?.addEventListener('click', async () => {
-        const emailInput = document.getElementById('invite-email-input');
-        const email = emailInput.value.trim();
-        
-        if (!email) {
-            alert('Por favor ingresa un email');
-            return;
-        }
-        
-        if (!currentBoardId || !currentBoardData) {
-            alert('No hay tablero activo');
-            return;
-        }
-        
+        // Esperar un momento para que el DOM se actualice
+        setTimeout(() => {
+            const emailInput = document.getElementById('invite-email-input');
+            
+            if (!emailInput) {
+                console.error('No se encontró el input de email');
+                alert('Error: No se puede acceder al campo de email. Intenta cerrar y abrir el modal de nuevo.');
+                return;
+            }
+            
+            const email = emailInput.value.trim();
+            
+            if (!email) {
+                alert('Por favor ingresa un email');
+                return;
+            }
+            
+            if (!currentBoardId || !currentBoardData) {
+                alert('No hay tablero activo');
+                return;
+            }
+            
+            sendInvitation(email);
+        }, 100);
+    });
+
+    // Función separada para enviar la invitación
+    async function sendInvitation(email) {
         try {
-            // Buscar usuario por email
+            console.log('Buscando usuario con email:', email);
+            
             const usersSnap = await getDocs(query(collection(db, 'users'), where('email', '==', email)));
             
             if (usersSnap.empty) {
@@ -367,7 +382,6 @@ function initializeApp() {
             const targetUser = usersSnap.docs[0];
             const targetUserId = targetUser.id;
             
-            // Crear notificación
             await addDoc(collection(db, 'notifications'), {
                 userId: targetUserId,
                 type: 'board_invitation',
@@ -379,15 +393,16 @@ function initializeApp() {
             });
             
             alert(`Invitación enviada a ${email}`);
-            emailInput.value = '';
+            document.getElementById('invite-email-input').value = '';
             closeModal('invite-modal');
             
             logActivity('invited_member', 'board', currentBoardId, { email: email });
         } catch (e) {
             console.error('Error enviando invitación:', e);
-            alert('Error al enviar invitación');
+            alert('Error al enviar invitación: ' + e.message);
         }
-    });
+    }
+
     
     // Toggle del panel de miembros
     document.getElementById('members-btn')?.addEventListener('click', () => {
