@@ -1688,6 +1688,10 @@ function renderFilterMenu() {
             if (e.key === '/') { e.preventDefault(); searchInput.focus(); }
             if (e.key === 'Escape') document.querySelectorAll('.fixed').forEach(m => { if(!m.classList.contains('hidden')) closeModal(m.id); });
             if ((e.key === 'n' || e.key === 'N') && currentBoardId && !boardView.classList.contains('hidden')) { e.preventDefault(); const firstList = document.querySelector('.list'); if (firstList) openCardModal(firstList.dataset.listId); }
+            // Añadir esto dentro del listener de keydown en initGlobalShortcuts
+            if ((e.key === 'l' || e.key === 'L') && currentBoardId && !boardView.classList.contains('hidden')) { e.preventDefault(); if (hasPermission('createList')) { document.getElementById('add-list-btn').click();
+    }
+}
         });
     }
 
