@@ -1681,15 +1681,6 @@ function renderFilterMenu() {
     document.getElementById('save-list-btn').addEventListener('click',async()=>{ const v=document.getElementById('list-name-input').value.trim(); if(v){ const ref = await addDoc(collection(db,'boards',currentBoardId,'lists'),{name:v,position:Date.now(),createdAt:serverTimestamp()}); logActivity('created_list', 'list', null, { listName: v }); allSearchCache.push({ id: ref.id, type: 'list', title: v, boardId: currentBoardId, boardTitle: currentBoardData.title }); closeModal('list-modal'); document.getElementById('list-name-input').value=''; } });
     document.getElementById('save-board-btn').addEventListener('click',async()=>{ const v=document.getElementById('board-name-input').value.trim(); if(v){ const ref = await addDoc(collection(db,'boards'),{title:v,ownerId:currentUser.uid,memberEmails:[currentUser.email],members:{[currentUser.uid]:{email:currentUser.email,name:currentUser.displayName||'User',role:'owner'}},createdAt:serverTimestamp()}); allSearchCache.push({ id: ref.id, type: 'board', title: v }); closeModal('board-modal'); } });
     document.getElementById('back-to-boards-btn').addEventListener('click', ()=>{ boardView.style.display='none'; document.querySelector('.boards-section').style.display='block'; document.getElementById('create-board-btn').classList.remove('hidden'); if(unsubscribeLists) unsubscribeLists(); if(unsubscribeActivity) unsubscribeActivity(); currentBoardId=null; renderBoards(); });
-
-// Conectar botones de cierre de Exportar/Importar
-    document.getElementById('close-export-modal')?.addEventListener('click', () => closeModal('export-modal'));
-    document.getElementById('close-import-modal')?.addEventListener('click', () => {
-        closeModal('import-modal');
-        // Limpiamos el input y deshabilitamos el botón al cerrar
-        document.getElementById('import-file-input').value = '';
-        document.getElementById('confirm-import-btn').disabled = true;
-    });
     
     function initGlobalShortcuts() {
         document.addEventListener('keydown', (e) => {
@@ -1721,23 +1712,6 @@ function renderFilterMenu() {
                     e.preventDefault();
                     searchInput.focus();
                     break;
-                    
-                case 'escape': 
-                    // Cierra cualquier modal abierto (busca todos los elementos con clase .fixed)
-                    document.querySelectorAll('.fixed').forEach(m => {
-                        // Si no está oculto, ciérralo usando la función corregida
-                        if (!m.classList.contains('hidden')) closeModal(m.id);
-                    });
-                    
-                    // Cierra paneles y búsqueda
-                    document.getElementById('filter-popover')?.classList.add('hidden');
-                    searchResults?.classList.add('hidden');
-                    document.getElementById('members-panel')?.classList.add('hidden');
-                    document.getElementById('activity-panel')?.classList.add('hidden');
-                    
-                    // Limpiar estado visual de filtros si se cierra con Esc
-                    document.getElementById('members-panel')?.style.display = 'none'; // Asegurar cierre
-                    break;    
 
                 // --- NUEVA TARJETA (N) ---
                 case 'n': 
@@ -2182,25 +2156,16 @@ function renderFilterMenu() {
     const confirmImportBtn = document.getElementById('confirm-import-btn');
 
     document.getElementById('open-export-modal-btn')?.addEventListener('click', () => {
-        exportModal.classList.remove('hidden'); 
-        exportModal.style.display = 'flex'; // Forzamos flex
+        exportModal.classList.remove('hidden'); exportModal.style.display = 'flex';
     });
-    // CERRAR EXPORTAR (Corrección: Forzar display none)
     document.getElementById('close-export-modal')?.addEventListener('click', () => {
         exportModal.classList.add('hidden');
-        exportModal.style.display = 'none'; // CRÍTICO: Limpia el estilo en línea
     });
-    // Abrir Importar
     document.getElementById('open-import-modal-btn')?.addEventListener('click', () => {
-        importModal.classList.remove('hidden'); 
-        importModal.style.display = 'flex';
+        importModal.classList.remove('hidden'); importModal.style.display = 'flex';
     });
-    // CERRAR IMPORTAR (Corrección: Forzar display none y limpiar)
     document.getElementById('close-import-modal')?.addEventListener('click', () => {
-        importModal.classList.add('hidden');
-        importModal.style.display = 'none'; // CRÍTICO
-        importInput.value = ''; 
-        confirmImportBtn.disabled = true;
+        importModal.classList.add('hidden'); importInput.value = ''; confirmImportBtn.disabled = true;
     });
 
     importInput?.addEventListener('change', () => {
@@ -2409,4 +2374,3 @@ function renderFilterMenu() {
 // ↓↓↓ ESTA ES LA LLAVE DE CIERRE QUE YA TIENES AL FINAL DEL ARCHIVO ↓↓↓
 
 } // ← Este es el cierre de initializeApp
-
