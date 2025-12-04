@@ -2069,98 +2069,117 @@ function renderFilterMenu() {
     }
 
 // ========================================
-    // 16. EXPORTAR E IMPORTAR TABLEROS (JSON & XML)
+    // 16. EXPORTAR E IMPORTAR (JSON & XML) - VERSIÓN CORREGIDA
     // ========================================
 
-    // --- UTILIDADES DE CONVERSIÓN XML ---
+    // --- HELPERS XML ---
     const OBJtoXML = (obj) => {
         let xml = '';
         for (let prop in obj) {
-            xml += obj[prop] instanceof Array ? '' : "<" + prop + ">";
             if (obj[prop] instanceof Array) {
                 for (let array in obj[prop]) {
-                    xml += "<" + prop + ">";
-                    xml += OBJtoXML(new Object(obj[prop][array]));
-                    xml += "</" + prop + ">";
+                    xml += `<${prop}>` + OBJtoXML(new Object(obj[prop][array])) + `</${prop}>`;
                 }
-            } else if (typeof obj[prop] == "object") {
-                xml += OBJtoXML(new Object(obj[prop]));
+            } else if (typeof obj[prop] == "object" && obj[prop] !== null) {
+                xml += `<${prop}>` + OBJtoXML(new Object(obj[prop])) + `</${prop}>`;
             } else {
-                xml += obj[prop];
+                xml += `<${prop}>` + (obj[prop] || '') + `</${prop}>`;
             }
-            xml += obj[prop] instanceof Array ? '' : "</" + prop + ">";
         }
-        var xml = xml.replace(/<\/?[0-9]{1,}>/g, '');
         return xml;
     }
 
-    const XMLtoOBJ = (xml) => {
-        // Implementación simplificada para estructuras conocidas
-        try {
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(xml, "text/xml");
-            
-            function xml2json(xml) {
-                var obj = {};
-                if (xml.nodeType == 1) { 
-                    if (xml.attributes.length > 0) {
-                        obj["@attributes"] = {};
-                        for (var j = 0; j < xml.attributes.length; j++) {
-                            var attribute = xml.attributes.item(j);
-                            obj["@attributes"][attribute.nodeName] = attribute.nodeValue;
-                        }
-                    }
-                } else if (xml.nodeType == 3) { 
-                    obj = xml.nodeValue;
-                }
-                if (xml.hasChildNodes()) {
-                    for (var i = 0; i < xml.childNodes.length; i++) {
-                        var item = xml.childNodes.item(i);
-                        var nodeName = item.nodeName;
-                        if (typeof (obj[nodeName]) == "undefined") {
-                            // Caso especial para arrays conocidos en nuestra estructura
-                            if(nodeName === 'lists' || nodeName === 'cards' || nodeName === 'labels' || nodeName === 'checklist') {
-                                obj[nodeName] = xml2json(item);
-                                if (!Array.isArray(obj[nodeName])) obj[nodeName] = [obj[nodeName]]; 
-                            } else {
-                                var tmp = xml2json(item);
-                                if(typeof tmp === 'string') tmp = tmp.trim(); // Limpiar espacios XML
-                                if(tmp !== "") obj[nodeName] = tmp;
-                            }
-                        } else {
-                            if (typeof (obj[nodeName].push) == "undefined") {
-                                var old = obj[nodeName];
-                                obj[nodeName] = [];
-                                obj[nodeName].push(old);
-                            }
-                            obj[nodeName].push(xml2json(item));
-                        }
+    const XMLtoOBJ = (xmlText) => {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+        
+        // Función recursiva para convertir DOM XML a Objeto JS
+        function xmlToJson(xml) {
+            let obj = {};
+            if (xml.nodeType == 1) { // element
+                if (xml.attributes.length > 0) {
+                    for (let j = 0; j < xml.attributes.length; j++) {
+                        const attribute = xml.attributes.item(j);
+                        obj[attribute.nodeName] = attribute.nodeValue;
                     }
                 }
-                return obj;
+            } else if (xml.nodeType == 3) { // text
+                obj = xml.nodeValue;
             }
-            
-            const result = xml2json(xmlDoc);
-            // Normalizar la estructura si el XML root añade un wrapper extra
-            return result.root ? result.root : result;
-            
-        } catch (e) {
-            console.error("Error parseando XML", e);
-            return null;
+
+            if (xml.hasChildNodes()) {
+                for(let i = 0; i < xml.childNodes.length; i++) {
+                    const item = xml.childNodes.item(i);
+                    const nodeName = item.nodeName;
+                    
+                    if (typeof(obj[nodeName]) == "undefined") {
+                        // Detectar nodos que deben ser Arrays siempre
+                        if (['lists', 'cards', 'labels', 'checklist'].includes(nodeName)) {
+                            const inner = xmlToJson(item);
+                            obj[nodeName] = Array.isArray(inner) ? inner : [inner];
+                        } else {
+                            // Caso normal: texto o objeto
+                            const inner = xmlToJson(item);
+                            // Si el nodo es solo texto (#text), simplificar
+                            if (item.childNodes.length === 1 && item.childNodes[0].nodeType === 3) {
+                                obj[nodeName] = item.childNodes[0].nodeValue;
+                            } else {
+                                obj[nodeName] = inner;
+                            }
+                        }
+                    } else {
+                        if (typeof(obj[nodeName].push) == "undefined") {
+                            const old = obj[nodeName];
+                            obj[nodeName] = [];
+                            obj[nodeName].push(old);
+                        }
+                        // Caso especial texto
+                        if (item.childNodes.length === 1 && item.childNodes[0].nodeType === 3) {
+                            obj[nodeName].push(item.childNodes[0].nodeValue);
+                        } else {
+                            obj[nodeName].push(xmlToJson(item));
+                        }
+                    }
+                }
+            }
+            return obj;
         }
+        
+        const res = xmlToJson(xmlDoc);
+        return res.root ? res.root : res;
     }
 
-    // --- LÓGICA DE EXPORTACIÓN ---
-    document.getElementById('export-board-btn')?.addEventListener('click', async () => {
+    // --- UI MODALES ---
+    const exportModal = document.getElementById('export-modal');
+    const importModal = document.getElementById('import-modal');
+    const importInput = document.getElementById('import-file-input');
+    const confirmImportBtn = document.getElementById('confirm-import-btn');
+
+    document.getElementById('open-export-modal-btn')?.addEventListener('click', () => {
+        exportModal.classList.remove('hidden'); exportModal.style.display = 'flex';
+    });
+    document.getElementById('close-export-modal')?.addEventListener('click', () => {
+        exportModal.classList.add('hidden');
+    });
+    document.getElementById('open-import-modal-btn')?.addEventListener('click', () => {
+        importModal.classList.remove('hidden'); importModal.style.display = 'flex';
+    });
+    document.getElementById('close-import-modal')?.addEventListener('click', () => {
+        importModal.classList.add('hidden'); importInput.value = ''; confirmImportBtn.disabled = true;
+    });
+
+    importInput?.addEventListener('change', () => {
+        confirmImportBtn.disabled = !importInput.files.length;
+    });
+
+    // --- LÓGICA EXPORTAR ---
+    const handleExport = async (format) => {
         if (!currentBoardId || !currentBoardData) return;
-
-        const format = document.getElementById('export-format-select').value; // 'json' o 'xml'
-
+        
         try {
-            // Obtener etiquetas actuales del tablero (CRÍTICO PARA FILTROS)
-            let currentLabels = [];
+            // Obtener etiquetas limpias
             const boardDoc = await getDoc(doc(db, 'boards', currentBoardId));
-            if(boardDoc.exists()) currentLabels = boardDoc.data().labels || [];
+            const boardLabels = boardDoc.data().labels || [];
 
             const exportData = {
                 version: '1.0',
@@ -2168,206 +2187,186 @@ function renderFilterMenu() {
                 board: {
                     title: currentBoardData.title,
                     background: currentBoardData.background || '#0079BF',
-                    labels: currentLabels // <--- Guardamos las etiquetas
+                    labels: boardLabels // <--- IMPORTANTE: Array de objetos {name, color...}
                 },
                 lists: [],
                 cards: []
             };
 
-            // 1. Listas
+            // Recopilar Listas
             const listsSnap = await getDocs(query(collection(db, 'boards', currentBoardId, 'lists'), orderBy('position')));
             for (const listDoc of listsSnap.docs) {
-                const listData = listDoc.data();
+                const l = listDoc.data();
                 exportData.lists.push({
                     oldId: listDoc.id,
-                    name: listData.name,
-                    position: listData.position,
-                    archived: listData.archived || false
+                    name: l.name,
+                    position: l.position,
+                    archived: !!l.archived
                 });
 
-                // 2. Tarjetas
+                // Recopilar Tarjetas
                 const cardsSnap = await getDocs(query(collection(db, 'boards', currentBoardId, 'lists', listDoc.id, 'cards'), orderBy('position')));
-                cardsSnap.forEach(cardDoc => {
-                    const cardData = cardDoc.data();
+                cardsSnap.forEach(cDoc => {
+                    const c = cDoc.data();
                     exportData.cards.push({
                         listId: listDoc.id,
-                        title: cardData.title,
-                        description: cardData.description || '',
-                        position: cardData.position,
-                        cover: cardData.cover || null,
-                        labels: cardData.labels || [],
-                        checklist: cardData.checklist || [],
-                        dueDate: cardData.dueDate || null,
-                        dueComplete: cardData.dueComplete || false,
-                        archived: cardData.archived || false
+                        title: c.title,
+                        description: c.description || '',
+                        position: c.position,
+                        cover: c.cover || null,
+                        labels: c.labels || [],
+                        checklist: c.checklist || [],
+                        dueDate: c.dueDate || null,
+                        dueComplete: !!c.dueComplete,
+                        archived: !!c.archived
                     });
                 });
             }
 
-            let dataStr, mimeType, extension;
-
+            let content, mime, ext;
             if (format === 'xml') {
-                // Envolver en root para XML válido
-                dataStr = '<?xml version="1.0" encoding="UTF-8"?><root>' + OBJtoXML(exportData) + '</root>';
-                mimeType = "application/xml";
-                extension = "xml";
+                content = '<?xml version="1.0" encoding="UTF-8"?><root>' + OBJtoXML(exportData) + '</root>';
+                mime = 'application/xml';
+                ext = 'xml';
             } else {
-                dataStr = JSON.stringify(exportData, null, 2);
-                mimeType = "application/json";
-                extension = "json";
+                content = JSON.stringify(exportData, null, 2);
+                mime = 'application/json';
+                ext = 'json';
             }
 
-            const blob = new Blob([dataStr], { type: mimeType });
+            const blob = new Blob([content], { type: mime });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `tablero-${currentBoardData.title.replace(/\s+/g, '-').toLowerCase()}.${extension}`;
+            a.download = `tablero-${currentBoardData.title.replace(/\s+/g, '-').toLowerCase()}.${ext}`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+            
+            exportModal.classList.add('hidden');
 
-        } catch (error) {
-            console.error('Error al exportar:', error);
-            alert('Error al exportar el tablero');
+        } catch (e) {
+            console.error(e);
+            alert("Error al exportar.");
         }
-    });
+    };
 
-    // --- LÓGICA DE IMPORTACIÓN ---
-    document.getElementById('import-board-btn')?.addEventListener('click', () => {
-        document.getElementById('import-board-input').click();
-    });
+    document.getElementById('export-json-btn')?.addEventListener('click', () => handleExport('json'));
+    document.getElementById('export-xml-btn')?.addEventListener('click', () => handleExport('xml'));
 
-    document.getElementById('import-board-input')?.addEventListener('change', (e) => {
-        const file = e.target.files[0];
+    // --- LÓGICA IMPORTAR ---
+    confirmImportBtn?.addEventListener('click', () => {
+        const file = importInput.files[0];
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onload = async (event) => {
+        reader.onload = async (e) => {
             try {
-                const content = event.target.result;
+                const txt = e.target.result;
                 let data;
-
-                // Detectar formato
-                if (file.name.endsWith('.xml') || content.trim().startsWith('<?xml') || content.trim().startsWith('<root>')) {
-                    const parsedXML = XMLtoOBJ(content);
-                    // Ajuste de estructura si el parser XML metió arrays dentro de objetos wrapper
-                    // Nota: Los parsers XML<->JS son complejos, asumimos estructura básica
-                    data = parsedXML;
-                    // Normalización manual básica post-XML si es necesario
-                    if(!data.board) throw new Error("XML inválido o estructura no reconocida");
+                
+                // Detección simple de formato
+                if (txt.trim().startsWith('<')) {
+                    // XML
+                    const rawData = XMLtoOBJ(txt);
+                    // Normalizar estructura XML que a veces anida arrays
+                    data = { 
+                        board: rawData.board, 
+                        lists: Array.isArray(rawData.lists) ? rawData.lists : (rawData.lists ? [rawData.lists] : []),
+                        cards: Array.isArray(rawData.cards) ? rawData.cards : (rawData.cards ? [rawData.cards] : [])
+                    };
+                    
+                    // Normalizar etiquetas de XML (pueden venir como string si están vacías o mal parseadas)
+                    if (data.board.labels && !Array.isArray(data.board.labels)) {
+                         // Intento de arreglo manual para XMLs raros
+                         data.board.labels = data.board.labels.label ? (Array.isArray(data.board.labels.label) ? data.board.labels.label : [data.board.labels.label]) : [];
+                    }
                 } else {
-                    data = JSON.parse(content);
+                    // JSON
+                    data = JSON.parse(txt);
                 }
 
-                if (!data.board || !data.board.title) {
-                    throw new Error('Formato de archivo inválido: Faltan datos del tablero');
+                if(!data.board || !data.board.title) throw new Error("Estructura inválida");
+
+                // 1. Crear Tablero con Etiquetas
+                const newBoard = {
+                    title: data.board.title + ' (Importado)',
+                    background: data.board.background,
+                    labels: data.board.labels || [], // <--- AQUÍ CARGAMOS LAS ETIQUETAS
+                    ownerId: currentUser.uid,
+                    ownerEmail: currentUser.email,
+                    members: { [currentUser.uid]: { email: currentUser.email, name: currentUser.displayName||'User', role: 'owner' } },
+                    memberEmails: [currentUser.email],
+                    createdAt: serverTimestamp()
+                };
+
+                const bRef = await addDoc(collection(db, 'boards'), newBoard);
+                const bId = bRef.id;
+                const listMap = {};
+
+                // 2. Crear Listas
+                const lists = data.lists || [];
+                for(const l of lists) {
+                    const ref = await addDoc(collection(db, 'boards', bId, 'lists'), {
+                        name: l.name,
+                        position: Number(l.position),
+                        archived: l.archived === true || l.archived === 'true',
+                        createdAt: serverTimestamp()
+                    });
+                    listMap[l.oldId] = ref.id;
+                    
+                    // ACTUALIZAR CACHÉ DE BÚSQUEDA MANUALMENTE
+                    allSearchCache.push({ id: ref.id, type: 'list', title: l.name, boardId: bId, boardTitle: newBoard.title, score: 0 });
                 }
 
-                await importBoardData(data);
-                e.target.value = ''; 
+                // 3. Crear Tarjetas
+                const cards = data.cards || [];
+                const batchPromises = cards.map(c => {
+                    const lid = listMap[c.listId];
+                    if(!lid) return null;
+                    
+                    const cardData = {
+                        title: c.title,
+                        description: c.description,
+                        position: Number(c.position),
+                        cover: c.cover,
+                        labels: Array.isArray(c.labels) ? c.labels : [], // Asegurar array
+                        checklist: Array.isArray(c.checklist) ? c.checklist : [],
+                        dueDate: c.dueDate,
+                        dueComplete: c.dueComplete === true || c.dueComplete === 'true',
+                        archived: c.archived === true || c.archived === 'true',
+                        createdAt: serverTimestamp()
+                    };
 
-            } catch (error) {
-                console.error('Error al importar:', error);
-                alert('Error al importar: ' + error.message);
+                    // Promesa para crear tarjeta
+                    return addDoc(collection(db, 'boards', bId, 'lists', lid, 'cards'), cardData)
+                        .then(ref => {
+                            // ACTUALIZAR CACHÉ DE BÚSQUEDA MANUALMENTE
+                            allSearchCache.push({ 
+                                id: ref.id, type: 'card', title: c.title, description: c.description, 
+                                listId: lid, listName: '...', // Nombre de lista pendiente, no crítico para buscar
+                                boardId: bId, boardTitle: newBoard.title, score: 0 
+                            });
+                        });
+                });
+
+                await Promise.all(batchPromises);
+
+                // ACTUALIZAR CACHÉ DE BÚSQUEDA (TABLERO)
+                allSearchCache.push({ id: bId, type: 'board', title: newBoard.title, score: 0 });
+
+                importModal.classList.add('hidden');
+                alert("Importado correctamente.");
+                loadBoards(); // Refrescar dashboard
+
+            } catch (err) {
+                console.error(err);
+                alert("Error importando: " + err.message);
             }
         };
         reader.readAsText(file);
     });
-
-    async function importBoardData(data) {
-        if (!confirm(`¿Importar el tablero "${data.board.title}"?`)) return;
-
-        try {
-            // 1. Crear Tablero (INCLUYENDO ETIQUETAS)
-            const newBoardData = {
-                title: data.board.title + ' (Importado)',
-                background: data.board.background,
-                // CORRECCIÓN: Importar las etiquetas guardadas para que funcionen los filtros
-                labels: data.board.labels || [], 
-                ownerId: currentUser.uid,
-                ownerEmail: currentUser.email,
-                members: {
-                    [currentUser.uid]: {
-                        email: currentUser.email,
-                        name: currentUser.displayName || 'Usuario',
-                        role: 'owner'
-                    }
-                },
-                memberEmails: [currentUser.email],
-                createdAt: serverTimestamp()
-            };
-
-            const boardRef = await addDoc(collection(db, 'boards'), newBoardData);
-            const newBoardId = boardRef.id;
-            const listIdMap = {};
-
-            // 2. Crear Listas
-            // Asegurar que sea array (el parser XML a veces devuelve objeto único si solo hay 1)
-            const lists = Array.isArray(data.lists) ? data.lists : (data.lists ? [data.lists] : []);
-            
-            for (const list of lists) {
-                const newListRef = await addDoc(collection(db, 'boards', newBoardId, 'lists'), {
-                    name: list.name,
-                    position: Number(list.position), // Asegurar número
-                    archived: list.archived === 'true' || list.archived === true,
-                    createdAt: serverTimestamp()
-                });
-                listIdMap[list.oldId] = newListRef.id;
-            }
-
-            // 3. Crear Tarjetas
-            const cards = Array.isArray(data.cards) ? data.cards : (data.cards ? [data.cards] : []);
-            
-            const batchPromises = cards.map(card => {
-                const newListId = listIdMap[card.listId];
-                if (!newListId) return null;
-
-                // Normalización de datos post-XML (checklist/labels a veces vienen mal formados)
-                let cleanChecklist = [];
-                if(card.checklist && Array.isArray(card.checklist)) cleanChecklist = card.checklist;
-                
-                let cleanLabels = [];
-                if(card.labels && Array.isArray(card.labels)) cleanLabels = card.labels;
-
-                return addDoc(collection(db, 'boards', newBoardId, 'lists', newListId, 'cards'), {
-                    title: card.title,
-                    description: card.description || '',
-                    position: Number(card.position),
-                    cover: card.cover || null,
-                    labels: cleanLabels,
-                    checklist: cleanChecklist,
-                    dueDate: card.dueDate || null,
-                    dueComplete: card.dueComplete === 'true' || card.dueComplete === true,
-                    archived: card.archived === 'true' || card.archived === true,
-                    attachments: [], 
-                    assignedTo: [],
-                    createdAt: serverTimestamp()
-                });
-            });
-
-            await Promise.all(batchPromises);
-
-            alert('Tablero importado exitosamente.');
-            
-            // 4. ACTUALIZACIÓN CRÍTICA: Refrescar UI y Buscador
-            // Forzamos volver al dashboard para limpiar el estado
-            document.getElementById('back-to-boards-btn').click();
-            
-            // Recargamos tableros visualmente
-            loadBoards();
-            
-            // CORRECCIÓN: Reconstruir el índice de búsqueda para incluir el nuevo tablero
-            setTimeout(() => {
-                buildGlobalIndex(); 
-                console.log("Índice de búsqueda actualizado con el tablero importado.");
-            }, 1000);
-
-        } catch (error) {
-            console.error('Error importando:', error);
-            alert('Error al crear el tablero importado. Revisa la consola.');
-        }
-    }
     
     // Ejecutar la configuración
     setupEnterKeys();
