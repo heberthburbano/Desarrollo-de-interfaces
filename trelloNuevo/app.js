@@ -1684,14 +1684,81 @@ function renderFilterMenu() {
     
     function initGlobalShortcuts() {
         document.addEventListener('keydown', (e) => {
-            if (e.target.matches('input, textarea')) return;
-            if (e.key === '/') { e.preventDefault(); searchInput.focus(); }
-            if (e.key === 'Escape') document.querySelectorAll('.fixed').forEach(m => { if(!m.classList.contains('hidden')) closeModal(m.id); });
-            if ((e.key === 'n' || e.key === 'N') && currentBoardId && !boardView.classList.contains('hidden')) { e.preventDefault(); const firstList = document.querySelector('.list'); if (firstList) openCardModal(firstList.dataset.listId); }
-            // Añadir esto dentro del listener de keydown en initGlobalShortcuts
-            if ((e.key === 'l' || e.key === 'L') && currentBoardId && !boardView.classList.contains('hidden')) { e.preventDefault(); if (hasPermission('createList')) { document.getElementById('add-list-btn').click();
-    }
-}
+            // 1. Ignorar si el usuario está escribiendo en un input o textarea
+            if (e.target.matches('input, textarea') || e.target.isContentEditable) return;
+
+            // 2. Comprobar si hay un tablero abierto
+            const isBoardOpen = currentBoardId && !boardView.classList.contains('hidden');
+            if (!isBoardOpen) return;
+
+            switch (e.key.toLowerCase()) {
+                // --- BÚSQUEDA ---
+                case '/':
+                    e.preventDefault();
+                    searchInput.focus();
+                    break;
+
+                // --- ACCIONES DE CREACIÓN ---
+                case 'n': // Nueva Tarjeta
+                    e.preventDefault();
+                    const firstList = document.querySelector('.list');
+                    if (firstList) openCardModal(firstList.dataset.listId);
+                    break;
+
+                case 'l': // Nueva Lista
+                    e.preventDefault();
+                    if (hasPermission('createList')) {
+                        document.getElementById('add-list-btn').click();
+                    }
+                    break;
+
+                // --- HERRAMIENTAS Y PANELES ---
+                case 'f': // Filtros
+                    e.preventDefault();
+                    document.getElementById('filter-btn').click();
+                    break;
+
+                case 'escape': // Cerrar todo
+                    document.querySelectorAll('.fixed').forEach(m => {
+                        if (!m.classList.contains('hidden')) closeModal(m.id);
+                    });
+                    // También limpiar búsqueda y filtros si están abiertos
+                    document.getElementById('filter-popover')?.classList.add('hidden');
+                    searchResults?.classList.add('hidden');
+                    break;
+
+                // --- ATAJO PRO: "Q" (SOLO MIS TARJETAS) ---
+                case 'q':
+                    e.preventDefault();
+                    // Si ya estoy filtrando por mí mismo, quito el filtro. Si no, lo pongo.
+                    const myId = currentUser.uid;
+                    if (activeFilters.members.includes(myId)) {
+                        activeFilters.members = activeFilters.members.filter(id => id !== myId);
+                    } else {
+                        activeFilters.members.push(myId);
+                    }
+                    // Actualizar UI
+                    updateFilterState();
+                    // Feedback visual en el botón de filtro
+                    const filterBtn = document.getElementById('filter-btn');
+                    if(activeFilters.members.includes(myId)) {
+                        filterBtn.classList.add('ring-2', 'ring-green-400'); // Indicador visual rápido
+                    } else {
+                        filterBtn.classList.remove('ring-2', 'ring-green-400');
+                    }
+                    break;
+
+                // --- NAVEGACIÓN HORIZONTAL (Scroll con Flechas) ---
+                case 'arrowright':
+                    const containerR = document.getElementById('lists-container');
+                    if (containerR) containerR.scrollBy({ left: 300, behavior: 'smooth' });
+                    break;
+
+                case 'arrowleft':
+                    const containerL = document.getElementById('lists-container');
+                    if (containerL) containerL.scrollBy({ left: -300, behavior: 'smooth' });
+                    break;
+            }
         });
     }
 
