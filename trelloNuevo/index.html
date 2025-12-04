@@ -122,9 +122,20 @@
 
         <div class="boards-section flex-1 p-8 overflow-y-auto bg-slate-50 dark:bg-slate-900">
             <div class="max-w-4xl mx-auto">
-                <h2 class="text-lg font-bold text-slate-700 dark:text-slate-200 mb-4 flex items-center gap-2">
-                    <i data-lucide="user"></i> Tus espacios de trabajo
-                </h2>
+                
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-lg font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                        <i data-lucide="briefcase"></i> Mis Tableros
+                    </h2>
+                    <div class="flex gap-2">
+                        <input type="file" id="import-board-input" accept=".json" class="hidden">
+                        
+                        <button id="import-board-btn" class="bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 px-3 py-1.5 rounded-[3px] text-sm font-bold transition flex items-center gap-2 shadow-sm">
+                            <i data-lucide="upload" class="w-4 h-4"></i>
+                            <span class="hidden sm:inline">Importar</span>
+                        </button>
+                    </div>
+                </div>
                 <div id="boards-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 </div>
             </div>
@@ -149,6 +160,10 @@
                 <div class="flex items-center gap-2">
                     <div id="members-preview" class="flex -space-x-1 mr-2"></div>
 
+                    <button id="export-board-btn" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-[3px] text-sm font-bold transition flex items-center gap-2" title="Exportar tablero">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span class="hidden xl:inline">Exportar</span>
+                    </button>
                     <button id="bg-btn-manual" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-[3px] text-sm font-bold transition flex items-center gap-2" onclick="window.openBackgroundPicker()">
                         <i data-lucide="image" class="w-4 h-4"></i>
                         <span class="hidden sm:inline">Fondo</span>
@@ -379,8 +394,7 @@
             </div>
             
             <div class="space-y-2 mb-3 overflow-y-auto flex-1" id="labels-list-container">
-                <!-- Las etiquetas se renderizarán aquí dinámicamente -->
-            </div>
+                </div>
             
             <div class="pt-3 border-t border-slate-200 dark:border-slate-700">
                 <button id="create-new-label-btn" class="w-full text-left px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded text-sm font-medium flex items-center gap-2">
@@ -391,7 +405,6 @@
         </div>
     </div>
 
-    <!-- Modal para crear/editar etiqueta -->
     <div id="label-editor-modal" class="hidden fixed inset-0 z-[110] flex items-center justify-center bg-black/40">
         <div class="bg-white dark:bg-slate-800 p-4 rounded shadow-xl w-80">
             <div class="flex justify-between items-center mb-3">
