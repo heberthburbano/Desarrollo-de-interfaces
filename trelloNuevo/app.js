@@ -1228,7 +1228,7 @@ function initializeApp() {
 
     function setupDropZone(cont, lid) {
         // Aumentar la altura mínima del contenedor
-        cont.style.minHeight = '100px';
+        cont.style.minHeight = '50px';
         
         cont.addEventListener('dragover', (e) => {
             if(draggedItem) {
