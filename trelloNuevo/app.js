@@ -1853,5 +1853,63 @@ function initializeApp() {
         }
     }, true);
 
+    // ========================================
+    // 14. MEJORA UX: TECLA ENTER EN INPUTS
+    // ========================================
+    function setupEnterKeys() {
+        // Función helper para vincular un Input con su Botón
+        const bindEnter = (inputId, btnId) => {
+            const input = document.getElementById(inputId);
+            const btn = document.getElementById(btnId);
+            
+            if(input && btn) {
+                input.addEventListener('keydown', (e) => {
+                    if(e.key === 'Enter') {
+                        e.preventDefault(); // Evita saltos de línea innecesarios
+                        btn.click();        // Simula el click en el botón
+                    }
+                });
+            }
+        };
+
+        // --- Configuración de Enlaces ---
+
+        // 1. Autenticación (Login y Registro)
+        bindEnter('login-password', 'login-btn');
+        bindEnter('register-password', 'register-btn');
+        // También permitimos enter en el email por si el usuario ya escribió la pass
+        bindEnter('login-email', 'login-btn'); 
+
+        // 2. Creación (Tableros y Listas)
+        bindEnter('board-name-input', 'save-board-btn');
+        bindEnter('list-name-input', 'save-list-btn');
+
+        // 3. Dentro de la Tarjeta (Checklist y Comentarios)
+        bindEnter('new-checklist-item-input', 'add-checklist-item-btn');
+        bindEnter('comment-input', 'add-comment-btn');
+        
+        // 4. Invitaciones
+        bindEnter('invite-email-input', 'send-invite-btn');
+        
+        // 5. Búsqueda Global (Opcional, si quieres que Enter abra el primer resultado)
+        const searchInp = document.getElementById('global-search');
+        if(searchInp) {
+            searchInp.addEventListener('keydown', (e) => {
+                if(e.key === 'Enter') {
+                    // Si no hay resultado seleccionado con flechas, abrir el primero
+                    const firstResult = document.querySelector('.search-result-item');
+                    if(firstResult && selectedResultIndex === -1) {
+                        firstResult.click();
+                    }
+                }
+            });
+        }
+    }
+    
+    // Ejecutar la configuración
+    setupEnterKeys();
+
+// ↓↓↓ ESTA ES LA LLAVE DE CIERRE QUE YA TIENES AL FINAL DEL ARCHIVO ↓↓↓
+
 } // ← Este es el cierre de initializeApp
 
