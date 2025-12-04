@@ -2150,22 +2150,36 @@ function renderFilterMenu() {
     }
 
     // --- UI MODALES ---
+    // --- UI MODALES ---
     const exportModal = document.getElementById('export-modal');
     const importModal = document.getElementById('import-modal');
     const importInput = document.getElementById('import-file-input');
     const confirmImportBtn = document.getElementById('confirm-import-btn');
 
+    // ABRIR EXPORTAR
     document.getElementById('open-export-modal-btn')?.addEventListener('click', () => {
-        exportModal.classList.remove('hidden'); exportModal.style.display = 'flex';
+        exportModal.classList.remove('hidden'); 
+        exportModal.style.display = 'flex'; // Se abre con estilo inline
     });
+
+    // CERRAR EXPORTAR (CORREGIDO)
     document.getElementById('close-export-modal')?.addEventListener('click', () => {
         exportModal.classList.add('hidden');
+        exportModal.style.display = 'none'; // <--- ESTO FALTABA: Limpiar el estilo inline
     });
+
+    // ABRIR IMPORTAR
     document.getElementById('open-import-modal-btn')?.addEventListener('click', () => {
-        importModal.classList.remove('hidden'); importModal.style.display = 'flex';
+        importModal.classList.remove('hidden'); 
+        importModal.style.display = 'flex'; // Se abre con estilo inline
     });
+
+    // CERRAR IMPORTAR (CORREGIDO)
     document.getElementById('close-import-modal')?.addEventListener('click', () => {
-        importModal.classList.add('hidden'); importInput.value = ''; confirmImportBtn.disabled = true;
+        importModal.classList.add('hidden');
+        importModal.style.display = 'none'; // <--- ESTO FALTABA: Limpiar el estilo inline
+        importInput.value = ''; 
+        confirmImportBtn.disabled = true;
     });
 
     importInput?.addEventListener('change', () => {
