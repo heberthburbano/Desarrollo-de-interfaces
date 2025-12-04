@@ -2069,27 +2069,113 @@ function renderFilterMenu() {
     }
 
 // ========================================
-    // 16. EXPORTAR E IMPORTAR TABLEROS (JSON)
+    // 16. EXPORTAR E IMPORTAR TABLEROS (JSON & XML)
     // ========================================
 
-    // --- LÓGICA DE EXPORTACIÓN (Sigue igual) ---
+    // --- UTILIDADES DE CONVERSIÓN XML ---
+    const OBJtoXML = (obj) => {
+        let xml = '';
+        for (let prop in obj) {
+            xml += obj[prop] instanceof Array ? '' : "<" + prop + ">";
+            if (obj[prop] instanceof Array) {
+                for (let array in obj[prop]) {
+                    xml += "<" + prop + ">";
+                    xml += OBJtoXML(new Object(obj[prop][array]));
+                    xml += "</" + prop + ">";
+                }
+            } else if (typeof obj[prop] == "object") {
+                xml += OBJtoXML(new Object(obj[prop]));
+            } else {
+                xml += obj[prop];
+            }
+            xml += obj[prop] instanceof Array ? '' : "</" + prop + ">";
+        }
+        var xml = xml.replace(/<\/?[0-9]{1,}>/g, '');
+        return xml;
+    }
+
+    const XMLtoOBJ = (xml) => {
+        // Implementación simplificada para estructuras conocidas
+        try {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xml, "text/xml");
+            
+            function xml2json(xml) {
+                var obj = {};
+                if (xml.nodeType == 1) { 
+                    if (xml.attributes.length > 0) {
+                        obj["@attributes"] = {};
+                        for (var j = 0; j < xml.attributes.length; j++) {
+                            var attribute = xml.attributes.item(j);
+                            obj["@attributes"][attribute.nodeName] = attribute.nodeValue;
+                        }
+                    }
+                } else if (xml.nodeType == 3) { 
+                    obj = xml.nodeValue;
+                }
+                if (xml.hasChildNodes()) {
+                    for (var i = 0; i < xml.childNodes.length; i++) {
+                        var item = xml.childNodes.item(i);
+                        var nodeName = item.nodeName;
+                        if (typeof (obj[nodeName]) == "undefined") {
+                            // Caso especial para arrays conocidos en nuestra estructura
+                            if(nodeName === 'lists' || nodeName === 'cards' || nodeName === 'labels' || nodeName === 'checklist') {
+                                obj[nodeName] = xml2json(item);
+                                if (!Array.isArray(obj[nodeName])) obj[nodeName] = [obj[nodeName]]; 
+                            } else {
+                                var tmp = xml2json(item);
+                                if(typeof tmp === 'string') tmp = tmp.trim(); // Limpiar espacios XML
+                                if(tmp !== "") obj[nodeName] = tmp;
+                            }
+                        } else {
+                            if (typeof (obj[nodeName].push) == "undefined") {
+                                var old = obj[nodeName];
+                                obj[nodeName] = [];
+                                obj[nodeName].push(old);
+                            }
+                            obj[nodeName].push(xml2json(item));
+                        }
+                    }
+                }
+                return obj;
+            }
+            
+            const result = xml2json(xmlDoc);
+            // Normalizar la estructura si el XML root añade un wrapper extra
+            return result.root ? result.root : result;
+            
+        } catch (e) {
+            console.error("Error parseando XML", e);
+            return null;
+        }
+    }
+
+    // --- LÓGICA DE EXPORTACIÓN ---
     document.getElementById('export-board-btn')?.addEventListener('click', async () => {
         if (!currentBoardId || !currentBoardData) return;
 
+        const format = document.getElementById('export-format-select').value; // 'json' o 'xml'
+
         try {
+            // Obtener etiquetas actuales del tablero (CRÍTICO PARA FILTROS)
+            let currentLabels = [];
+            const boardDoc = await getDoc(doc(db, 'boards', currentBoardId));
+            if(boardDoc.exists()) currentLabels = boardDoc.data().labels || [];
+
             const exportData = {
                 version: '1.0',
                 type: 'trello-clone-board',
                 board: {
                     title: currentBoardData.title,
-                    background: currentBoardData.background || '#0079BF'
+                    background: currentBoardData.background || '#0079BF',
+                    labels: currentLabels // <--- Guardamos las etiquetas
                 },
                 lists: [],
                 cards: []
             };
 
+            // 1. Listas
             const listsSnap = await getDocs(query(collection(db, 'boards', currentBoardId, 'lists'), orderBy('position')));
-            
             for (const listDoc of listsSnap.docs) {
                 const listData = listDoc.data();
                 exportData.lists.push({
@@ -2099,6 +2185,7 @@ function renderFilterMenu() {
                     archived: listData.archived || false
                 });
 
+                // 2. Tarjetas
                 const cardsSnap = await getDocs(query(collection(db, 'boards', currentBoardId, 'lists', listDoc.id, 'cards'), orderBy('position')));
                 cardsSnap.forEach(cardDoc => {
                     const cardData = cardDoc.data();
@@ -2117,13 +2204,24 @@ function renderFilterMenu() {
                 });
             }
 
-            const dataStr = JSON.stringify(exportData, null, 2);
-            const blob = new Blob([dataStr], { type: "application/json" });
+            let dataStr, mimeType, extension;
+
+            if (format === 'xml') {
+                // Envolver en root para XML válido
+                dataStr = '<?xml version="1.0" encoding="UTF-8"?><root>' + OBJtoXML(exportData) + '</root>';
+                mimeType = "application/xml";
+                extension = "xml";
+            } else {
+                dataStr = JSON.stringify(exportData, null, 2);
+                mimeType = "application/json";
+                extension = "json";
+            }
+
+            const blob = new Blob([dataStr], { type: mimeType });
             const url = URL.createObjectURL(blob);
-            
             const a = document.createElement('a');
             a.href = url;
-            a.download = `tablero-${currentBoardData.title.replace(/\s+/g, '-').toLowerCase()}.json`;
+            a.download = `tablero-${currentBoardData.title.replace(/\s+/g, '-').toLowerCase()}.${extension}`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -2135,10 +2233,8 @@ function renderFilterMenu() {
         }
     });
 
-    // --- LÓGICA DE IMPORTACIÓN (Ajustada para el Dashboard) ---
-    
+    // --- LÓGICA DE IMPORTACIÓN ---
     document.getElementById('import-board-btn')?.addEventListener('click', () => {
-        // Simular clic en el input file oculto
         document.getElementById('import-board-input').click();
     });
 
@@ -2149,32 +2245,46 @@ function renderFilterMenu() {
         const reader = new FileReader();
         reader.onload = async (event) => {
             try {
-                const data = JSON.parse(event.target.result);
-                
-                if (!data.type || data.type !== 'trello-clone-board' || !data.board) {
-                    throw new Error('Formato de archivo inválido');
+                const content = event.target.result;
+                let data;
+
+                // Detectar formato
+                if (file.name.endsWith('.xml') || content.trim().startsWith('<?xml') || content.trim().startsWith('<root>')) {
+                    const parsedXML = XMLtoOBJ(content);
+                    // Ajuste de estructura si el parser XML metió arrays dentro de objetos wrapper
+                    // Nota: Los parsers XML<->JS son complejos, asumimos estructura básica
+                    data = parsedXML;
+                    // Normalización manual básica post-XML si es necesario
+                    if(!data.board) throw new Error("XML inválido o estructura no reconocida");
+                } else {
+                    data = JSON.parse(content);
+                }
+
+                if (!data.board || !data.board.title) {
+                    throw new Error('Formato de archivo inválido: Faltan datos del tablero');
                 }
 
                 await importBoardData(data);
-                e.target.value = ''; // Limpiar para permitir re-importar
+                e.target.value = ''; 
 
             } catch (error) {
                 console.error('Error al importar:', error);
-                alert('Error: El archivo no es un tablero válido.');
+                alert('Error al importar: ' + error.message);
             }
         };
         reader.readAsText(file);
     });
 
     async function importBoardData(data) {
-        // Confirmación
-        if (!confirm(`¿Importar "${data.board.title}" como un nuevo tablero?`)) return;
+        if (!confirm(`¿Importar el tablero "${data.board.title}"?`)) return;
 
         try {
-            // 1. Crear el Tablero Nuevo
+            // 1. Crear Tablero (INCLUYENDO ETIQUETAS)
             const newBoardData = {
                 title: data.board.title + ' (Importado)',
                 background: data.board.background,
+                // CORRECCIÓN: Importar las etiquetas guardadas para que funcionen los filtros
+                labels: data.board.labels || [], 
                 ownerId: currentUser.uid,
                 ownerEmail: currentUser.email,
                 members: {
@@ -2193,31 +2303,43 @@ function renderFilterMenu() {
             const listIdMap = {};
 
             // 2. Crear Listas
-            for (const list of data.lists) {
+            // Asegurar que sea array (el parser XML a veces devuelve objeto único si solo hay 1)
+            const lists = Array.isArray(data.lists) ? data.lists : (data.lists ? [data.lists] : []);
+            
+            for (const list of lists) {
                 const newListRef = await addDoc(collection(db, 'boards', newBoardId, 'lists'), {
                     name: list.name,
-                    position: list.position,
-                    archived: list.archived,
+                    position: Number(list.position), // Asegurar número
+                    archived: list.archived === 'true' || list.archived === true,
                     createdAt: serverTimestamp()
                 });
                 listIdMap[list.oldId] = newListRef.id;
             }
 
             // 3. Crear Tarjetas
-            const batchPromises = data.cards.map(card => {
+            const cards = Array.isArray(data.cards) ? data.cards : (data.cards ? [data.cards] : []);
+            
+            const batchPromises = cards.map(card => {
                 const newListId = listIdMap[card.listId];
                 if (!newListId) return null;
 
+                // Normalización de datos post-XML (checklist/labels a veces vienen mal formados)
+                let cleanChecklist = [];
+                if(card.checklist && Array.isArray(card.checklist)) cleanChecklist = card.checklist;
+                
+                let cleanLabels = [];
+                if(card.labels && Array.isArray(card.labels)) cleanLabels = card.labels;
+
                 return addDoc(collection(db, 'boards', newBoardId, 'lists', newListId, 'cards'), {
                     title: card.title,
-                    description: card.description,
-                    position: card.position,
-                    cover: card.cover,
-                    labels: card.labels,
-                    checklist: card.checklist,
-                    dueDate: card.dueDate,
-                    dueComplete: card.dueComplete,
-                    archived: card.archived,
+                    description: card.description || '',
+                    position: Number(card.position),
+                    cover: card.cover || null,
+                    labels: cleanLabels,
+                    checklist: cleanChecklist,
+                    dueDate: card.dueDate || null,
+                    dueComplete: card.dueComplete === 'true' || card.dueComplete === true,
+                    archived: card.archived === 'true' || card.archived === true,
                     attachments: [], 
                     assignedTo: [],
                     createdAt: serverTimestamp()
@@ -2228,12 +2350,22 @@ function renderFilterMenu() {
 
             alert('Tablero importado exitosamente.');
             
-            // Recargar la lista de tableros en el dashboard
+            // 4. ACTUALIZACIÓN CRÍTICA: Refrescar UI y Buscador
+            // Forzamos volver al dashboard para limpiar el estado
+            document.getElementById('back-to-boards-btn').click();
+            
+            // Recargamos tableros visualmente
             loadBoards();
+            
+            // CORRECCIÓN: Reconstruir el índice de búsqueda para incluir el nuevo tablero
+            setTimeout(() => {
+                buildGlobalIndex(); 
+                console.log("Índice de búsqueda actualizado con el tablero importado.");
+            }, 1000);
 
         } catch (error) {
             console.error('Error importando:', error);
-            alert('Error al crear el tablero importado.');
+            alert('Error al crear el tablero importado. Revisa la consola.');
         }
     }
     
