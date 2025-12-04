@@ -128,7 +128,7 @@
                         <i data-lucide="briefcase"></i> Mis Tableros
                     </h2>
                     <div class="flex gap-2">
-                        <input type="file" id="import-board-input" accept=".json" class="hidden">
+                        <input type="file" id="import-board-input" accept=".json,.xml" class="hidden">
                         
                         <button id="import-board-btn" class="bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 px-3 py-1.5 rounded-[3px] text-sm font-bold transition flex items-center gap-2 shadow-sm">
                             <i data-lucide="upload" class="w-4 h-4"></i>
@@ -159,6 +159,11 @@
 
                 <div class="flex items-center gap-2">
                     <div id="members-preview" class="flex -space-x-1 mr-2"></div>
+
+                    <select id="export-format-select" class="bg-white/20 hover:bg-white/30 text-white text-xs font-bold py-1.5 px-2 rounded-[3px] border-none outline-none cursor-pointer transition appearance-none">
+                        <option value="json" class="text-slate-800">JSON</option>
+                        <option value="xml" class="text-slate-800">XML</option>
+                    </select>
 
                     <button id="export-board-btn" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-[3px] text-sm font-bold transition flex items-center gap-2" title="Exportar tablero">
                         <i data-lucide="download" class="w-4 h-4"></i>
@@ -302,7 +307,10 @@
                     </div>
                     <div>
                         <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Vencimiento</label>
-                        <input type="date" id="card-due-date-input" class="w-full bg-slate-100 dark:bg-slate-700 p-2 rounded text-sm border-none">
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="card-due-complete-input" class="w-5 h-5 rounded border-slate-300 text-blue-600 cursor-pointer" title="Marcar como cumplida">
+                            <input type="date" id="card-due-date-input" class="flex-1 bg-slate-100 dark:bg-slate-700 p-2 rounded text-sm border-none dark:text-white">
+                        </div>
                     </div>
                 </div>
                 <div class="mb-6">
