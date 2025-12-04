@@ -1,7 +1,7 @@
 import { auth, db } from './firebase-config.js';
 import { 
     collection, addDoc, doc, updateDoc, deleteDoc, query, where, onSnapshot, 
-    orderBy, serverTimestamp, getDoc, getDocs, arrayUnion, arrayRemove, setDoc 
+    orderBy, serverTimestamp, getDoc, getDocs, arrayUnion, arrayRemove, setDoc, deleteField 
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
 document.addEventListener('DOMContentLoaded', initializeApp);
