@@ -128,14 +128,13 @@
                         <i data-lucide="briefcase"></i> Mis Tableros
                     </h2>
                     <div class="flex gap-2">
-                        <input type="file" id="import-board-input" accept=".json,.xml" class="hidden">
-                        
-                        <button id="import-board-btn" class="bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 px-3 py-1.5 rounded-[3px] text-sm font-bold transition flex items-center gap-2 shadow-sm">
+                        <button id="open-import-modal-btn" class="bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 px-3 py-1.5 rounded-[3px] text-sm font-bold transition flex items-center gap-2 shadow-sm">
                             <i data-lucide="upload" class="w-4 h-4"></i>
-                            <span class="hidden sm:inline">Importar</span>
+                            <span class="hidden sm:inline">Importar Tablero</span>
                         </button>
                     </div>
                 </div>
+
                 <div id="boards-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 </div>
             </div>
@@ -160,15 +159,11 @@
                 <div class="flex items-center gap-2">
                     <div id="members-preview" class="flex -space-x-1 mr-2"></div>
 
-                    <select id="export-format-select" class="bg-white/20 hover:bg-white/30 text-white text-xs font-bold py-1.5 px-2 rounded-[3px] border-none outline-none cursor-pointer transition appearance-none">
-                        <option value="json" class="text-slate-800">JSON</option>
-                        <option value="xml" class="text-slate-800">XML</option>
-                    </select>
-
-                    <button id="export-board-btn" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-[3px] text-sm font-bold transition flex items-center gap-2" title="Exportar tablero">
+                    <button id="open-export-modal-btn" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-[3px] text-sm font-bold transition flex items-center gap-2" title="Exportar tablero">
                         <i data-lucide="download" class="w-4 h-4"></i>
                         <span class="hidden xl:inline">Exportar</span>
                     </button>
+
                     <button id="bg-btn-manual" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-[3px] text-sm font-bold transition flex items-center gap-2" onclick="window.openBackgroundPicker()">
                         <i data-lucide="image" class="w-4 h-4"></i>
                         <span class="hidden sm:inline">Fondo</span>
@@ -486,6 +481,55 @@
 
             <div id="archived-content" class="flex-1 overflow-y-auto p-4 bg-slate-50 dark:bg-slate-900 space-y-2">
                 </div>
+        </div>
+    </div>
+
+    <div id="export-modal" class="hidden fixed inset-0 bg-black/60 z-[90] flex items-center justify-center">
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-2xl w-96 p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-lg text-slate-700 dark:text-white">Exportar Tablero</h3>
+                <button id="close-export-modal" class="text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 p-1 rounded"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <p class="text-sm text-slate-600 dark:text-slate-300 mb-6">Elige el formato para descargar tu tablero. Ambos formatos incluyen listas, tarjetas, etiquetas y checklists.</p>
+            <div class="grid grid-cols-2 gap-4">
+                <button id="export-json-btn" class="flex flex-col items-center justify-center p-4 border-2 border-slate-200 dark:border-slate-600 rounded-lg hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-slate-700 transition group">
+                    <div class="bg-yellow-100 text-yellow-700 p-2 rounded-full mb-2 group-hover:bg-white"><i data-lucide="file-json" class="w-6 h-6"></i></div>
+                    <span class="font-bold text-slate-700 dark:text-slate-200">JSON</span>
+                    <span class="text-xs text-slate-500">Formato estándar</span>
+                </button>
+                <button id="export-xml-btn" class="flex flex-col items-center justify-center p-4 border-2 border-slate-200 dark:border-slate-600 rounded-lg hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-slate-700 transition group">
+                    <div class="bg-green-100 text-green-700 p-2 rounded-full mb-2 group-hover:bg-white"><i data-lucide="file-code" class="w-6 h-6"></i></div>
+                    <span class="font-bold text-slate-700 dark:text-slate-200">XML</span>
+                    <span class="text-xs text-slate-500">Formato compatible</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="import-modal" class="hidden fixed inset-0 bg-black/60 z-[90] flex items-center justify-center">
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-2xl w-96 p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-lg text-slate-700 dark:text-white">Importar Tablero</h3>
+                <button id="close-import-modal" class="text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 p-1 rounded"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Selecciona el archivo (.json o .xml)</label>
+                <input type="file" id="import-file-input" accept=".json,.xml" class="w-full text-sm text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-slate-700 dark:file:text-slate-200 border border-slate-200 dark:border-slate-600 rounded p-2">
+            </div>
+
+            <div class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded border border-blue-100 dark:border-blue-800 mb-4">
+                <p class="text-xs text-blue-800 dark:text-blue-300 flex gap-2">
+                    <i data-lucide="info" class="w-4 h-4 shrink-0"></i>
+                    El sistema detectará automáticamente si es JSON o XML.
+                </p>
+            </div>
+
+            <div class="flex justify-end">
+                <button id="confirm-import-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    <i data-lucide="upload-cloud" class="w-4 h-4"></i> Importar Ahora
+                </button>
+            </div>
         </div>
     </div>
 
