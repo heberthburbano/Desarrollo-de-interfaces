@@ -1521,21 +1521,33 @@ function initializeApp() {
     document.getElementById('close-filter-btn')?.addEventListener('click', () => document.getElementById('filter-popover').classList.add('hidden'));
     document.getElementById('clear-filters-btn')?.addEventListener('click', () => { activeFilters = { labels: [], members: [] }; updateFilterState(); });
 
-    function renderFilterMenu() {
-        const labelsContainer = document.getElementById('filter-labels-list'); labelsContainer.innerHTML = '';
-        const standardLabels = [ { name: 'urgente', color: 'bg-red-100 text-red-700', labelClass: 'bg-red-500' }, { name: 'diseño', color: 'bg-purple-100 text-purple-700', labelClass: 'bg-purple-500' }, { name: 'dev', color: 'bg-green-100 text-green-700', labelClass: 'bg-green-500' } ];
-        standardLabels.forEach(l => {
-            const isChecked = activeFilters.labels.includes(l.name);
-            const row = document.createElement('label'); row.className = 'flex items-center gap-3 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 p-2 rounded -mx-2';
-            row.innerHTML = `<input type="checkbox" class="filter-checkbox rounded border-slate-300 text-blue-600" value="${l.name}" data-type="label" ${isChecked ? 'checked' : ''}><span class="w-full h-8 rounded ${l.labelClass} text-white text-xs font-bold flex items-center px-2 capitalize shadow-sm">${l.name}${isChecked ? '<i data-lucide="check" class="ml-auto w-4 h-4"></i>' : ''}</span>`;
-            row.querySelector('input').addEventListener('change', (e) => toggleFilter('labels', l.name, e.target.checked));
-            labelsContainer.appendChild(row);
-        });
-        const membersContainer = document.getElementById('filter-members-list'); membersContainer.innerHTML = '';
+function renderFilterMenu() {
+        const labelsContainer = document.getElementById('filter-labels-list'); 
+        labelsContainer.innerHTML = '';
+        
+        // CORRECCIÓN: Usar boardLabels (dinámicas) en vez de standardLabels (fijas)
+        if (boardLabels.length === 0) {
+            labelsContainer.innerHTML = '<p class="text-xs text-slate-400 italic">No hay etiquetas en este tablero</p>';
+        } else {
+            boardLabels.forEach(l => {
+                const isChecked = activeFilters.labels.includes(l.name);
+                const row = document.createElement('label'); 
+                row.className = 'flex items-center gap-3 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 p-2 rounded -mx-2';
+                // Usamos l.bg y l.text que vienen de tus etiquetas personalizadas
+                row.innerHTML = `<input type="checkbox" class="filter-checkbox rounded border-slate-300 text-blue-600" value="${l.name}" data-type="label" ${isChecked ? 'checked' : ''}><span class="w-full h-8 rounded ${l.bg} ${l.text} text-xs font-bold flex items-center px-2 capitalize shadow-sm">${l.name}${isChecked ? '<i data-lucide="check" class="ml-auto w-4 h-4"></i>' : ''}</span>`;
+                row.querySelector('input').addEventListener('change', (e) => toggleFilter('labels', l.name, e.target.checked));
+                labelsContainer.appendChild(row);
+            });
+        }
+
+        // Renderizado de Miembros (Esto ya estaba bien, lo dejamos igual)
+        const membersContainer = document.getElementById('filter-members-list'); 
+        membersContainer.innerHTML = '';
         if (currentBoardData && currentBoardData.members) {
             Object.entries(currentBoardData.members).forEach(([uid, m]) => {
                 const isChecked = activeFilters.members.includes(uid);
-                const row = document.createElement('label'); row.className = 'flex items-center gap-3 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 p-2 rounded -mx-2';
+                const row = document.createElement('label'); 
+                row.className = 'flex items-center gap-3 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 p-2 rounded -mx-2';
                 row.innerHTML = `<input type="checkbox" class="filter-checkbox rounded border-slate-300" value="${uid}" data-type="member" ${isChecked ? 'checked' : ''}><div class="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-700 border border-slate-300">${m.name.charAt(0).toUpperCase()}</div><span class="text-sm text-slate-700 dark:text-slate-300 truncate flex-1">${m.name}</span>`;
                 row.querySelector('input').addEventListener('change', (e) => toggleFilter('members', uid, e.target.checked));
                 membersContainer.appendChild(row);
