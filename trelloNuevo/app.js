@@ -2067,6 +2067,188 @@ function renderFilterMenu() {
             alert('Hubo un error al intentar salir del tablero: ' + error.message);
         }
     }
+
+    // ========================================
+    // 16. EXPORTAR E IMPORTAR TABLEROS (JSON)
+    // ========================================
+
+    // --- LÓGICA DE EXPORTACIÓN ---
+    document.getElementById('export-board-btn')?.addEventListener('click', async () => {
+        if (!currentBoardId || !currentBoardData) return;
+
+        try {
+            const exportData = {
+                version: '1.0',
+                type: 'trello-clone-board',
+                board: {
+                    title: currentBoardData.title,
+                    background: currentBoardData.background || '#0079BF'
+                },
+                lists: [],
+                cards: []
+            };
+
+            // 1. Obtener Listas
+            const listsSnap = await getDocs(query(collection(db, 'boards', currentBoardId, 'lists'), orderBy('position')));
+            
+            // 2. Iterar listas y obtener sus tarjetas
+            for (const listDoc of listsSnap.docs) {
+                const listData = listDoc.data();
+                exportData.lists.push({
+                    oldId: listDoc.id, // Guardamos el ID viejo para mapear las tarjetas
+                    name: listData.name,
+                    position: listData.position,
+                    archived: listData.archived || false
+                });
+
+                const cardsSnap = await getDocs(query(collection(db, 'boards', currentBoardId, 'lists', listDoc.id, 'cards'), orderBy('position')));
+                cardsSnap.forEach(cardDoc => {
+                    const cardData = cardDoc.data();
+                    exportData.cards.push({
+                        listId: listDoc.id, // Referencia a la lista vieja
+                        title: cardData.title,
+                        description: cardData.description || '',
+                        position: cardData.position,
+                        cover: cardData.cover || null,
+                        labels: cardData.labels || [],
+                        checklist: cardData.checklist || [],
+                        dueDate: cardData.dueDate || null,
+                        dueComplete: cardData.dueComplete || false,
+                        archived: cardData.archived || false
+                        // Nota: No exportamos comentarios ni actividad para mantenerlo limpio
+                    });
+                });
+            }
+
+            // 3. Crear el archivo Blob y descargar
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `tablero-${currentBoardData.title.replace(/\s+/g, '-').toLowerCase()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            alert('Tablero exportado correctamente');
+
+        } catch (error) {
+            console.error('Error al exportar:', error);
+            alert('Error al exportar el tablero');
+        }
+    });
+
+    // --- LÓGICA DE IMPORTACIÓN ---
+    
+    // Al hacer clic en el botón, disparamos el input oculto
+    document.getElementById('import-board-btn')?.addEventListener('click', () => {
+        document.getElementById('import-board-input').click();
+    });
+
+    // Al seleccionar el archivo
+    document.getElementById('import-board-input')?.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            try {
+                const data = JSON.parse(event.target.result);
+                
+                // Validación básica
+                if (!data.type || data.type !== 'trello-clone-board' || !data.board) {
+                    throw new Error('Formato de archivo inválido');
+                }
+
+                await importBoardData(data);
+                
+                // Limpiar input para permitir importar el mismo archivo de nuevo
+                e.target.value = ''; 
+
+            } catch (error) {
+                console.error('Error al importar:', error);
+                alert('Error al importar: El archivo está dañado o no es compatible.');
+            }
+        };
+        reader.readAsText(file);
+    });
+
+    async function importBoardData(data) {
+        if (!confirm(`¿Importar el tablero "${data.board.title}"? Se creará como un tablero nuevo.`)) return;
+
+        try {
+            // 1. Crear el Tablero Nuevo
+            const newBoardData = {
+                title: data.board.title + ' (Importado)',
+                background: data.board.background,
+                ownerId: currentUser.uid,
+                ownerEmail: currentUser.email,
+                members: {
+                    [currentUser.uid]: {
+                        email: currentUser.email,
+                        name: currentUser.displayName || 'Usuario',
+                        role: 'owner'
+                    }
+                },
+                memberEmails: [currentUser.email],
+                createdAt: serverTimestamp()
+            };
+
+            const boardRef = await addDoc(collection(db, 'boards'), newBoardData);
+            const newBoardId = boardRef.id;
+
+            // Mapa para traducir IDs viejos a nuevos: { "id_viejo": "id_nuevo" }
+            const listIdMap = {};
+
+            // 2. Crear Listas
+            for (const list of data.lists) {
+                const newListRef = await addDoc(collection(db, 'boards', newBoardId, 'lists'), {
+                    name: list.name,
+                    position: list.position,
+                    archived: list.archived,
+                    createdAt: serverTimestamp()
+                });
+                // Guardamos la relación
+                listIdMap[list.oldId] = newListRef.id;
+            }
+
+            // 3. Crear Tarjetas (Usando el mapa de IDs)
+            const batchPromises = data.cards.map(card => {
+                const newListId = listIdMap[card.listId]; // Buscamos dónde va la tarjeta ahora
+                if (!newListId) return null; // Si la lista no se creó, saltamos
+
+                return addDoc(collection(db, 'boards', newBoardId, 'lists', newListId, 'cards'), {
+                    title: card.title,
+                    description: card.description,
+                    position: card.position,
+                    cover: card.cover,
+                    labels: card.labels,
+                    checklist: card.checklist,
+                    dueDate: card.dueDate,
+                    dueComplete: card.dueComplete,
+                    archived: card.archived,
+                    attachments: [], // Por seguridad, no importamos adjuntos externos
+                    assignedTo: [], // Reseteamos miembros asignados porque pueden no existir
+                    createdAt: serverTimestamp()
+                });
+            });
+
+            await Promise.all(batchPromises);
+
+            alert('¡Tablero importado con éxito!');
+            
+            // Volver al menú principal para ver el nuevo tablero
+            document.getElementById('back-to-boards-btn').click();
+            loadBoards();
+
+        } catch (error) {
+            console.error('Error en proceso de importación:', error);
+            alert('Error grave durante la importación. Es posible que el tablero se haya creado parcialmente.');
+        }
+    }
     
     // Ejecutar la configuración
     setupEnterKeys();
