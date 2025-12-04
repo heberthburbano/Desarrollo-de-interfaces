@@ -979,6 +979,17 @@ function initializeApp() {
         currentBoardData = data; 
         const memberData = data.members?.[currentUser.uid];
         currentUserRole = memberData ? memberData.role : 'viewer';
+        // --- NUEVA LÓGICA: MOSTRAR/OCULTAR BOTÓN ABANDONAR ---
+        const leaveBtn = document.getElementById('leave-board-btn');
+        if (leaveBtn) {
+            // Si eres el dueño (ownerId), NO puedes abandonar (debes borrar el tablero).
+            // Si eres invitado, SÍ puedes abandonar.
+            if (data.ownerId === currentUser.uid) {
+                leaveBtn.classList.add('hidden');
+            } else {
+                leaveBtn.classList.remove('hidden');
+            }
+        }
         document.getElementById('board-title').textContent = data.title;
         renderBoardMembers(data.members);
         
@@ -1915,6 +1926,60 @@ function renderFilterMenu() {
                     }
                 }
             });
+        }
+    }
+
+    // ========================================
+    // 15. ABANDONAR TABLERO
+    // ========================================
+    
+    document.getElementById('leave-board-btn')?.addEventListener('click', leaveCurrentBoard);
+
+    async function leaveCurrentBoard() {
+        if (!currentBoardId || !currentUser) return;
+
+        if (!confirm(`¿Estás seguro de que quieres abandonar el tablero "${currentBoardData.title}"? Ya no podrás verlo a menos que te inviten de nuevo.`)) {
+            return;
+        }
+
+        try {
+            const boardRef = doc(db, 'boards', currentBoardId);
+
+            // Operación atómica: Borrar la clave del usuario del mapa 'members'
+            // y quitar el email del array 'memberEmails'
+            await updateDoc(boardRef, {
+                [`members.${currentUser.uid}`]: deleteField(),
+                memberEmails: arrayRemove(currentUser.email)
+            });
+
+            // Registrar actividad antes de perder acceso visual
+            // Nota: Técnicamente ya no tienes acceso, pero el log se intenta enviar.
+            // Si falla por reglas de seguridad, no es crítico.
+            try {
+                await addDoc(collection(db, 'activity_logs'), {
+                    boardId: currentBoardId,
+                    userId: currentUser.uid,
+                    userName: currentUser.displayName || currentUser.email,
+                    action: 'left_board',
+                    entityType: 'board',
+                    entityId: currentBoardId,
+                    timestamp: serverTimestamp()
+                });
+            } catch (logError) {
+                console.warn("No se pudo registrar log de salida (posible falta de permisos tras salir).");
+            }
+
+            alert('Has abandonado el tablero exitosamente.');
+
+            // Simular clic en "Volver" para ir a la lista de tableros
+            document.getElementById('back-to-boards-btn').click();
+            
+            // Recargar la lista de tableros para que desaparezca el actual
+            loadBoards();
+
+        } catch (error) {
+            console.error('Error al abandonar tablero:', error);
+            alert('Hubo un error al intentar salir del tablero: ' + error.message);
         }
     }
     
