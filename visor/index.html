@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trello Aesthetics Doc Viewer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="logo-area">
+                <span class="logo-icon">📄</span>
+                <span class="logo-text">DocViewer</span>
+            </div>
+        </header>
+
+        <main class="main-layout">
+            
+            <aside class="sidebar-list">
+                <div class="sidebar-header">
+                    <h3>Archivos</h3>
+                    <span class="count-badge" id="fileCount">0</span>
+                </div>
+
+                <div class="sidebar-content" id="fileList">
+                    <div class="empty-state">
+                        Sube un archivo para comenzar
+                    </div>
+                </div>
+
+                <div class="sidebar-footer">
+                    <label for="fileInput" class="btn-primary-ghost">
+                        + Añadir archivo
+                    </label>
+                    <input type="file" id="fileInput" multiple accept=".txt,.json,.md,.pdf,.png,.jpg,.jpeg,.gif,.webp,.svg,.html,.css,.js,.xml,.sql,.csv,.mp3,.mp4,.webm" hidden>
+                    <label for="folderInput" class="btn-primary-ghost" style="color: #0052CC; background: rgba(0, 82, 204, 0.08);">
+                        + Subir Proyecto Web
+                    </label>
+                    <input type="file" id="folderInput" webkitdirectory directory hidden>
+                </div>
+            </aside>
+
+            <div class="right-panel-container" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0;">
+                
+                <div class="tabs-bar" id="tabsBar">
+                    </div>
+
+                <section class="viewer-canvas" style="border-radius: 0 0 12px 12px; height: 100%;">
+                    <div class="viewer-card" id="viewerCard">
+                        
+                        <div class="viewer-header">
+                            <div class="viewer-meta">
+                                <h1 id="docTitle">Sin documento seleccionado</h1>
+                                <span id="docType" class="meta-tag" style="display:none;">TXT</span>
+                            </div>
+                            
+                            <div class="view-toggle-container" id="mdToggle" style="display: none;">
+                                <button class="toggle-btn active" data-view="raw">Código</button>
+                                <button class="toggle-btn" data-view="preview">Vista Previa</button>
+                            </div>
+
+                            <button id="downloadBtn" class="header-action-btn" title="Descargar archivo">
+                                <span class="icon">⬇</span> <span class="btn-text">Descargar</span>
+                            </button>
+                        </div>      
+                        
+                        <div class="viewer-body" id="docContent">
+                            <div class="placeholder-message">
+                                Selecciona un archivo o arrastra elementos en la lista lateral.
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,578 @@
+:root {
+    /* Paleta Trello / Atlassian Design System */
+    --c-bg-app: #0079BF;       /* Azul Trello Clásico */
+    --c-bg-list: #EBECF0;      /* N30 - Fondo de listas */
+    --c-bg-card: #FFFFFF;      /* N0 - Fondo de tarjetas */
+    --c-text-main: #172B4D;    /* N800 - Texto principal */
+    --c-text-sub: #5E6C84;     /* N500 - Texto secundario */
+    --c-primary: #0052CC;      /* B400 - Azul Acción */
+    --c-shadow: rgba(9, 30, 66, 0.25); /* Sombra semántica */
+    
+    /* Espaciado (Grid 8px) */
+    --sp-1: 8px;
+    --sp-2: 16px;
+    --sp-3: 24px;
+    
+    /* Tipografía */
+    --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: var(--font-stack);
+    color: var(--c-text-main);
+    font-size: 14px;
+    line-height: 20px;
+    height: 100vh;
+    overflow: hidden;
+    background-color: var(--c-bg-app);
+}
+
+/* LAYOUT GENERAL */
+.app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.app-header {
+    height: 48px;
+    background: rgba(0,0,0,0.16); /* Header semitransparente estilo Trello */
+    display: flex;
+    align-items: center;
+    padding: 0 var(--sp-2);
+    backdrop-filter: blur(4px);
+    flex-shrink: 0;
+}
+
+.logo-text {
+    color: white;
+    font-weight: 700;
+    font-size: 18px;
+    margin-left: 8px;
+    opacity: 0.9;
+}
+
+.logo-icon { font-size: 20px; }
+
+.main-layout {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    padding: var(--sp-2); /* Padding alrededor del "tablero" */
+    gap: var(--sp-2);
+}
+
+/* SIDEBAR (Estética de Lista Trello) */
+.sidebar-list {
+    width: 300px; /* Ancho moderno de lista */
+    background-color: var(--c-bg-list); /* N30  */
+    border-radius: 12px; /* Radio moderno */
+    display: flex;
+    flex-direction: column;
+    max-height: 100%;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+}
+
+.sidebar-header {
+    padding: var(--sp-2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(9,30,66,0.08);
+}
+
+.sidebar-header h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--c-text-main);
+}
+
+.count-badge {
+    background: rgba(9,30,66,0.08);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--sp-1);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1);
+}
+
+/* ITEM DE ARCHIVO (Estética de Tarjeta Trello) */
+.file-item {
+    background-color: var(--c-bg-card);
+    padding: var(--sp-1);
+    border-radius: 8px; /* [cite: 99] */
+    box-shadow: 0 1px 0 var(--c-shadow); /* [cite: 106] */
+    cursor: pointer;
+    transition: background 0.1s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.file-item:hover, .file-item.active {
+    background-color: #F4F5F7; /* Color hover Trello */
+}
+
+.file-item.active {
+    box-shadow: 0 0 0 2px var(--c-primary); /* Focus ring */
+}
+
+.file-icon {
+    width: 24px;
+    height: 24px;
+    background: #DFE1E6;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: bold;
+    color: var(--c-text-sub);
+}
+
+.file-name {
+    font-size: 14px;
+    word-break: break-all;
+    flex: 1;
+}
+
+.sidebar-footer {
+    padding: var(--sp-1);
+}
+
+.btn-primary-ghost {
+    display: block;
+    width: 100%;
+    padding: 8px;
+    border-radius: 4px;
+    color: #5E6C84;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.2s;
+}
+
+.btn-primary-ghost:hover {
+    background-color: rgba(9, 30, 66, 0.08);
+    color: var(--c-text-main);
+}
+
+/* VISOR PRINCIPAL (Estética de Detalle/Modal) */
+.viewer-canvas {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: transparent;
+    overflow: hidden;
+}
+
+.viewer-card {
+    background: #f4f5f7; /* Fondo gris muy suave para el contenedor */
+    border-radius: 12px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 12px 24px -6px rgba(9, 30, 66, 0.25);
+}
+
+.viewer-header {
+    background: var(--c-bg-card);
+    padding: var(--sp-3);
+    border-bottom: 1px solid rgba(9,30,66,0.08);
+    /* Nuevas propiedades para alineación: */
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.viewer-meta h1 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.meta-tag {
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 700;
+    background: #DFE1E6;
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: var(--c-text-sub);
+}
+
+.viewer-body {
+    flex: 1;
+    padding: var(--sp-3);
+    overflow-y: auto;
+    background: #FFFFFF;
+    position: relative;
+}
+
+/* UTILIDADES DE CONTENIDO */
+.placeholder-message {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--c-text-sub);
+    font-style: italic;
+}
+
+pre {
+    background: #F4F5F7;
+    padding: var(--sp-2);
+    border-radius: 4px;
+    white-space: pre-wrap;
+    font-family: 'Consolas', monospace;
+    font-size: 13px;
+    color: var(--c-text-main);
+}
+
+iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: #f4f5f7;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 20px;
+    color: var(--c-text-sub);
+    font-size: 13px;
+}
+
+/* Añadir al final de style.css */
+
+/* Estilos para Bloques de Código (HTML, JS, CSS, SQL) */
+pre {
+    background: #F4F5F7; /* N20 - Fondo suave */
+    color: #172B4D;      /* N800 - Texto principal */
+    padding: var(--sp-2);
+    border-radius: 4px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 13px;
+    line-height: 20px;
+    overflow-x: auto;
+    border: 1px solid rgba(9,30,66,0.08); /* Borde sutil */
+}
+
+/* Scrollbars personalizados estilo Trello (Opcional pero recomendado) */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: rgba(9,30,66,0.04);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(9,30,66,0.15); /* N200 aprox */
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(9,30,66,0.25);
+}
+/* Editor de Código Interactivo */
+.code-editor {
+    width: 100%;
+    height: 100%;
+    background-color: #F4F5F7; /* N20 - Fondo reposo */
+    color: #172B4D;            /* N800 - Texto */
+    border: 2px solid transparent; /* Reserva espacio para borde */
+    border-radius: 3px;
+    padding: 12px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 13px;
+    line-height: 20px;
+    resize: none; /* Deshabilitar redimensionado manual */
+    outline: none;
+    transition: background 0.1s, border-color 0.1s;
+}
+
+.code-editor:focus {
+    background-color: #FFFFFF; /* N0 - Fondo activo */
+    border-color: #0052CC;     /* B400 - Foco */
+}
+
+/* Control de Vistas (Segmented Control estilo Trello) */
+.view-toggle-container {
+    background-color: rgba(9, 30, 66, 0.04); /* Fondo sutil */
+    padding: 2px;
+    border-radius: 3px;
+    display: inline-flex;
+    margin-top: 12px;
+}
+
+.toggle-btn {
+    border: none;
+    background: transparent;
+    padding: 6px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #42526E; /* N500 */
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.2s;
+}
+
+.toggle-btn:hover {
+    background-color: rgba(9, 30, 66, 0.08);
+    color: #172B4D;
+}
+
+.toggle-btn.active {
+    background-color: #FFFFFF; /* N0 - Elevación */
+    color: #0052CC;            /* B400 - Azul Primario */
+    box-shadow: 0 1px 2px rgba(9, 30, 66, 0.15); /* Sombra suave */
+    font-weight: 600;
+}
+
+.header-action-btn {
+    background-color: rgba(9, 30, 66, 0.04); /* Fondo neutro sutil */
+    color: #42526E; /* Texto N500 */
+    border: none;
+    border-radius: 3px;
+    padding: 6px 12px;
+    font-family: var(--font-stack);
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background-color 0.1s, color 0.1s;
+    height: 32px; /* Altura estándar botones Trello */
+}
+
+.header-action-btn:hover {
+    background-color: rgba(9, 30, 66, 0.08); /* Hover más oscuro */
+    color: #172B4D; /* Texto N800 */
+}
+
+.header-action-btn:active {
+    background-color: #E4F0F6; /* Azul muy claro al clicar */
+    color: #0052CC;
+}
+
+.header-action-btn .icon {
+    font-size: 16px;
+    line-height: 1;
+}
+/* --- 4. PESTAÑAS (Tabs) --- */
+.tabs-bar {
+    display: flex;
+    background: rgba(0,0,0,0.1);
+    padding: 4px 4px 0 4px; /* Space top */
+    gap: 4px;
+    overflow-x: auto;
+    flex-shrink: 0;
+}
+
+.tab-item {
+    background: rgba(255, 255, 255, 0.5);
+    padding: 6px 12px;
+    border-radius: 8px 8px 0 0;
+    font-size: 13px;
+    color: #172B4D;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 100px;
+    max-width: 200px;
+    transition: background 0.1s;
+    user-select: none;
+}
+
+.tab-item:hover { background: rgba(255, 255, 255, 0.8); }
+.tab-item.active {
+    background: #F4F5F7; /* Conecta con el visor */
+    font-weight: 600;
+    color: #0052CC;
+}
+
+.close-tab {
+    border-radius: 50%;
+    width: 16px; height: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+}
+.close-tab:hover { background: rgba(9,30,66,0.15); }
+
+/* --- 3. EDITOR CON GUTTER (Números de línea) --- */
+.editor-wrapper {
+    display: flex;
+    height: 100%;
+    border: 1px solid #DFE1E6;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.gutter {
+    background: #EBECF0; /* N30 */
+    color: #5E6C84;      /* N500 */
+    padding: 12px 8px;
+    text-align: right;
+    font-family: 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 20px;
+    user-select: none;
+    border-right: 1px solid #DFE1E6;
+    min-width: 40px;
+    overflow: hidden;
+}
+
+/* Ajuste al textarea existente para que encaje en el wrapper */
+.code-editor {
+    border: none;
+    border-radius: 0;
+    flex: 1;
+}
+
+/* --- ELIMINAR Y DRAG & DROP --- */
+.delete-btn {
+    opacity: 0;
+    color: #6B778C;
+    padding: 4px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+.file-item:hover .delete-btn { opacity: 1; }
+.delete-btn:hover { color: #FF5630; /* Rojo Trello */ }
+
+/* Física de Arrastre [cite: 126, 130] */
+.file-item.dragging {
+    opacity: 0.5;
+    transform: rotate(3deg); /* Rotación Trello */
+    background: #E4F0F6;
+    box-shadow: 0 12px 24px -6px rgba(9, 30, 66, 0.25);
+}
+
+/* --- ESTILOS PARA PROYECTO WEB (Visor Interno) --- */
+.project-viewer-layout {
+    display: flex;
+    height: 100%;
+    overflow: hidden;
+}
+
+.project-sidebar {
+    width: 220px;
+    background-color: #FAFBFC;
+    border-right: 1px solid #DFE1E6;
+    overflow-y: auto;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.project-sidebar-title {
+    padding: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #5E6C84;
+    border-bottom: 1px solid #DFE1E6;
+}
+
+.project-file-list {
+    padding: 8px;
+}
+
+.project-file-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 3px;
+    cursor: default;
+    font-size: 13px;
+    color: #172B4D;
+}
+
+.project-file-item:hover {
+    background-color: #EBECF0;
+}
+
+.project-file-item.is-main {
+    font-weight: 600;
+    color: #0052CC;
+}
+
+.project-preview-area {
+    flex: 1;
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Sidebar interno del proyecto */
+.project-sidebar {
+    width: 220px;
+    background-color: #FAFBFC;
+    border-right: 1px solid #DFE1E6;
+    display: flex;
+    flex-direction: column;
+}
+
+.project-file-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.project-file-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 3px;
+    cursor: pointer; /* Importante: cursor de mano */
+    font-size: 13px;
+    color: #172B4D;
+    transition: background 0.1s;
+    user-select: none;
+}
+
+.project-file-item:hover {
+    background-color: #EBECF0;
+}
+
+/* Estado Activo (Archivo seleccionado) */
+.project-file-item.active {
+    background-color: #E6EFFC; /* Azul claro */
+    color: #0052CC;
+    font-weight: 500;
+}
+
+.project-file-item.is-main {
+    font-weight: 600;
+}
+
+.p-icon {
+    font-size: 14px;
+    opacity: 0.8;
+    width: 16px;
+    text-align: center;
+}
+
+/* Área de previsualización interna */
+.project-preview-area {
+    flex: 1;
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Evita scroll doble */
+    height: 100%;
+}
