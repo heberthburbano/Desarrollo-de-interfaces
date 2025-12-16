@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberNoir: Aventura Interactiva</title>
+    <link rel="stylesheet" href="styles.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+</head>
+<body>
+
+    <nav class="system-ui">
+        <div class="logo">CyberNoir Engine</div>
+        
+        <div class="controls">
+            <button id="btn-export" class="btn-secondary">💾 Local Exp</button>
+            <button id="btn-import" class="btn-secondary">📂 Local Imp</button>
+
+            <span style="border-right: 1px solid #555; margin: 0 10px; height: 20px;"></span>
+
+            <button id="btn-save-cloud" class="btn-secondary" style="opacity: 0.5;" disabled>☁️ Guardar</button>
+            <button id="btn-load-cloud" class="btn-secondary" style="opacity: 0.5;" disabled>☁️ Cargar</button>
+        </div>
+
+        <div id="user-area" class="user-area">
+            <button id="btn-login" class="btn-primary">G Login</button>
+            
+            <div id="user-info" style="display:none; align-items:center; gap:10px;">
+                <img id="user-photo" src="" style="width:30px; height:30px; border-radius:50%; border:1px solid white; object-fit: cover;">
+                <span id="user-name" style="font-size:0.8rem;"></span>
+                <button id="btn-logout" class="btn-secondary" style="font-size:0.7rem; border:1px solid #555;">Salir</button>
+            </div>
+        </div>
+    </nav>
+
+    <main id="comic-container" class="comic-container">
+        </main>
+
+    <dialog id="modal-share" class="modal">
+        <h3 id="modal-title">Gestión de Partida</h3>
+        <textarea id="modal-input" rows="5" placeholder="Pega tu código aquí..."></textarea>
+        <div class="modal-actions">
+            <button id="btn-modal-action" class="btn-primary">Confirmar</button>
+            <button id="btn-modal-close" class="btn-secondary">Cerrar</button>
+        </div>
+    </dialog>
+    <dialog id="modal-login" class="modal" style="text-align: center;">
+        <h3 style="color: var(--accent-color); margin-top:0;">Acceso CyberNoir</h3>
+        
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+            <input type="email" id="input-email" placeholder="Correo electrónico" class="cyber-input">
+            <input type="password" id="input-pass" placeholder="Contraseña" class="cyber-input">
+        </div>
+
+        <div class="modal-actions" style="justify-content: center; gap: 10px; margin-bottom: 15px;">
+            <button id="btn-do-login" class="btn-primary">Entrar</button>
+            <button id="btn-do-register" class="btn-secondary" style="border: 1px solid var(--accent-color);">Registrar</button>
+        </div>
+
+        <div style="border-top: 1px dashed #555; padding-top: 15px; margin-top: 10px;">
+            <p style="font-size: 0.8rem; margin-bottom: 10px;">O accede con:</p>
+            <button id="btn-do-google" class="btn-primary" style="background: #db4437; border:none;">G Google</button>
+        </div>
+        
+        <button id="btn-close-login" class="btn-secondary" style="margin-top: 20px; width: 100%;">Cancelar</button>
+    </dialog>
+    <script src="story-data.js"></script> 
+    <script src="app.js"></script>
+</body>
+</html>

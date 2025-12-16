@@ -1,0 +1,135 @@
+:root {
+    --bg-color: #1a1a1a;
+    --text-color: #ffffff;
+    --accent-color: #ff0055;
+    --panel-border: 3px solid #000;
+    --comic-font: 'Courier New', monospace;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: var(--comic-font);
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* --- Barra de Sistema --- */
+.system-ui {
+    width: 100%;
+    background: #000;
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-sizing: border-box;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.logo { font-weight: bold; color: var(--accent-color); letter-spacing: 2px; }
+
+/* --- Botones --- */
+button {
+    cursor: pointer;
+    font-family: inherit;
+    text-transform: uppercase;
+    font-weight: bold;
+    border: 1px solid white;
+    padding: 5px 10px;
+}
+
+.btn-primary { background: var(--accent-color); color: white; border: none; padding: 10px 20px; }
+.btn-secondary { background: transparent; color: white; font-size: 0.8rem; }
+.btn-secondary:hover { background: rgba(255,255,255,0.1); }
+
+/* --- Motor de Layouts (Grid) --- */
+.comic-container {
+    width: 100%;
+    max-width: 900px;
+    padding: 20px;
+    display: grid;
+    gap: 15px;
+    margin-bottom: 50px;
+    box-sizing: border-box;
+}
+
+/* Layout: Hero (1 grande) */
+.layout-hero { grid-template-columns: 1fr; }
+
+/* Layout: Split (2 columnas) */
+.layout-split { grid-template-columns: 1fr 1fr; }
+
+/* Layout: Comic Clásico (Arriba grande, abajo 2 pequeñas) */
+.layout-classic { 
+    grid-template-areas: 
+        "header header"
+        "left right";
+    grid-template-columns: 1fr 1fr;
+}
+
+/* --- Viñetas --- */
+.panel {
+    background: white;
+    border: var(--panel-border);
+    color: black;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    min-height: 200px; /* Altura mínima para que se vean */
+}
+
+.panel img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    flex-grow: 1;
+}
+
+.panel-caption {
+    padding: 10px;
+    background: #fff;
+    border-top: 2px solid #000;
+    font-size: 0.9rem;
+}
+
+/* --- Contenedor de Decisiones --- */
+.choices-container {
+    grid-column: 1 / -1; /* Ocupa todo el ancho siempre */
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 20px;
+    padding: 20px;
+    border-top: 1px dashed #555;
+}
+
+/* --- Modal --- */
+.modal {
+    background: #222;
+    color: white;
+    border: 1px solid #555;
+    padding: 20px;
+    max-width: 500px;
+    width: 90%;
+}
+.modal textarea { width: 100%; margin: 10px 0; background: #000; color: #0f0; border: none; padding: 10px; }
+/* Estilos para Inputs del Login */
+.cyber-input {
+    background: #000;
+    border: 1px solid #555;
+    color: #fff;
+    padding: 10px;
+    font-family: 'Courier New', monospace;
+    font-size: 1rem;
+    outline: none;
+}
+
+.cyber-input:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 5px var(--accent-color);
+}
