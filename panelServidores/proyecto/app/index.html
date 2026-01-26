@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Server Controller</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
+    <style>
+        :root {
+            --bg-body: #0f172a; --primary: #6366f1; --success: #10b981; --danger: #ef4444; --warn: #f59e0b;
+            --card-bg: rgba(30, 41, 59, 0.7); --card-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc; --text-muted: #94a3b8;
+            --chart-cpu: #818cf8; --chart-ram: #d8b4fe;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif; background-color: var(--bg-body); color: var(--text-main);
+            margin: 0; padding: 40px 20px; min-height: 100vh;
+            background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                              radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.15) 0px, transparent 50%);
+        }
+        h1 { font-weight: 800; font-size: 2.5rem; text-align: center; margin: 0 0 50px 0;
+             background: linear-gradient(to right, #818cf8, #34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 30px; max-width: 1200px; margin: 0 auto; }
+        
+        /* CARD */
+        .server-card {
+            background: var(--card-bg); backdrop-filter: blur(12px); border: 1px solid var(--card-border);
+            border-radius: 20px; padding: 25px; transition: 0.3s; position: relative; overflow: hidden;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .server-card:hover { transform: translateY(-5px); border-color: rgba(255,255,255,0.2); }
+        .server-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; transition: 0.3s; }
+        
+        /* Statuses */
+        .running::before { background: var(--success); box-shadow: 0 0 15px var(--success); }
+        .stopped::before { background: var(--danger); }
+        .paused::before { background: var(--warn); box-shadow: 0 0 15px var(--warn); } /* COLOR NARANJA PARA PAUSA */
+        
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+        .server-name { font-weight: 700; font-size: 1.3rem; margin-bottom: 5px; }
+        .server-ip { font-family: 'JetBrains Mono'; font-size: 0.85rem; color: var(--text-muted); display: block; }
+        
+        .status-badge { font-size: 0.75rem; font-weight: 700; padding: 5px 12px; border-radius: 20px; text-transform: uppercase; border: 1px solid transparent; letter-spacing: 1px; }
+        .running .status-badge { background: rgba(16, 185, 129, 0.15); color: var(--success); border-color: rgba(16, 185, 129, 0.3); }
+        .stopped .status-badge { background: rgba(239, 68, 68, 0.15); color: var(--danger); border-color: rgba(239, 68, 68, 0.3); }
+        .paused .status-badge { background: rgba(245, 158, 11, 0.15); color: var(--warn); border-color: rgba(245, 158, 11, 0.3); }
+
+        .metrics-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .metric-box { background: rgba(15, 23, 42, 0.5); padding: 15px; border-radius: 12px; text-align: center; border: 1px solid rgba(255,255,255,0.05); }
+        .metric-label { font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 5px; font-weight: 600;}
+        .metric-val { font-family: 'JetBrains Mono'; font-weight: 700; font-size: 1.4rem; }
+        .c-cpu { color: var(--chart-cpu); } 
+        .c-ram { color: var(--chart-ram); }
+
+        .chart-wrapper { height: 160px; margin-bottom: 25px; }
+
+        .action-bar { display: flex; gap: 10px; }
+        
+        .btn-main {
+            flex: 1; padding: 12px; border: none; border-radius: 10px; font-weight: 700; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .btn-icon {
+            width: 48px; border: none; border-radius: 10px; cursor: pointer; font-size: 1.4rem;
+            display: flex; align-items: center; justify-content: center; transition: 0.2s;
+            background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid rgba(255,255,255,0.05);
+        }
+        .btn-icon:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px); }
+        
+        .btn-start { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); }
+        .btn-stop { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3); }
+        .btn-resume { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3); }
+
+        .spinner { width: 18px; height: 18px; border: 2px solid white; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; display: none; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <h1>Nexus Control</h1>
+    <div id="grid" class="dashboard-grid">Cargando...</div>
+
+    <script>
+        const charts = {}; const history = {};
+
+        function notify(msg, type='info') {
+            const colors = { success: "#10b981", error: "#ef4444", info: "#3b82f6" };
+            Toastify({ text: msg, duration: 2000, style: { background: colors[type], borderRadius: "10px" } }).showToast();
+        }
+
+        async function fetchServers() {
+            try {
+                const res = await fetch('http://localhost:3000/api/servers');
+                const servers = await res.json();
+                renderDashboard(servers);
+            } catch (e) { console.error(e); }
+        }
+
+        function renderDashboard(servers) {
+            const grid = document.getElementById('grid');
+            if(servers.length === 0) { grid.innerHTML = '<p style="text-align:center">No hay máquinas</p>'; return; }
+            if(grid.innerHTML.includes('Cargando')) grid.innerHTML = '';
+
+            servers.forEach(srv => {
+                let card = document.getElementById(`card-${srv.id}`);
+                if (!card) { card = createCard(srv); grid.appendChild(card); }
+                updateCard(srv);
+            });
+        }
+
+        function createCard(srv) {
+            const div = document.createElement('div');
+            div.id = `card-${srv.id}`; div.className = 'server-card';
+            div.innerHTML = `
+                <div class="card-header">
+                    <div>
+                        <div class="server-name">${srv.nombre}</div>
+                        <div class="server-ip" id="ip-${srv.id}">IP: ---</div>
+                    </div>
+                    <div class="status-badge" id="badge-${srv.id}">...</div>
+                </div>
+                <div class="metrics-container">
+                    <div class="metric-box">
+                        <div class="metric-label">CPU Core</div>
+                        <div class="metric-val c-cpu" id="cpu-${srv.id}">0%</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">RAM Usage</div>
+                        <div class="metric-val c-ram" id="ram-${srv.id}">0 MB</div>
+                    </div>
+                </div>
+                <div class="chart-wrapper"><canvas id="chart-${srv.id}"></canvas></div>
+                
+                <div class="action-bar">
+                    <button class="btn-main" id="btn-main-${srv.id}" onclick="toggleServer('${srv.id}')">
+                        <span>Acción</span> <div class="spinner"></div>
+                    </button>
+                    <button class="btn-icon" title="Pausar" onclick="sendCommand('${srv.id}', 'pause')">
+                        <i class="ri-pause-circle-line"></i>
+                    </button>
+                    <button class="btn-icon" title="Guardar Estado (Hibernate)" onclick="sendCommand('${srv.id}', 'save')">
+                        <i class="ri-save-3-line"></i>
+                    </button>
+                </div>
+            `;
+            return div;
+        }
+
+        function updateCard(srv) {
+            const card = document.getElementById(`card-${srv.id}`);
+            const badge = document.getElementById(`badge-${srv.id}`);
+            const ipTxt = document.getElementById(`ip-${srv.id}`);
+            const btnMain = document.getElementById(`btn-main-${srv.id}`);
+            
+            // 1. GESTIÓN DEL ESTADO VISUAL
+            card.classList.remove('running', 'stopped', 'paused');
+            card.classList.add(srv.estado); 
+            
+            // 2. TEXTOS Y BOTONES SEGÚN ESTADO
+            const ipDisplay = (srv.ip && srv.ip !== 'undefined') ? srv.ip : '---';
+            ipTxt.innerText = (srv.estado === 'running') ? `IP: ${ipDisplay}` : 'IP: ---';
+
+            if (srv.estado === 'running') {
+                badge.innerText = 'ONLINE';
+                btnMain.className = 'btn-main btn-stop';
+                btnMain.querySelector('span').innerHTML = '<i class="ri-shut-down-line"></i> APAGAR';
+                btnMain.onclick = () => sendCommand(srv.id, 'stop');
+
+            } else if (srv.estado === 'paused') { // <--- CASO NUEVO: PAUSADO
+                badge.innerText = 'PAUSADO';
+                btnMain.className = 'btn-main btn-resume'; // Color Naranja
+                btnMain.querySelector('span').innerHTML = '<i class="ri-play-circle-line"></i> REANUDAR';
+                btnMain.onclick = () => sendCommand(srv.id, 'resume'); // Llama a la nueva ruta
+
+            } else {
+                badge.innerText = 'OFFLINE';
+                btnMain.className = 'btn-main btn-start';
+                btnMain.querySelector('span').innerHTML = '<i class="ri-play-fill"></i> INICIAR';
+                btnMain.onclick = () => sendCommand(srv.id, 'start');
+            }
+
+            // Charts & Numbers
+            document.getElementById(`cpu-${srv.id}`).innerText = srv.estado==='running' ? srv.cpu+'%' : '--';
+            document.getElementById(`ram-${srv.id}`).innerText = srv.estado==='running' ? `${srv.ramUso}/${srv.ramTotal}MB` : '--';
+            
+            updateChart(srv.id, srv.estado==='running'?srv.cpu:0, srv.estado==='running'?(srv.ramUso/srv.ramTotal)*100:0);
+        }
+
+        function updateChart(id, cpu, ram) {
+            const ctx = document.getElementById(`chart-${id}`);
+            if(!history[id]) history[id] = {c:Array(20).fill(0), r:Array(20).fill(0)};
+            history[id].c.push(cpu); history[id].c.shift();
+            history[id].r.push(ram); history[id].r.shift();
+            
+            if(charts[id]) {
+                charts[id].data.datasets[0].data = history[id].c;
+                charts[id].data.datasets[1].data = history[id].r;
+                charts[id].update('none');
+            } else {
+                charts[id] = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: Array(20).fill(''),
+                        datasets: [
+                            { label: 'CPU %', data: history[id].c, borderColor: '#818cf8', backgroundColor: (ctx)=>{const g=ctx.chart.ctx.createLinearGradient(0,0,0,160);g.addColorStop(0,'rgba(129,140,248,0.4)');g.addColorStop(1,'rgba(129,140,248,0)');return g;}, borderWidth: 2, tension: 0.4, fill: true, pointRadius: 0 },
+                            { label: 'RAM %', data: history[id].r, borderColor: '#d8b4fe', borderWidth: 2, tension: 0.4, pointRadius: 0, borderDash:[5,5] }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'bottom', labels: {color:'#94a3b8', font:{size:10, family:'Inter'}, usePointStyle:true} } }, scales: { x:{display:false}, y:{display:false, min:0, max:100} }, animation: false }
+                });
+            }
+        }
+
+        async function sendCommand(id, action) {
+            notify(`Enviando comando: ${action.toUpperCase()}`, 'info');
+            try {
+                await fetch(`http://localhost:3000/api/${action}/${id}`, { method: 'POST' });
+                setTimeout(() => { fetchServers(); notify('Comando exitoso', 'success'); }, 1500);
+            } catch { notify('Error de conexión', 'error'); }
+        }
+
+        setInterval(fetchServers, 3000);
+        fetchServers();
+    </script>
+</body>
+</html>
