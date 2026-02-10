@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Finanzas Personales</title>
+    <!-- Google Fonts for modern typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+</head>
+
+<body>
+
+    <!-- App Container -->
+    <div class="app-container">
+
+        <!-- =========================
+             SECTIONS (VIEWS)
+        ========================== -->
+
+        <!-- 1. LOGIN -->
+        <section id="login" class="view">
+            <div class="login-card">
+                <div class="logo">
+                    <i class="fa-solid fa-wallet"></i>
+                    <h1 id="auth-title" data-i18n="app_name">Mi Billetera</h1>
+                </div>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="email" data-i18n="login_email">Correo Electrónico</label>
+                        <input type="email" id="email" placeholder="usuario@ejemplo.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password" data-i18n="login_pass">Contraseña</label>
+                        <input type="password" id="password" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" id="auth-submit-btn" class="btn btn-primary"
+                        data-i18n="login_btn">Entrar</button>
+                    <p class="login-footer"><span id="auth-footer-text" data-i18n="login_footer">¿No tienes
+                            cuenta?</span> <a href="#" id="auth-toggle-link" data-i18n="login_register">Regístrate</a>
+                    </p>
+                </form>
+            </div>
+        </section>
+
+        <!-- 2. HOME (DASHBOARD) -->
+        <section id="home" class="view active">
+            <header class="top-bar">
+                <h2 data-i18n="greeting">Hola, Usuario</h2>
+                <div class="avatar"><i class="fa-solid fa-user"></i></div>
+            </header>
+
+            <div class="dashboard-grid">
+                <!-- Balance Card -->
+                <div class="card balance-card">
+                    <h3 data-i18n="balance_total">Balance Total</h3>
+                    <div class="amount" id="display-balance">€ 0.00</div>
+
+                    <div class="balance-summary">
+                        <div class="summary-item income">
+                            <i class="fa-solid fa-arrow-up"></i>
+                            <div>
+                                <span data-i18n="income_label">Ingresos</span>
+                                <strong id="display-income">€ 0.00</strong>
+                            </div>
+                        </div>
+                        <div class="summary-item expense">
+                            <i class="fa-solid fa-arrow-down"></i>
+                            <div>
+                                <span data-i18n="expense_label">Gastos</span>
+                                <strong id="display-expense">€ 0.00</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ADD: Chart Section (Moved here) -->
+                <div class="chart-section" style="grid-column: 1 / -1;">
+                    <div class="chart-header">
+                        <div>
+                            <h3>Resumen Visual</h3>
+                            <div class="chart-tabs">
+                                <button class="chart-tab active" data-type="expense">Gastos</button>
+                                <button class="chart-tab" data-type="income">Ingresos</button>
+                            </div>
+                        </div>
+                        <select id="chart-filter" class="chart-filter" style="display:none;">
+                            <option value="day">Hoy</option>
+                            <option value="week">7 Días</option>
+                            <option value="month" selected>Este Mes</option>
+                            <option value="quarter">Últimos 3 Meses</option>
+                            <option value="all">Todo</option>
+                        </select>
+                        <div class="chart-filter-pills" id="chart-filter-pills">
+                            <button class="filter-pill" data-value="day">Hoy</button>
+                            <button class="filter-pill" data-value="week">7 Días</button>
+                            <button class="filter-pill active" data-value="month">Este Mes</button>
+                            <button class="filter-pill" data-value="quarter">3 Meses</button>
+                            <button class="filter-pill" data-value="all">Todo</button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="expenseChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Monthly Expenses Card -->
+                <div class="card expense-card">
+                    <h3 data-i18n="expense_month">Gastos del Mes</h3>
+                    <div class="amount">€ 850.00</div>
+                    <div class="progress-bar">
+                        <div class="progress" style="width: 65%;"></div>
+                    </div>
+                    <small data-i18n="budget_info">65% de tu presupuesto</small>
+                </div>
+
+                <!-- Chart Section REMOVED from here -->
+
+                <!-- Recent Transactions Summary -->
+                <div class="recent-section">
+                    <div class="section-header">
+                        <h3 data-i18n="recent_moves">Últimos Movimientos</h3>
+                        <a href="#transactions" class="nav-link" onclick="window.router.navigate('transactions')"
+                            data-i18n="view_all">Ver todo</a>
+                    </div>
+                    <!-- Dynamic List Container -->
+                    <ul class="transaction-list-preview" id="recent-transactions-list">
+                        <!-- Items will be injected here by JS -->
+                        <div class="empty-state">
+                            <p data-i18n="empty_state">No hay movimientos aún.</p>
+                        </div>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. TRANSACTIONS (MOVIMIENTOS) -->
+        <section id="transactions" class="view">
+            <header class="top-bar">
+                <h2 data-i18n="moves_title">Movimientos</h2>
+            </header>
+
+            <div class="filter-bar">
+                <select id="category-filter-select" class="filter-select">
+                    <option value="all" data-i18n="filter_all">Todas las Categorías</option>
+                </select>
+                <button id="btn-export-csv" class="btn-icon"
+                    style="background: #10b981; color: white; margin-left: 10px; border-radius: 8px; width: 44px; height: 44px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; border:none;"
+                    title="Exportar a Excel">
+                    <i class="fa-solid fa-file-csv"></i>
+                </button>
+                <button id="btn-export-pdf" class="btn-icon"
+                    style="background: #ef4444; color: white; margin-left: 10px; border-radius: 8px; width: 44px; height: 44px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; border:none;"
+                    title="Descargar PDF">
+                    <i class="fa-solid fa-file-pdf"></i>
+                </button>
+            </div>
+
+            <div class="transaction-list-full" id="full-transactions-list">
+                <!-- Items will be injected here by JS -->
+            </div>
+        </section>
+
+        <!-- 4. ADD TRANSACTION (AÑADIR) -->
+        <section id="add" class="view">
+            <header class="top-bar">
+                <button class="icon-btn back-btn" onclick="window.history.back()"><i
+                        class="fa-solid fa-arrow-left"></i></button>
+                <h2 data-i18n="add_title">Añadir</h2>
+                <div><!-- Spacer --></div>
+            </header>
+
+            <form class="add-form" id="add-form">
+
+                <!-- Type Toggle -->
+                <div class="type-toggle-container">
+                    <input type="radio" name="type" id="type-expense" value="expense" checked>
+                    <label for="type-expense" class="type-btn expense-btn" data-i18n="type_expense">Gasto</label>
+
+                    <input type="radio" name="type" id="type-income" value="income">
+                    <label for="type-income" class="type-btn income-btn" data-i18n="type_income">Ingreso</label>
+                </div>
+
+                <div class="amount-input-container">
+                    <select id="currency-selector"
+                        style="border: none; background: transparent; font-size: 1.5rem; font-weight: 600; color: var(--text-muted); margin-right: 8px; cursor: pointer;">
+                        <option value="EUR">€</option>
+                        <option value="USD">$</option>
+                        <option value="GBP">£</option>
+                    </select>
+                    <input type="number" id="input-amount" step="0.01" data-i18n-placeholder="amount_placeholder"
+                        placeholder="0.00" class="large-amount-input" required autofocus>
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="concept_label">Concepto</label>
+                    <input type="text" id="input-title" data-i18n-placeholder="concept_placeholder"
+                        placeholder="¿Qué es?" required>
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="date_label" style="display:block;margin-bottom:8px">Fecha</label>
+                    <input type="date" id="input-date"
+                        style="width: 100%; border: 1px solid var(--border-color); padding: 12px; border-radius: 12px;"
+                        required>
+                </div>
+
+                <div class="form-group">
+                    <label>Adjuntar Recibo (Opcional)</label>
+                    <div class="file-upload" onclick="document.getElementById('receipt-input').click()">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <span>Haz clic para subir imagen o PDF</span>
+                        <input type="file" id="receipt-input" accept="image/*,application/pdf" style="display: none"
+                            onchange="this.previousElementSibling.innerText = this.files[0] ? this.files[0].name : 'Haz clic para subir imagen o PDF'">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="category" data-i18n="category_label">Categoría</label>
+                    <div class="input-group" style="display: flex; gap: 8px;">
+                        <select id="category" class="form-control"
+                            style="flex: 1; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color);"
+                            required>
+                            <option value="" disabled selected>Selecciona una opción</option>
+                        </select>
+                        <button type="button" id="btn-add-category" class="btn-icon"
+                            style="background: var(--primary-color); color: white; border: none; border-radius: 12px; width: 44px; height: 44px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block" data-i18n="save_btn">Guardar</button>
+            </form>
+        </section>
+
+        <!-- 5. PROFILE (PERFIL) -->
+        <section id="profile" class="view">
+            <header class="top-bar">
+                <h2 data-i18n="profile_title">Perfil</h2>
+            </header>
+
+            <div class="profile-header">
+                <div class="large-avatar"><i class="fa-solid fa-user"></i></div>
+                <h3>Usuario Demo</h3>
+                <p>usuario@ejemplo.com</p>
+            </div>
+
+            <div class="settings-list">
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <i class="fa-solid fa-moon"></i>
+                        <span data-i18n="dark_mode">Modo Oscuro</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="theme-toggle">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <!-- Language Selector -->
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <i class="fa-solid fa-globe"></i>
+                        <span data-i18n="language">Idioma</span>
+                    </div>
+                    <div class="language-selector">
+                        <button id="lang-es" class="lang-btn">ES</button>
+                        <button id="lang-en" class="lang-btn">EN</button>
+                    </div>
+                </div>
+                <div class="setting-item text-danger" onclick="window.router.navigate('login')">
+                    <div class="setting-info">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        <span data-i18n="logout">Cerrar Sesión</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. SETTINGS (CONFIGURACIÓN) -->
+        <section id="settings" class="view">
+            <header class="top-bar">
+                <h2>Configuración</h2>
+            </header>
+
+            <!-- Main Settings Menu -->
+            <div id="settings-menu">
+                <div class="card" style="padding: 0; overflow: hidden;">
+                    <div class="settings-list">
+                        <div class="settings-item" id="btn-settings-categories">
+                            <div class="setting-info">
+                                <div class="icon-box"
+                                    style="width: 36px; height: 36px; background: #e0e7ff; color: #6366f1; margin-right: 12px; font-size: 1rem;">
+                                    <i class="fa-solid fa-tags"></i>
+                                </div>
+                                <span>Gestionar Categorías</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-right"
+                                style="color: var(--text-muted); font-size: 0.8rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Categories Management Sub-view -->
+            <div id="settings-categories" class="hidden">
+                <div class="section-header" style="margin-bottom: 16px;">
+                    <button id="btn-back-settings"
+                        style="display: flex; align-items: center; gap: 8px; font-weight: 500; color: var(--text-muted);">
+                        <i class="fa-solid fa-arrow-left"></i> Volver
+                    </button>
+                </div>
+
+                <h3 style="margin-bottom: 20px;">Mis Categorías</h3>
+
+                <div class="card" style="padding: 0; overflow: hidden; min-height: 200px;">
+                    <div id="categories-management-list" class="settings-list">
+                        <!-- Dynamic Items -->
+                    </div>
+                </div>
+
+                <!-- Warning about default categories -->
+                <p style="text-align: center; color: var(--text-muted); font-size: 0.8rem; margin-top: 10px;">
+                    <i class="fa-solid fa-circle-info"></i> Puedes eliminar categorías personalizadas.
+                </p>
+            </div>
+
+            <!-- FAB for Adding Category inside Settings -->
+            <div id="fab-add-category" class="fab-container"
+                style="position: fixed; bottom: 85px; right: 20px; top: auto; display: none;">
+                <button class="fab" style="background: var(--primary-color);">
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- NAVIGATION -->
+        <nav class="main-nav">
+            <button class="nav-item active" data-target="home">
+                <i class="fa-solid fa-house"></i>
+                <span data-i18n="nav_home">Inicio</span>
+            </button>
+            <button class="nav-item" data-target="transactions">
+                <i class="fa-solid fa-list"></i>
+                <span data-i18n="nav_transactions">Movimientos</span>
+            </button>
+
+            <div class="fab-container">
+                <button class="fab" data-target="add">
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+            </div>
+
+            <button class="nav-item" data-target="profile">
+                <i class="fa-solid fa-user"></i>
+                <span data-i18n="nav_profile">Perfil</span>
+            </button>
+            <button class="nav-item" data-target="settings">
+                <i class="fa-solid fa-gear"></i>
+                <span>Ajustes</span>
+            </button>
+        </nav>
+
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toast-container"></div>
+
+    <!-- CONFIRM MODAL -->
+    <div id="custom-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h3 id="modal-title">Confirmación</h3>
+            <p id="modal-msg">¿Estás seguro?</p>
+            <div class="modal-actions">
+                <button id="modal-btn-cancel" class="btn-cancel">Cancelar</button>
+                <button id="modal-btn-confirm" class="btn-confirm">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW: CATEGORY MODAL -->
+    <div id="category-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h3>Nueva Categoría</h3>
+            <div class="form-group">
+                <label>Nombre</label>
+                <input type="text" id="cat-name-input" placeholder="Ej: Gimnasio" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Color</label>
+                <input type="color" id="cat-color-input" value="#6366f1"
+                    style="width: 100%; height: 40px; cursor: pointer;">
+            </div>
+            <div class="form-group">
+                <label>Icono</label>
+                <div class="icon-grid-selector" id="cat-icon-selector">
+                    <label class="icon-option"><input type="radio" name="icon" value="fa-tag" checked><i
+                            class="fa-solid fa-tag"></i></label>
+                    <label class="icon-option"><input type="radio" name="icon" value="fa-cart-shopping"><i
+                            class="fa-solid fa-cart-shopping"></i></label>
+                    <label class="icon-option"><input type="radio" name="icon" value="fa-car"><i
+                            class="fa-solid fa-car"></i></label>
+                    <label class="icon-option"><input type="radio" name="icon" value="fa-heart"><i
+                            class="fa-solid fa-heart"></i></label>
+                    <label class="icon-option"><input type="radio" name="icon" value="fa-gamepad"><i
+                            class="fa-solid fa-gamepad"></i></label>
+                    <label class="icon-option"><input type="radio" name="icon" value="fa-paw"><i
+                            class="fa-solid fa-paw"></i></label>
+                    <label class="icon-option"><input type="radio" name="icon" value="fa-graduation-cap"><i
+                            class="fa-solid fa-graduation-cap"></i></label>
+                    <label class="icon-option"><input type="radio" name="icon" value="fa-plane"><i
+                            class="fa-solid fa-plane"></i></label>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button id="btn-cancel-cat" class="btn-cancel">Cancelar</button>
+                <button id="btn-save-cat" class="btn-confirm">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW: PDF FILTER MODAL -->
+    <div id="pdf-filter-modal" class="modal-overlay hidden">
+        <div class="modal-card" style="max-width: 500px;">
+            <h3>Personalizar Informe</h3>
+            <p style="margin-bottom: 16px; color: var(--text-muted);">Selecciona las categorías a incluir:</p>
+
+            <div id="pdf-category-list" class="checkbox-grid">
+                <!-- Checkboxes will be injected here -->
+            </div>
+
+            <div class="modal-actions">
+                <button id="btn-cancel-pdf" class="btn-cancel">Cancelar</button>
+                <button id="btn-confirm-pdf" class="btn-confirm" style="background: #ef4444;">Descargar PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabaseClient.js"></script>
+    <script src="authManager.js"></script>
+    <script src="router.js"></script>
+    <script src="transactionManager.js"></script>
+    <script src="currencyService.js"></script>
+    <script src="toast.js"></script>
+    <script src="chartManager.js"></script>
+    <script src="categoryManager.js"></script>
+    <script src="pdfService.js"></script>
+    <script src="i18n.js"></script>
+    <script src="main.js"></script>
+</body>
+
+</html>
