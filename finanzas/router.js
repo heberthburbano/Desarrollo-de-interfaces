@@ -36,7 +36,7 @@ class Router {
     handleLocation() {
         const hash = window.location.hash.substring(1); // Remove '#'
         const route = this.routes.includes(hash) ? hash : this.defaultRoute;
-        
+
         this.render(route);
     }
 
@@ -60,7 +60,7 @@ class Router {
             // Small timeout to allow display change before adding opacity class for simple transition if needed
             // For now, just adding active class which is handled in CSS
             setTimeout(() => {
-                 targetSection.classList.add('active');
+                targetSection.classList.add('active');
             }, 10);
         }
 
@@ -71,6 +71,9 @@ class Router {
         if (route === 'login') {
             if (nav) nav.style.display = 'none';
             if (fabContainer) fabContainer.style.display = 'none';
+        } else if (route === 'settings') {
+            if (nav) nav.style.display = 'flex'; // Keep nav visible
+            if (fabContainer) fabContainer.style.display = 'none'; // Hide global FAB in settings
         } else {
             if (nav) nav.style.display = 'flex'; // Restore flex for nav
             if (fabContainer) fabContainer.style.display = 'block'; // Restore block for fab container
@@ -84,13 +87,13 @@ class Router {
                 btn.classList.remove('active');
             }
         });
-        
+
         // Handle FAB active state if desired, mostly FAB triggers 'add'
         const fab = document.querySelector('.fab');
-        if(route === 'add') {
-             fab.classList.add('active-fab'); // Optional styling
+        if (route === 'add') {
+            fab.classList.add('active-fab'); // Optional styling
         } else {
-             fab.classList.remove('active-fab');
+            fab.classList.remove('active-fab');
         }
 
         this.currentRoute = route;

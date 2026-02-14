@@ -950,13 +950,11 @@ function setupSettingsLogic() {
     const menu = document.getElementById('settings-menu');
     const catsView = document.getElementById('settings-categories');
     const btnBack = document.getElementById('btn-back-settings');
-    const fabAdd = document.getElementById('fab-add-category');
 
     if (btnGoCats) {
         btnGoCats.addEventListener('click', () => {
             menu.classList.add('hidden');
             catsView.classList.remove('hidden');
-            fabAdd.style.display = 'flex'; // Show FAB
             renderSettingsCategories();
         });
     }
@@ -966,17 +964,16 @@ function setupSettingsLogic() {
         btnBack.addEventListener('click', () => {
             catsView.classList.add('hidden');
             menu.classList.remove('hidden');
-            fabAdd.style.display = 'none'; // Hide FAB
         });
     }
 
-    // 3. FAB Add Category (Opens existing modal)
-    if (fabAdd) {
-        fabAdd.addEventListener('click', () => {
+    // 3. Static "Nueva Categoría" button (replaces old floating FAB)
+    const btnAddCatSettings = document.getElementById('btn-add-category-settings');
+    if (btnAddCatSettings) {
+        btnAddCatSettings.addEventListener('click', () => {
             const modal = document.getElementById('category-modal');
             if (modal) {
                 modal.classList.remove('hidden');
-                // Focus
                 setTimeout(() => {
                     const input = document.getElementById('cat-name-input');
                     if (input) input.focus();

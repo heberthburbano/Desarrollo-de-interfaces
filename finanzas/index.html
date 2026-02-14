@@ -329,6 +329,12 @@
 
                 <h3 style="margin-bottom: 20px;">Mis Categorías</h3>
 
+                <!-- Static button to add category (replaces old floating FAB) -->
+                <button id="btn-add-category-settings" class="btn btn-primary"
+                    style="width: 100%; padding: 14px; margin-bottom: 20px; border-radius: 12px; background: var(--primary-color); color: white; border: none; font-size: 1rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity 0.2s;">
+                    <i class="fa-solid fa-plus"></i> Nueva Categoría
+                </button>
+
                 <div class="card" style="padding: 0; overflow: hidden; min-height: 200px;">
                     <div id="categories-management-list" class="settings-list">
                         <!-- Dynamic Items -->
@@ -339,14 +345,6 @@
                 <p style="text-align: center; color: var(--text-muted); font-size: 0.8rem; margin-top: 10px;">
                     <i class="fa-solid fa-circle-info"></i> Puedes eliminar categorías personalizadas.
                 </p>
-            </div>
-
-            <!-- FAB for Adding Category inside Settings -->
-            <div id="fab-add-category" class="fab-container"
-                style="position: fixed; bottom: 85px; right: 20px; top: auto; display: none;">
-                <button class="fab" style="background: var(--primary-color);">
-                    <i class="fa-solid fa-plus"></i>
-                </button>
             </div>
         </section>
 
