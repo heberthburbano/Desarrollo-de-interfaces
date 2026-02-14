@@ -1,0 +1,152 @@
+Documentación Técnica: App de Finanzas Personales (PWA)
+1. Introducción y Objetivos
+Desarrollo de una Aplicación Web Progresiva (PWA) para la gestión de gastos personales. El objetivo principal fue crear una herramienta ligera, accesible desde cualquier dispositivo y con capacidad de instalación nativa, sin depender de frameworks pesados.
+
+Características Clave:
+
+Arquitectura SPA (Single Page Application).
+
+Diseño Mobile-First y adaptativo.
+
+Persistencia de datos en la nube.
+
+Funcionamiento Offline (PWA).
+
+2. Stack Tecnológico
+Para este proyecto se seleccionó un stack minimalista y eficiente:
+
+Frontend: HTML5, CSS3 (Variables nativas), JavaScript (Vanilla ES6+).
+
+Backend & Base de Datos: Supabase (PostgreSQL + Auth).
+
+Librerías:
+
+Chart.js (Visualización de datos).
+
+FontAwesome (Iconografía).
+
+Supabase-js (Cliente de conexión).
+
+Infraestructura:
+
+Hosting: GitHub Pages.
+
+Empaquetado: PWABuilder (Generación de APK).
+
+3. Arquitectura de la Solución
+3.1. Estructura de Archivos
+El proyecto sigue una estructura modular para facilitar el mantenimiento:
+
+index.html: Punto de entrada único (SPA).
+
+style.css: Estilos globales y gestión de temas (Dark/Light).
+
+main.js: Lógica principal e inicialización.
+
+router.js: Sistema de enrutamiento del lado del cliente (hash router).
+
+managers/: Módulos de lógica de negocio (AuthManager, TransactionManager).
+
+3.2. Diseño de Base de Datos (Supabase)
+Se implementó una tabla transactions con Row Level Security (RLS) para asegurar que cada usuario solo vea sus datos.
+
+Tabla: transactions
+
+Columnas: id, user_id, amount, category, date, type (expense/income), description.
+
+4. Ingeniería de Prompts (Metodología de Desarrollo)
+El desarrollo se guio mediante "Role Prompting" con un Agente de IA, iterando en fases:
+
+Fase 1: Estructura y Lógica Core
+Prompt Clave: "Actúa como un experto en JavaScript. Crea una estructura SPA básica con un Router que maneje vistas (Login, Home, Add). Conecta con Supabase para autenticación."
+
+Resultado: Base funcional con sistema de login y navegación básica.
+
+Fase 2: Visualización de Datos
+Prompt Clave: "Integra Chart.js para mostrar un gráfico de donut con los gastos por categoría. Los colores deben coincidir con la paleta CSS definida."
+
+Resultado: Dashboard visual con métricas en tiempo real.
+
+Fase 3: Refactorización Mobile-Native (UX)
+Basado en documentación de ergonomía móvil (Regla de las 3C, Zona del Pulgar).
+
+Prompt Clave: "Refactoriza la interfaz para móvil. Convierte la tabla de transacciones en Tarjetas (Cards). Implementa un Bottom Navigation Bar y mueve los modales a Bottom Sheets (hojas deslizantes)."
+
+Resultado: Transformación de una web de escritorio a una experiencia de app nativa.
+
+📸 SOLICITUD DE CAPTURA 1:
+
+Qué necesito: Una captura de la pantalla principal ("Home" o "Transacciones") vista desde el móvil.
+
+Objetivo: Mostrar el diseño de tarjetas y la barra de navegación inferior.
+
+Fase 4: Conversión a PWA y Offline
+Prompt Clave: "Genera un Service Worker con estrategia 'Cache First' para la interfaz y 'Network Only' para la API de Supabase. Crea el manifest.json para permitir la instalación en Android."
+
+5. Desafíos Técnicos y Soluciones (Troubleshooting)
+Durante el desarrollo surgieron problemas críticos que se resolvieron mediante depuración lógica:
+
+🔴 Problema 1: "Z-Index War" en Móvil
+Síntoma: El botón flotante (+) no funcionaba en móvil aunque era visible.
+
+Causa: La barra de navegación tenía un área transparente (padding) que se superponía al botón.
+
+Solución: Se aplicó z-index: 2000 al botón y se ajustó su posición bottom usando calc(80px + env(safe-area-inset-bottom)) para respetar el área segura del iPhone.
+
+🔴 Problema 2: Fuga de Seguridad Visual
+Síntoma: La barra de navegación aparecía en la pantalla de Login.
+
+Solución: Se implementó un "Guardia de Navegación" en el Router.
+
+JavaScript
+
+if (route === 'login') { nav.style.display = 'none'; }
+📸 SOLICITUD DE CAPTURA 2:
+
+Qué necesito: Pantalla de Login limpia (sin barras de menú abajo, solo el formulario).
+
+Objetivo: Demostrar la corrección de seguridad visual.
+
+🔴 Problema 3: Error CORS en Producción
+Síntoma: Failed to fetch al usar la app desde el móvil (GitHub Pages).
+
+Causa: Supabase bloqueaba las peticiones desde el dominio github.io.
+
+Solución: Configuración de "Site URL" y "Redirect URLs" en el panel de autenticación de Supabase.
+
+🔴 Problema 4: Confusión de UX en Ajustes
+Síntoma: Dos botones + en la pantalla de Configuración.
+
+Solución: Ocultar el FAB global en la vista settings y rediseñar el botón de "Crear Categoría" como un bloque estático superior.
+
+📸 SOLICITUD DE CAPTURA 3:
+
+Qué necesito: La pantalla de "Gestión de Categorías" donde se vea el botón rectangular grande de "Nueva Categoría" y NO se vea el botón redondo flotante.
+
+6. Proceso de Despliegue (Deploy)
+Git: Control de versiones y push a rama main.
+
+GitHub Pages: Hosting estático automático.
+
+PWABuilder:
+
+Análisis del manifest.json y sw.js.
+
+Generación de Trusted Web Activity (TWA) para Android.
+
+Compilación de archivo .apk firmado.
+
+📸 SOLICITUD DE CAPTURA 4:
+
+Qué necesito: Una captura de tu menú de aplicaciones del móvil donde se vea el icono de tu App instalada junto a las otras apps (Instagram, WhatsApp, etc.).
+
+Objetivo: La prueba definitiva de que es una App real.
+
+7. Conclusión y Futuras Mejoras
+El proyecto ha resultado en una aplicación financiera robusta, segura y con una experiencia de usuario nativa.
+
+Próximos pasos (Roadmap):
+
+[ ] Implementar API de conversión de divisas.
+
+[ ] Modo Oscuro automático según preferencias del sistema.
