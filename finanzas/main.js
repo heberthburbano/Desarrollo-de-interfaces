@@ -1,4 +1,15 @@
 /**
+ * Service Worker Registration
+ */
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('[App] SW registrado:', reg.scope))
+            .catch(err => console.log('[App] Fallo al registrar SW:', err));
+    });
+}
+
+/**
 /**
  * Main - App Entry Point
  */
