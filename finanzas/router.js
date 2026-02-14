@@ -64,6 +64,18 @@ class Router {
             }, 10);
         }
 
+        // 3. Update Global UI Visibility (Nav & FAB)
+        const nav = document.querySelector('.main-nav');
+        const fabContainer = document.querySelector('.fab-container'); // Correct selector from CSS inspection
+
+        if (route === 'login') {
+            if (nav) nav.style.display = 'none';
+            if (fabContainer) fabContainer.style.display = 'none';
+        } else {
+            if (nav) nav.style.display = 'flex'; // Restore flex for nav
+            if (fabContainer) fabContainer.style.display = 'block'; // Restore block for fab container
+        }
+
         // 3. Update Navigation Active State
         document.querySelectorAll('.nav-item').forEach(btn => {
             if (btn.dataset.target === route) {
