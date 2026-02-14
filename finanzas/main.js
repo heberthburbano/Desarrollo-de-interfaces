@@ -193,6 +193,14 @@ function setupAuthListeners() {
                 return; // DETENER EJECUCIÓN
             }
 
+            // Guardia Offline: No intentar login sin conexión
+            if (!navigator.onLine) {
+                window.showToast('⚠️ Sin conexión a internet. Conéctate para iniciar sesión.', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerText = originalBtnText;
+                return;
+            }
+
             // Debug para ver qué estamos enviando realmente
             console.log(`Enviando a Supabase: Email='${email}', Pass='${password}'`);
 
@@ -1043,3 +1051,18 @@ function renderSettingsCategories() {
         list.appendChild(item);
     });
 }
+
+// ===========================================
+// GLOBAL: Connectivity Listeners
+// ===========================================
+window.addEventListener('offline', () => {
+    console.log('[App] Conexión perdida');
+    window.showToast('📡 Se ha perdido la conexión a internet', 'error');
+    document.body.classList.add('offline-mode');
+});
+
+window.addEventListener('online', () => {
+    console.log('[App] Conexión recuperada');
+    window.showToast('✅ Conexión recuperada', 'success');
+    document.body.classList.remove('offline-mode');
+});
