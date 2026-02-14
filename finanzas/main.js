@@ -592,20 +592,9 @@ function setupAddForm() {
                             date: dateVal
                         };
 
-                        // Handle File Upload if NEW file selected
+                        // Handle File Upload if NEW file selected (fortified method)
                         if (file) {
-                            const fileName = `${Date.now()}_${file.name}`;
-                            const { error: upErr } = await window.supabaseClient.storage
-                                .from('receipts')
-                                .upload(fileName, file);
-
-                            if (upErr) throw upErr;
-
-                            const { data: urlData } = window.supabaseClient.storage
-                                .from('receipts')
-                                .getPublicUrl(fileName);
-
-                            updates.receipt_url = urlData.publicUrl;
+                            updates.receipt_url = await window.tm.uploadReceipt(file);
                         }
 
                         await window.tm.update(editingTransactionId, updates);

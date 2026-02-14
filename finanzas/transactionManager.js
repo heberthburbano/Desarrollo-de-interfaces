@@ -33,6 +33,48 @@ class TransactionManager {
     }
 
     /**
+     * Upload a receipt file to Supabase Storage (Fortified for Mobile)
+     * Validates type, size, and sanitizes the filename.
+     * @param {File} file - The file to upload
+     * @returns {string} publicUrl of the uploaded file
+     */
+    async uploadReceipt(file) {
+        // 1. Validate File Type
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
+        if (!allowedTypes.includes(file.type)) {
+            throw new Error('Tipo de archivo no permitido. Solo imágenes (JPG, PNG, WEBP) o PDF.');
+        }
+
+        // 2. Validate File Size (Max 5MB)
+        const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+        if (file.size > MAX_SIZE) {
+            throw new Error('⚠️ La imagen es muy pesada (Máx 5MB). Intenta con una foto más ligera.');
+        }
+
+        // 3. Get current user for folder path
+        const { data: { user } } = await this.client.auth.getUser();
+        if (!user) throw new Error('User not logged in');
+
+        // 4. Generate safe filename (Timestamp + clean extension)
+        const fileExt = file.name.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+        // 5. Upload
+        const { error: uploadError } = await this.client.storage
+            .from('receipts')
+            .upload(fileName, file, { upsert: false });
+
+        if (uploadError) throw uploadError;
+
+        // 6. Get and return public URL
+        const { data: urlData } = this.client.storage
+            .from('receipts')
+            .getPublicUrl(fileName);
+
+        return urlData.publicUrl;
+    }
+
+    /**
      * Add a new transaction (Wait for DB)
      */
     async add(transaction, file) {
@@ -42,20 +84,9 @@ class TransactionManager {
 
             let receiptUrl = null;
 
-            // 1. Upload File if exists
+            // 1. Upload File if exists (using fortified method)
             if (file) {
-                const fileName = `${Date.now()}_${file.name}`;
-                const { error: uploadError } = await this.client.storage
-                    .from('receipts')
-                    .upload(fileName, file);
-
-                if (uploadError) throw uploadError;
-
-                const { data } = this.client.storage
-                    .from('receipts')
-                    .getPublicUrl(fileName);
-
-                receiptUrl = data.publicUrl;
+                receiptUrl = await this.uploadReceipt(file);
             }
 
             const payload = {
